@@ -7,6 +7,27 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-
   ],
+  server: {
+    host: true,
+    port: 5173,
+    // dev proxy
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
+  preview: {
+    host: true,
+    port: 5173,
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
+    chunkSizeWarningLimit: 1000,
+  },
 })

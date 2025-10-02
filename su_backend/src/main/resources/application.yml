@@ -19,15 +19,18 @@ spring:
   mail:
     host: ${SPRING_MAIL_HOST}
     port: ${SPRING_MAIL_PORT}
-    username: ${SPRING_MAIL_USERNAME}
-    password: ${SPRING_MAIL_PASSWORD}
+    username: ${SPRING_MAIL_USERNAME:#{null}}
+    password: ${SPRING_MAIL_PASSWORD:#{null}}
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${SPRING_MAIL_SMTP_AUTH:false}
           starttls:
-            enable: true
+            enable: ${SPRING_MAIL_SMTP_STARTTLS:false}
+        transport:
+          protocol: smtp
     default-encoding: UTF-8
+    test-connection: false
 
   mail-from: ${SPRING_MAIL_FROM}
 
@@ -36,6 +39,15 @@ spring:
       enabled: true
     livereload:
       enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
 
 logging:
   level:
