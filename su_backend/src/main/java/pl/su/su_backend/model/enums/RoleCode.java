@@ -27,6 +27,7 @@ public enum RoleCode {
     // Other
     UCZEN("Uczeń", RoleCategory.OTHER),
     BYLY_UCZEN("Były uczeń", RoleCategory.OTHER),
+    ZABLOKOWANY("Były użytkownika", RoleCategory.OTHER),
 
     // System
     ADMINISTRATOR("Administrator", RoleCategory.SYSTEM);
