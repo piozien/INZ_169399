@@ -16,11 +16,20 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SuggestionRequestDto {
-	@NotNull private UUID userId;
-	@NotBlank private String title;
-	@NotBlank private String description;
-	@NotNull private Boolean isAnonymous;
-	@NotNull private SuggestionStatus status;
+	@NotNull(message = "User ID is required")
+	private UUID userId;
+	
+	@NotBlank(message = "Suggestion title is required")
+	private String title;
+	
+	@NotBlank(message = "Suggestion description is required")
+	private String description;
+	
+	@NotNull(message = "Anonymous flag is required")
+	private Boolean isAnonymous;
+	
+	@NotNull(message = "Suggestion status is required")
+	private SuggestionStatus status;
 	private Set<String> tags;
 }
 

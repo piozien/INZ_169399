@@ -19,6 +19,7 @@ public class EventMapper {
 				.createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
 				.calendarEventId(event.getCalendarEventId())
 				.createdAt(event.getCreatedAt())
+				.status(event.getStatus())
 				.build();
 	}
 

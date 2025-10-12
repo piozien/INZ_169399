@@ -47,8 +47,9 @@ public class ClassTransaction {
 	@JoinColumn(name = "added_by", nullable = false)
 	private Users addedBy;
 
-	@Column(name = "payer_user")
-	private UUID payerUser;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "payer_user")
+	private Users payerUser;
 
 	@Column(nullable = false)
 	@Builder.Default

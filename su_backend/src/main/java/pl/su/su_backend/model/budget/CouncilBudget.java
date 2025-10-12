@@ -6,8 +6,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.users.Users;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,11 +26,15 @@ public class CouncilBudget {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@Column(name = "council_id", nullable = false)
-	private UUID councilId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "council_id", nullable = false)
+	private Council council;
 
 	@Column
 	private Integer year;
+
+	@Column(name = "initial_amount", precision = 10, scale = 2)
+	private BigDecimal initialAmount;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "created_by", nullable = false)

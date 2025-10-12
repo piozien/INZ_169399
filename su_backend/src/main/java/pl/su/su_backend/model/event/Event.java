@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.model.enums.EventStatus;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -51,6 +52,11 @@ public class Event {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	@Builder.Default
+	private EventStatus status = EventStatus.DRAFT;
+
 	@OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
 	private Set<EventParticipant> participants = new HashSet<>();
@@ -60,5 +66,12 @@ public class Event {
 		if (createdAt == null) {
 			createdAt = LocalDateTime.now();
 		}
+		if (status == null) {
+			status = EventStatus.DRAFT;
+		}
+	}
+
+	public boolean isApproved() {
+		return EventStatus.APPROVED.equals(this.status);
 	}
 }

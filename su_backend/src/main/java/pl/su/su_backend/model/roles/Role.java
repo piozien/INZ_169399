@@ -33,7 +33,12 @@ public class Role {
 	private RoleCode roleCode;
 	private String description;
     
-	@ManyToMany
+
+	@OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
+	@Builder.Default
+	private Set<UserRole> userRoles = new HashSet<>();
+
+	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(
 		name = "role_permissions",
 		joinColumns = @JoinColumn(name = "role_id"),
@@ -41,16 +46,6 @@ public class Role {
 	)
 	@Builder.Default
 	private Set<Permission> permissions = new HashSet<>();
-
-	@OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
-	@Builder.Default
-	private Set<UserRole> userRoles = new HashSet<>();
-
-
-	public String getDisplayName() {
-		return roleCode != null ? roleCode.getDisplayName() : null;
-	}
-
 
 	public RoleCategory getCategory() {
 		return roleCode != null ? roleCode.getCategory() : null;

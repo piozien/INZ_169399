@@ -1,5 +1,6 @@
 package pl.su.su_backend.dto.budget;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -17,21 +18,22 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClassTransactionRequestDto {
-
-	@NotNull
-	private UUID budgetId;
-
-	@NotNull
-	private TransactionType type;
-
-	@NotNull
-	private BigDecimal amount;
-
-	@NotBlank
-	private String description;
-
-	@NotNull
-	private LocalDateTime date;
-
-	private UUID payerUser; // optional
+    
+    @NotNull(message = "Budget ID is required")
+    private UUID budgetId;
+    
+    @NotNull(message = "Transaction type is required")
+    private TransactionType type;
+    
+    @NotNull(message = "Amount is required")
+    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
+    private BigDecimal amount;
+    
+    @NotBlank(message = "Description is required")
+    private String description;
+    
+    @NotNull(message = "Date is required")
+    private LocalDateTime date;
+    
+    private UUID payerUserId;
 }

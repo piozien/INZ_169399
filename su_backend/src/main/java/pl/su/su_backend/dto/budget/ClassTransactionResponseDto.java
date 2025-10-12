@@ -15,14 +15,16 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClassTransactionResponseDto {
-
-	private UUID id;
-	private UUID budgetId;
-	private TransactionType type;
-	private BigDecimal amount;
-	private String description;
-	private LocalDateTime date;
-	private UUID addedById;
-	private UUID payerUser;
-	private Boolean confirmed;
+    
+    private UUID id;
+    private UUID budgetId;
+    private TransactionType type;
+    private BigDecimal amount;
+    private String description;
+    private LocalDateTime date;
+    private UUID addedById;
+    private String addedByFullName;
+    private UUID payerUserId;
+    private String payerUserFullName;
+    private Boolean confirmed;
 }

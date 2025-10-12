@@ -21,17 +21,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Permission {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
-	private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-	@Column(unique = true, nullable = false, length = 100)
-	private String code; // USER_EDIT, EVENT_DELETE
+    @Column(unique = true, nullable = false)
+    private String name;
 
-	@Column(length = 255)
-	private String description;
+    @Column
+    private String description;
 
-	@ManyToMany(mappedBy = "permissions")
-	@Builder.Default
-	private Set<Role> roles = new HashSet<>();
+    @ManyToMany(mappedBy = "permissions")
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
 }

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import pl.su.su_backend.model.enums.EventStatus;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,6 +24,7 @@ public class EventResponseDto {
 	private UUID createdById;
 	private String calendarEventId;
 	private LocalDateTime createdAt;
+	private EventStatus status;
 }
 
 

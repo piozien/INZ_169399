@@ -21,6 +21,7 @@ public class SuggestionResponseDto {
 	private String description;
 	private Boolean isAnonymous;
 	private SuggestionStatus status;
+	private String rejectionReason;
 	private LocalDateTime createdAt;
 	private Set<String> tags;
 }

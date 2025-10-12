@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.StatusEnum;
 
@@ -40,7 +41,9 @@ public class Users {
     @Builder.Default
     private StatusEnum status = StatusEnum.PENDING;
 
-    private UUID classId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", referencedColumnName = "id")
+    private Classes classes;
 
     private LocalDateTime createdAt;
 
@@ -50,6 +53,9 @@ public class Users {
 
     @Column(name = "external_id")
     private String externalId;
+
+    @Column(name = "refresh_token")
+    private String refreshToken;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -62,4 +68,9 @@ public class Users {
             status = StatusEnum.PENDING;
         }
     }
+
+    public boolean isBlocked() {
+        return StatusEnum.BLOCKED.equals(this.status);
+    }
+
 }

@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -13,9 +14,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClassBudgetRequestDto {
-
-	@NotNull
-	private UUID classId;
-
-	private Integer year;
+    
+    @NotNull(message = "Class ID is required")
+    private UUID classId;
+    
+    @NotNull(message = "Year is required")
+    private Integer year;
+    
+    @NotNull(message = "Initial amount is required")
+    private BigDecimal initialAmount;
 }

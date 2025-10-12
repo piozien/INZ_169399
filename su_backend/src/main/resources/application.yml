@@ -10,29 +10,28 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
   mail:
-    host: ${SPRING_MAIL_HOST}
-    port: ${SPRING_MAIL_PORT}
-    username: ${SPRING_MAIL_USERNAME:#{null}}
-    password: ${SPRING_MAIL_PASSWORD:#{null}}
+    host: mailpit  # Use Mailpit container
+    port: 1025     # Mailpit SMTP port
+    username: ""   # No authentication needed
+    password: ""   # No authentication needed
+    from: "noreply@school.edu"
     properties:
       mail:
         smtp:
-          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          auth: false
           starttls:
-            enable: ${SPRING_MAIL_SMTP_STARTTLS:false}
+            enable: false
         transport:
           protocol: smtp
     default-encoding: UTF-8
     test-connection: false
-
-  mail-from: ${SPRING_MAIL_FROM}
 
   devtools:
     restart:
@@ -40,11 +39,31 @@ spring:
     livereload:
       enabled: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          microsoft:
+            client-id: ${OAUTH2_MICROSOFT_CLIENT_ID}
+            client-secret: ${OAUTH2_MICROSOFT_CLIENT_SECRET}
+            scope: ${OAUTH2_MICROSOFT_SCOPE}
+            authorization-grant-type: ${OAUTH2_MICROSOFT_GRANT_TYPE}
+            redirect-uri: ${OAUTH2_MICROSOFT_REDIRECT_URI}
+        provider:
+          microsoft:
+            authorization-uri: ${OAUTH2_MICROSOFT_AUTHORIZATION_URI}
+            token-uri: ${OAUTH2_MICROSOFT_TOKEN_URI}
+            user-info-uri: ${OAUTH2_MICROSOFT_USER_INFO_URI}
+            user-name-attribute: ${OAUTH2_MICROSOFT_USER_NAME_ATTRIBUTE}
+
 management:
+  health:
+    mail:
+      enabled: true  # Enable mail health check with Mailpit
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,mappings
   endpoint:
     health:
       show-details: when-authorized
@@ -52,4 +71,37 @@ management:
 logging:
   level:
     org.springframework: INFO
-    com.twoja.aplikacja: DEBUG
+    pl.su.su_backend: DEBUG
+
+# JWT Configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION}
+    refresh-token:
+      expiration: ${JWT_REFRESH_EXPIRATION}
+  
+  # Password Reset Configuration
+  password-reset:
+    expiration-hours: ${PASSWORD_RESET_EXPIRATION_HOURS}
+  
+  # Frontend URL for password reset links
+  frontend:
+    url: ${FRONTEND_URL}
+  
+  # Scheduling configuration
+  scheduling:
+    enabled: ${SCHEDULING_ENABLED}
+
+  # Microsoft Graph / Outlook Calendar
+  microsoft:
+    graph:
+      base-url: ${MS_GRAPH_BASE_URL}
+    calendar:
+      enabled: ${MS_CALENDAR_ENABLED}
+      use-shared-owner: ${MS_CALENDAR_USE_SHARED_OWNER}
+      owner-user-id: ${MS_CALENDAR_OWNER_USER_ID}
+      events-path:
+        me: ${MS_CALENDAR_EVENTS_PATH_ME}
+        user: ${MS_CALENDAR_EVENTS_PATH_USER}
+

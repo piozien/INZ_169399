@@ -18,18 +18,18 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CouncilTransactionRequestDto {
 
-	@NotNull
+	@NotNull(message = "Budget ID is required")
 	private UUID budgetId;
 
-	@NotNull
+	@NotNull(message = "Transaction type is required")
 	private TransactionType type;
 
-	@NotNull
+	@NotNull(message = "Amount is required")
 	private BigDecimal amount;
 
-	@NotBlank
+	@NotBlank(message = "Description is required")
 	private String description;
 
-	@NotNull
+	@NotNull(message = "Date is required")
 	private LocalDateTime date;
 }

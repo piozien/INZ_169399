@@ -14,10 +14,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventRequestDto {
-	@NotBlank private String title;
-	@NotBlank private String description;
-	@NotNull private LocalDateTime startDate;
-	@NotNull private LocalDateTime endDate;
+	@NotBlank(message = "Event title is required")
+	private String title;
+	
+	@NotBlank(message = "Event description is required")
+	private String description;
+	
+	@NotNull(message = "Start date is required")
+	private LocalDateTime startDate;
+	
+	@NotNull(message = "End date is required")
+	private LocalDateTime endDate;
 	private String location;
 	private String calendarEventId;
 }

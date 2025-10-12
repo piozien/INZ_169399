@@ -23,8 +23,8 @@ public class Classes {
 	private UUID id;
 
 	@Column(nullable = false)
-	private String name; // "3A"
+	private String name;
 
 	@Column
-	private String year; // "2024/25"
+	private String year;
 }
