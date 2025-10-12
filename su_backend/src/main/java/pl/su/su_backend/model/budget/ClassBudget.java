@@ -1,0 +1,58 @@
+package pl.su.su_backend.model.budget;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import pl.su.su_backend.model.classes.Classes;
+import pl.su.su_backend.model.users.Users;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "class_budgets")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ClassBudget {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "class_id", nullable = false)
+	private Classes classes;
+
+	@Column
+	private Integer year;
+
+	@Column(name = "initial_amount", precision = 10, scale = 2)
+	private BigDecimal initialAmount;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "created_by", nullable = false)
+	private Users createdBy;
+
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
+
+	@OneToMany(mappedBy = "budget", cascade = CascadeType.ALL, orphanRemoval = true)
+	@Builder.Default
+	private List<ClassTransaction> transactions = new ArrayList<>();
+
+	@PrePersist
+	public void onCreate() {
+		if (createdAt == null) {
+			createdAt = LocalDateTime.now();
+		}
+	}
+}

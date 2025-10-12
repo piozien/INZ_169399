@@ -1,0 +1,95 @@
+# Development Docker Compose - hot-reload frontendu
+
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: su_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - su_network
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  database:
+    image: postgres:17.5-alpine
+    container_name: su_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-su_db}
+      POSTGRES_USER: ${POSTGRES_USER:-su_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-su_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - su_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-su_user} -d ${POSTGRES_DB:-su_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./su_backend
+      dockerfile: Dockerfile
+    container_name: su_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-su_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-su_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-su_password}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-mailpit}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-1025}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_FROM: ${SPRING_MAIL_FROM:-noreply@su-app.local}
+    depends_on:
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - su_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend DEV hot-reload
+  frontend:
+    build:
+      context: ./su_frontend
+      dockerfile: Dockerfile.dev
+    container_name: su_frontend_dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"  # Vite dev server
+    volumes:
+      - ./su_frontend:/app  # Mount source code
+      - /app/node_modules   # Don't overwrite node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - su_network
+
+networks:
+  su_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+
