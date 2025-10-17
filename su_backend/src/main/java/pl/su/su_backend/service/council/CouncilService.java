@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.dto.budget.*;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
@@ -46,7 +48,7 @@ public class CouncilService {
     public CouncilResponseDto getCouncil() {
         List<Council> councils = councilRepository.findAll();
         if (councils.isEmpty()) {
-            throw new RuntimeException("No council found. Please create a council first.");
+            throw ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "No council found");
         }
         return CouncilMapper.toResponseDto(councils.getFirst());
     }
@@ -55,7 +57,7 @@ public class CouncilService {
     protected Council getCouncilEntity() {
         List<Council> councils = councilRepository.findAll();
         if (councils.isEmpty()) {
-            throw new RuntimeException("No council found. Please create a council first.");
+            throw ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "No council found");
         }
         return councils.getFirst();
     }
@@ -64,10 +66,10 @@ public class CouncilService {
         log.info("Creating council budget by user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_BUDGET_CREATE)) {
-            throw new RuntimeException("Access denied: User must have council budget creation permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         Council council = getCouncilEntity();
@@ -83,10 +85,10 @@ public class CouncilService {
         log.info("Fetching all council budgets for user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_BUDGET_VIEW)) {
-            throw new RuntimeException("Access denied: User must have council budget viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<CouncilBudget> budgets = councilBudgetRepository.findAll();
@@ -97,14 +99,14 @@ public class CouncilService {
         log.info("Creating council transaction by user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_CREATE)) {
-            throw new RuntimeException("Access denied: User must have council transaction creation permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         CouncilBudget budget = councilBudgetRepository.findById(dto.getBudgetId())
-                .orElseThrow(() -> new RuntimeException("Budget not found: " + dto.getBudgetId()));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found"));
         
         CouncilTransaction transaction = CouncilTransactionMapper.toEntity(dto, budget, user);
         CouncilTransaction savedTransaction = councilTransactionRepository.save(transaction);
@@ -118,10 +120,10 @@ public class CouncilService {
         log.info("Fetching transactions for budget: {} by user: {}", budgetId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_VIEW)) {
-            throw new RuntimeException("Access denied: User must have council transaction viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<CouncilTransaction> transactions = councilTransactionRepository.findByBudgetId(budgetId);
@@ -132,10 +134,10 @@ public class CouncilService {
         log.info("Fetching draft events for SU by user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw new RuntimeException("Access denied: User must be a member of SU");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return eventService.getDraftEventsForSU(currentUserEmail);
@@ -145,10 +147,10 @@ public class CouncilService {
         log.info("Fetching pending events for SU review by user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw new RuntimeException("Access denied: User must be a member of SU");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return eventService.getPendingEvents();
@@ -158,10 +160,10 @@ public class CouncilService {
         log.info("Approving event {} by SU user: {}", eventId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            throw new RuntimeException("Access denied: User must be a member of SU");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return eventService.approveEvent(eventId, user.getId());
@@ -171,10 +173,10 @@ public class CouncilService {
         log.info("Rejecting event {} by SU user: {}", eventId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            throw new RuntimeException("Access denied: User must be a member of SU");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return eventService.rejectEvent(eventId, user.getId());
@@ -184,10 +186,10 @@ public class CouncilService {
         log.info("Submitting event {} for approval by SU user: {}", eventId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_CREATE)) {
-            throw new RuntimeException("Access denied: User must be a member of SU");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return eventService.submitEventForApproval(eventId, user.getId());
@@ -197,17 +199,17 @@ public class CouncilService {
         log.info("Adding member {} to council {} by user: {}", userId, councilId, currentUserEmail);
         
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw new RuntimeException("Access denied: User must have council member management permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> new RuntimeException("Council not found: " + councilId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
         Users member = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!council.getMembers().contains(member)) {
             council.getMembers().add(member);
@@ -223,17 +225,17 @@ public class CouncilService {
         log.info("Removing member {} from council {} by user: {}", userId, councilId, currentUserEmail);
         
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw new RuntimeException("Access denied: User must have council member management permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> new RuntimeException("Council not found: " + councilId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
         Users member = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (council.getMembers().contains(member)) {
             council.getMembers().remove(member);
@@ -249,13 +251,13 @@ public class CouncilService {
         log.info("Fetching members of council {} by user: {}", councilId, currentUserEmail);
         
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> new RuntimeException("Council not found: " + councilId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW)) {
-            throw new RuntimeException("Access denied: User must have council viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return council.getMembers().stream()
@@ -268,10 +270,10 @@ public class CouncilService {
         log.info("Creating council: {} for academic year: {} by user: {}", dto.getName(), dto.getAcademicYear(), currentUserEmail);
         
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_CREATE)) {
-            throw new RuntimeException("Access denied: User must have council creation permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         Council council = CouncilMapper.toEntity(dto);

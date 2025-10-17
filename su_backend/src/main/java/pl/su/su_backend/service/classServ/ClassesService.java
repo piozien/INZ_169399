@@ -13,6 +13,8 @@ import pl.su.su_backend.dto.classes.ClassesMapper;
 import pl.su.su_backend.dto.user.UserMapper;
 import pl.su.su_backend.repositories.classRep.ClassesRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +31,7 @@ public class ClassesService {
 
     public ClassesResponseDto create(ClassesRequestDto dto) {
         classesRepository.findByName(dto.getName()).ifPresent(c -> {
-            throw new RuntimeException("Class already exists: " + dto.getName());
+            throw ApiException.conflict(ErrorCode.VALIDATION_ERROR, "Class already exists");
         });
         Classes c = ClassesMapper.toEntity(dto);
         return ClassesMapper.toResponse(classesRepository.save(c));
@@ -42,12 +44,12 @@ public class ClassesService {
 
     @Transactional(readOnly = true)
     public ClassesResponseDto get(UUID id) {
-        var c = classesRepository.findById(id).orElseThrow(() -> new RuntimeException("Class not found: " + id));
+        var c = classesRepository.findById(id).orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found"));
         return ClassesMapper.toResponse(c);
     }
 
     public ClassesResponseDto update(UUID id, ClassesRequestDto dto) {
-        Classes c = classesRepository.findById(id).orElseThrow(() -> new RuntimeException("Class not found: " + id));
+        Classes c = classesRepository.findById(id).orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found"));
         c.setName(dto.getName());
         c.setYear(dto.getYear());
         return ClassesMapper.toResponse(classesRepository.save(c));
@@ -65,7 +67,7 @@ public class ClassesService {
     }
 
     public void detachUser(UUID userId) {
-        var user = usersRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        var user = usersRepository.findById(userId).orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         user.setClasses(null);
         usersRepository.save(user);
     }
