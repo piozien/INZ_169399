@@ -20,6 +20,8 @@ import pl.su.su_backend.repositories.event.EventParticipantRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,11 +47,11 @@ public class EventService {
         log.info("Creating event: {} by user: {}", dto.getTitle(), createdById);
         
         Users creator = usersRepository.findById(createdById)
-                .orElseThrow(() -> new RuntimeException("User not found: " + createdById));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
 
         // Check if user has permission to create events
         if (!permissionService.hasPermission(createdById, PermissionCode.EVENT_CREATE)) {
-            throw new RuntimeException("You are not authorized to create events");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Event event = Event.builder()
@@ -89,11 +91,11 @@ public class EventService {
         log.info("Fetching events for user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         // Check if user has permission to view events
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw new RuntimeException("Access denied: User must have event viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<Event> events;
@@ -121,16 +123,16 @@ public class EventService {
         log.info("Fetching all events for admin: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         // Check if user has permission to view events
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw new RuntimeException("Access denied: User must have event viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
-        
+
         // Check if user has admin/SU permissions (can see all events including drafts)
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            throw new RuntimeException("Access denied: User must have event approval permission to see all events");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<Event> events = eventRepository.findAllByOrderByStartDateAsc();
@@ -168,21 +170,21 @@ public class EventService {
         log.info("Fetching event with ID: {} by user: {}", eventId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
-        
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+
         // Check if user has permission to view events
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw new RuntimeException("Access denied: User must have event viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
-        
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
+
         // Check if user can access this specific event based on status
         if (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.PENDING) {
             // Only SU members can see DRAFT and PENDING events
             if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-                throw new RuntimeException("Access denied: Only SU members can view draft and pending events");
+                throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
             }
         }
         
@@ -193,11 +195,11 @@ public class EventService {
         log.info("Updating event: {} by user: {}", eventId, updatedById);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
         if (!event.getCreatedBy().getId().equals(updatedById) && 
             !permissionService.hasPermission(updatedById, PermissionCode.EVENT_EDIT)) {
-            throw new RuntimeException("You are not authorized to edit this event");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         event.setTitle(dto.getTitle());
@@ -224,11 +226,11 @@ public class EventService {
         log.info("Deleting event: {} by user: {}", eventId, deletedById);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
         if (!event.getCreatedBy().getId().equals(deletedById) &&
             !permissionService.hasPermission(deletedById, PermissionCode.EVENT_DELETE)) {
-            throw new RuntimeException("You are not authorized to delete this event");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         // Delete on Graph when enabled
@@ -249,13 +251,13 @@ public class EventService {
         log.info("Adding participant {} to event {} with role {}", userId, eventId, role);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
         
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (participantRepository.existsByEvent_IdAndUser_Id(eventId, userId)) {
-            throw new RuntimeException("User is already a participant of this event");
+            throw ApiException.conflict(ErrorCode.VALIDATION_ERROR, "Participant already exists");
         }
 
         EventParticipant participant = EventParticipant.builder()
@@ -279,13 +281,13 @@ public class EventService {
         log.info("Removing participant {} from event {} by user {}", userId, eventId, removedById);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
         // Check if user can remove (creator, has edit permission, or removing themselves)
         if (!event.getCreatedBy().getId().equals(removedById) && 
             !userId.equals(removedById) && 
             !permissionService.hasPermission(removedById, PermissionCode.EVENT_EDIT)) {
-            throw new RuntimeException("You are not authorized to remove this participant");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         participantRepository.deleteByEvent_IdAndUser_Id(eventId, userId);
@@ -344,11 +346,11 @@ public class EventService {
         log.info("Fetching draft events for SU: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         // Check if user has permission to view draft events (SU members)
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW_DRAFTS)) {
-            throw new RuntimeException("Access denied: User must have permission to view draft events");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<Event> events = eventRepository.findByStatusOrderByCreatedAtDesc(DRAFT);
@@ -363,7 +365,7 @@ public class EventService {
         log.info("Approving event {} by user {}", eventId, approvedById);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
         event.setStatus(APPROVED);
         Event updatedEvent = eventRepository.save(event);
@@ -381,7 +383,7 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
 
         if (!event.getStatus().equals(DRAFT)) {
-            throw new RuntimeException("Only DRAFT events can be submitted for approval");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Only DRAFT events can be submitted");
         }
 
         event.setStatus(PENDING);
@@ -397,7 +399,7 @@ public class EventService {
         log.info("Rejecting event {} by user {}", eventId, rejectedById);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
         event.setStatus(REJECTED);
         Event updatedEvent = eventRepository.save(event);

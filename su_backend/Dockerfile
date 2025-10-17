@@ -2,13 +2,9 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy pom.xml and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copy source code and build
+COPY pom.xml ./
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn -B -U clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-jammy

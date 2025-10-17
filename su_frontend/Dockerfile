@@ -2,30 +2,27 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code and build
+# Copy source and build
 COPY . .
 RUN npm run build
 
-# Stage 2: Runtime with Nginx
-FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
+# Stage 2: Production image
+FROM node:20-alpine AS production
+WORKDIR /app
 
-# Remove default nginx static assets
-RUN rm -rf ./*
+ENV NODE_ENV=production
 
-# Copy built assets from build stage
-COPY --from=build /app/dist .
+# Copy only necessary files
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/package*.json ./
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN npm ci --omit=dev
 
-# Expose port
-EXPOSE 80
+EXPOSE 3000
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
-
+CMD ["npm", "start"]

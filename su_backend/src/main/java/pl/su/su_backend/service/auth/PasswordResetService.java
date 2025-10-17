@@ -11,6 +11,8 @@ import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.auth.PasswordResetTokenRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.user.MailService;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 
 import java.security.SecureRandom;
@@ -39,10 +41,10 @@ public class PasswordResetService {
         log.info("Sending password reset email to: {}", email);
         
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (user.isBlocked()) {
-            throw new RuntimeException("User account is blocked");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         tokenRepository.deleteByUser_Id(user.getId());
@@ -66,10 +68,10 @@ public class PasswordResetService {
         log.info("Resetting password with token");
         
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Invalid or expired token"));
 
         if (!resetToken.isValid()) {
-            throw new RuntimeException("Token has expired or has already been used");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Token expired or used");
         }
 
         Users user = resetToken.getUser();

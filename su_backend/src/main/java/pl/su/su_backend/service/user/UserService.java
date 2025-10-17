@@ -13,6 +13,8 @@ import pl.su.su_backend.config.JwtConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.su.su_backend.dto.user.*;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.AuthProvider;
@@ -61,18 +63,29 @@ public class UserService {
         log.info("Registering new user with email: {}", userRequestDto.getEmail());
 
         if (usersRepository.findByEmail(userRequestDto.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email " + userRequestDto.getEmail() + " already exists");
+            throw ApiException.conflict(
+                    ErrorCode.EMAIL_IN_USE, "Email already in use");
+        }
+
+        AuthProvider provider = userRequestDto.getAuthProvider() != null ? userRequestDto.getAuthProvider() : AuthProvider.LOCAL;
+        if (provider != AuthProvider.LOCAL) {
+            throw ApiException.badRequest(
+                    ErrorCode.INVALID_CREDENTIALS,
+                    "Use OAuth2 registration for this provider");
+        }
+        if (userRequestDto.getPassword() == null || userRequestDto.getPassword().isEmpty()) {
+            throw ApiException.badRequest(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Password is required for local registration");
         }
 
         Users user = Users.builder()
                 .fullName(userRequestDto.getFullName())
                 .email(userRequestDto.getEmail())
-                .password(userRequestDto.getPassword() != null && !userRequestDto.getPassword().isEmpty()
-                        ? passwordEncoder.encode(userRequestDto.getPassword())
-                        : "") // empty password OAUTH2
+                .password(passwordEncoder.encode(userRequestDto.getPassword()))
                 .status(userRequestDto.getStatus() != null ? userRequestDto.getStatus() : StatusEnum.PENDING)
                 .classes(null)
-                .authProvider(userRequestDto.getAuthProvider() != null ? userRequestDto.getAuthProvider() : AuthProvider.LOCAL)
+                .authProvider(provider)
                 .externalId(userRequestDto.getExternalId())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -99,7 +112,8 @@ public class UserService {
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Users user = usersRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->ApiException.unauthorized(
+                        ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
 
         log.info("User logged in successfully: {}", user.getEmail());
         activityLogService.log(user.getId(), ActionType.LOGIN, "User logged in");
@@ -113,12 +127,13 @@ public class UserService {
 
         String email = jwtConfig.extractEmail(refreshTokenRequestDto.getRefreshToken());
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.unauthorized(
+                       ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
 
         if (!tokenService.isRefreshTokenValid(user.getId(), refreshTokenRequestDto.getRefreshToken())) {
-            throw new RuntimeException("Invalid refresh token");
+            throw ApiException.unauthorized(
+                    ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
         }
-
 
         String newAccessToken = jwtConfig.generateToken(user.getEmail());
         String newRefreshToken = jwtConfig.generateRefreshToken(user.getEmail());
@@ -157,11 +172,13 @@ public class UserService {
         Users currentUser = getCurrentUser(currentUserEmail);
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
-            throw new RuntimeException("Access denied: User must have user viewing permission");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
         return UserMapper.toResponseDto(user);
     }
 
@@ -169,7 +186,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<String> getUserRoles(UUID userId) {
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
         return user.getUserRoles().stream()
                 .map(ur -> ur.getRole().getRoleCode().name())
                 .collect(Collectors.toList());
@@ -179,7 +197,8 @@ public class UserService {
     public UserResponseDto getUserByEmail(String email) {
         log.info("Fetching user with email: {}", email);
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
         return UserMapper.toResponseDto(user);
     }
 
@@ -193,7 +212,8 @@ public class UserService {
         Users currentUser = getCurrentUser(currentUserEmail);
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
-            throw new RuntimeException("Access denied: User must have user viewing permission");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         if (permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
@@ -217,7 +237,8 @@ public class UserService {
         log.info("Updating user with ID: {}", userId);
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         user.setFullName(userRequestDto.getFullName());
         user.setEmail(userRequestDto.getEmail());
@@ -239,10 +260,12 @@ public class UserService {
         log.info("Soft deleting (blocking) user with ID: {}", userId);
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (user.isBlocked()) {
-            throw new RuntimeException("User is already deleted/blocked");
+            throw ApiException.badRequest(
+                    ErrorCode.VALIDATION_ERROR, "User already blocked");
         }
 
         user.setStatus(StatusEnum.BLOCKED);
@@ -273,12 +296,13 @@ public class UserService {
         log.info("OAuth2 login for existing user: {}", email);
 
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (user.isBlocked()) {
-            throw new RuntimeException("User account is blocked");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
-
 
         String accessToken = jwtConfig.generateToken(user.getEmail());
         String refreshToken = jwtConfig.generateRefreshToken(user.getEmail());
@@ -306,7 +330,8 @@ public class UserService {
         log.info("OAuth2 registration for new user: {}", email);
 
         if (usersRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("User with email " + email + " already exists");
+            throw ApiException.conflict(
+                    ErrorCode.EMAIL_IN_USE, "Email already in use");
         }
 
         Users user = Users.builder()
@@ -321,7 +346,8 @@ public class UserService {
 
         Users savedUser = usersRepository.save(user);
         Role defaultRole = roleRepository.findByRoleCode(RoleCode.UCZEN)
-                .orElseThrow(() -> new RuntimeException("Default role UCZEN not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.DEFAULT_ROLE_MISSING, "Default role missing"));
         UserRole userRole = UserRole.builder()
                 .id(new UserRole.Id(savedUser.getId(), defaultRole.getId()))
                 .user(savedUser)
@@ -334,9 +360,27 @@ public class UserService {
         return loginOAuth2User(email);
     }
 
+    public LoginResponseDto loginOrRegisterOAuth2(String email, String fullName, String externalId, AuthProvider provider) {
+        if (provider == null || provider == AuthProvider.LOCAL) {
+            throw ApiException.badRequest(
+                    ErrorCode.VALIDATION_ERROR, "Invalid OAuth2 provider");
+        }
+
+        return usersRepository.findByEmail(email)
+                .map(user -> {
+                    if (user.getAuthProvider() != provider) {
+                        throw ApiException.unauthorized(
+                                ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
+                    }
+                    return loginOAuth2User(email);
+                })
+                .orElseGet(() -> registerOAuth2User(email, fullName, externalId, provider));
+    }
+
     public UserResponseDto updateUser(UUID userId, UserRequestDto userRequestDto, String currentUserEmail) {
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
 
@@ -344,7 +388,8 @@ public class UserService {
         }
 
         if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("You can only edit your own profile");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         return updateUser(userId, userRequestDto);
@@ -353,18 +398,22 @@ public class UserService {
 
     public UserResponseDto blockUser(UUID userId, String currentUserEmail) {
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw new RuntimeException("You don't have permission to block users");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         if (currentUser.getId().equals(userId)) {
-            throw new RuntimeException("You cannot block yourself");
+            throw ApiException.badRequest(
+                    ErrorCode.VALIDATION_ERROR, "Cannot block yourself");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         user.setStatus(StatusEnum.BLOCKED);
         usersRepository.save(user);
@@ -375,14 +424,17 @@ public class UserService {
 
     public UserResponseDto unblockUser(UUID userId, String currentUserEmail) {
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw new RuntimeException("You don't have permission to unblock users");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         user.setStatus(StatusEnum.CONFIRMED);
         usersRepository.save(user);
@@ -393,17 +445,21 @@ public class UserService {
 
     public UserResponseDto assignUserToClass(UUID userId, UUID classId, String currentUserEmail) {
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw new RuntimeException("You don't have permission to assign users to classes");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         Classes classes = classesRepository.findById(classId)
-                .orElseThrow(() -> new RuntimeException("Class not found with ID: " + classId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.VALIDATION_ERROR, "Class not found"));
 
         user.setClasses(classes);
         usersRepository.save(user);
@@ -415,14 +471,17 @@ public class UserService {
 
     public UserResponseDto removeUserFromClass(UUID userId, String currentUserEmail) {
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw new RuntimeException("You don't have permission to remove users from classes");
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
 
         String className = user.getClasses() != null ? user.getClasses().getName() : "unknown";
         user.setClasses(null);
@@ -435,12 +494,14 @@ public class UserService {
 
     private Users getCurrentUser(String currentUserEmail) {
         return usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.USER_NOT_FOUND, "User not found"));
     }
 
     private void assignDefaultRole(Users user) {
         Role defaultRole = roleRepository.findByRoleCode(RoleCode.UCZEN)
-                .orElseThrow(() -> new RuntimeException("Default role UCZEN not found"));
+                .orElseThrow(() -> ApiException.badRequest(
+                        ErrorCode.DEFAULT_ROLE_MISSING, "Default role missing"));
         UserRole userRole = UserRole.builder()
                 .id(new UserRole.Id(user.getId(), defaultRole.getId()))
                 .user(user)
@@ -452,7 +513,7 @@ public class UserService {
     private void sendActivationEmail(Users user) {
         String activationToken = jwtConfig.generateActivationToken(user.getEmail());
         String activationUrl = UriComponentsBuilder
-                .fromHttpUrl(frontendUrl)
+                .fromUriString(frontendUrl)
                 .path("/activate")
                 .queryParam("token", activationToken)
                 .build()

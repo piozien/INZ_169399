@@ -18,6 +18,8 @@ import pl.su.su_backend.repositories.budget.CouncilTransactionRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.service.auth.PermissionService;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -41,13 +43,13 @@ public class BudgetReportService {
         log.info("Generating class budget report for budget {} by user: {}", budgetId, currentUserEmail);
         
         ClassBudget budget = classBudgetRepository.findById(budgetId)
-                .orElseThrow(() -> new RuntimeException("Class budget not found: " + budgetId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class budget not found"));
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!hasAccessToClassBudget(user, budget)) {
-            throw new RuntimeException("Access denied: User cannot access this class budget");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         LocalDate fromDate = request.getFromDate() != null ? request.getFromDate() : LocalDate.now().minusMonths(1);
@@ -64,13 +66,13 @@ public class BudgetReportService {
         log.info("Generating council budget report for budget {} by user: {}", budgetId, currentUserEmail);
         
         CouncilBudget budget = councilBudgetRepository.findById(budgetId)
-                .orElseThrow(() -> new RuntimeException("Council budget not found: " + budgetId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council budget not found"));
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.REPORT_VIEW)) {
-            throw new RuntimeException("Access denied: User must have report viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         LocalDate fromDate = request.getFromDate() != null ? request.getFromDate() : LocalDate.now().minusMonths(1);
@@ -87,12 +89,12 @@ public class BudgetReportService {
         log.info("Generating all class budgets report for user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         List<ClassBudget> budgets;
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.CLASS_BUDGET_VIEW)) {
-            throw new RuntimeException("Access denied: User must have class budget viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         if (permissionService.hasPermission(user.getId(), PermissionCode.REPORT_GENERATE)) {
@@ -100,7 +102,7 @@ public class BudgetReportService {
         } else if (user.getClasses() != null) {
             budgets = classBudgetRepository.findByClasses_IdOrderByYearDesc(user.getClasses().getId());
         } else {
-            throw new RuntimeException("Access denied: User must be assigned to a class to view budgets");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<BudgetReportDto> reports = new ArrayList<>();

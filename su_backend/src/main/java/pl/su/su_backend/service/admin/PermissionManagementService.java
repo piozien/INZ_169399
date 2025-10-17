@@ -11,6 +11,8 @@ import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.repositories.permission.PermissionRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.service.auth.PermissionService;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,11 +32,11 @@ public class PermissionManagementService {
         log.info("Fetching permissions for role {} by user: {}", roleCode, currentUserEmail);
 
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("Access denied: User must have permission management access");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Role not found"));
 
         return role.getPermissions().stream()
                 .map(permission -> PermissionCode.valueOf(permission.getName().toUpperCase()))
@@ -46,7 +48,7 @@ public class PermissionManagementService {
         log.info("Fetching all permissions by user: {}", currentUserEmail);
         
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("Access denied: User must have permission management access");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         return Arrays.asList(PermissionCode.values());
@@ -57,7 +59,7 @@ public class PermissionManagementService {
         log.info("Fetching all roles by user: {}", currentUserEmail);
         
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("Access denied: User must have permission management access");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         return Arrays.asList(RoleCode.values());
@@ -71,10 +73,10 @@ public class PermissionManagementService {
         }
 
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Role not found"));
 
         Permission permission = permissionRepository.findByName(permissionCode.getCode())
-                .orElseThrow(() -> new RuntimeException("Permission not found: " + permissionCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Permission not found"));
 
         if (role.getPermissions().contains(permission)) {
             log.info("Permission {} already assigned to role {}", permissionCode, roleCode);
@@ -91,14 +93,14 @@ public class PermissionManagementService {
         log.info("Revoking permission {} from role {} by user: {}", permissionCode, roleCode, currentUserEmail);
 
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("Access denied: User must have permission management access");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Role not found"));
 
         Permission permission = permissionRepository.findByName(permissionCode.getCode())
-                .orElseThrow(() -> new RuntimeException("Permission not found: " + permissionCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Permission not found"));
 
         if (!role.getPermissions().contains(permission)) {
             log.info("Permission {} not assigned to role {}", permissionCode, roleCode);
@@ -116,7 +118,7 @@ public class PermissionManagementService {
         log.info("Fetching permission matrix by user: {}", currentUserEmail);
 
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("Access denied: User must have permission management access");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         Map<RoleCode, List<PermissionCode>> matrix = new HashMap<>();

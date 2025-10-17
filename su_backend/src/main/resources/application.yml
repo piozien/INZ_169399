@@ -16,23 +16,6 @@ spring:
       hibernate:
         format_sql: true
 
-  mail:
-    host: mailpit  # Use Mailpit container
-    port: 1025     # Mailpit SMTP port
-    username: ""   # No authentication needed
-    password: ""   # No authentication needed
-    from: "noreply@school.edu"
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
-        transport:
-          protocol: smtp
-    default-encoding: UTF-8
-    test-connection: false
-
   devtools:
     restart:
       enabled: true
@@ -59,7 +42,7 @@ spring:
 management:
   health:
     mail:
-      enabled: true  # Enable mail health check with Mailpit
+      enabled: false
   endpoints:
     web:
       exposure:

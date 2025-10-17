@@ -30,7 +30,7 @@ public class Event {
 	@Column(nullable = false)
 	private String title;
 
-	@Column(nullable = false, columnDefinition = "TEXT")
+	@Column(nullable = false)
 	private String description;
 
 	@Column(name = "start_date", nullable = false)
