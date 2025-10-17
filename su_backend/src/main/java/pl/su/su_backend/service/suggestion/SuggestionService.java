@@ -16,6 +16,8 @@ import pl.su.su_backend.repositories.suggestion.SuggestionRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +38,7 @@ public class SuggestionService {
         log.info("Creating suggestion by user {}", userId);
         
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
 
         Suggestion suggestion = Suggestion.builder()
                 .user(user)
@@ -60,10 +62,10 @@ public class SuggestionService {
         log.info("Fetching all suggestions for user: {}", currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.SUGGESTION_VIEW)) {
-            throw new RuntimeException("Access denied: User must have suggestion viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return suggestionRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -85,14 +87,14 @@ public class SuggestionService {
         log.info("Fetching suggestion with ID: {} by user: {}", suggestionId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.SUGGESTION_VIEW)) {
-            throw new RuntimeException("Access denied: User must have suggestion viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> new RuntimeException("Suggestion not found: " + suggestionId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
         return SuggestionMapper.toResponse(suggestion);
     }
 
@@ -100,10 +102,10 @@ public class SuggestionService {
         log.info("Approving suggestion {} by user {}", suggestionId, approvedById);
         
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> new RuntimeException("Suggestion not found: " + suggestionId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
         if (!SuggestionStatus.PENDING.equals(suggestion.getStatus())) {
-            throw new RuntimeException("Only PENDING suggestions can be approved");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Only PENDING suggestions can be approved");
         }
 
         suggestion.setStatus(SuggestionStatus.APPROVED);
@@ -121,14 +123,14 @@ public class SuggestionService {
         log.info("Rejecting suggestion {} by user {} with reason: {}", suggestionId, rejectedById, rejectionReason);
         
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> new RuntimeException("Suggestion not found: " + suggestionId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
         if (!SuggestionStatus.PENDING.equals(suggestion.getStatus())) {
-            throw new RuntimeException("Only PENDING suggestions can be rejected");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Only PENDING suggestions can be rejected");
         }
 
         if (rejectionReason == null || rejectionReason.trim().isEmpty()) {
-            throw new RuntimeException("Rejection reason is required");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Rejection reason is required");
         }
 
         suggestion.setStatus(SuggestionStatus.REJECTED);
@@ -146,14 +148,14 @@ public class SuggestionService {
         log.info("Updating suggestion {} by user {}", suggestionId, userId);
         
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> new RuntimeException("Suggestion not found: " + suggestionId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
         if (!suggestion.getUser().getId().equals(userId)) {
-            throw new RuntimeException("You are not authorized to edit this suggestion");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         if (!SuggestionStatus.PENDING.equals(suggestion.getStatus())) {
-            throw new RuntimeException("Cannot edit suggestion that is not pending");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Cannot edit non-pending suggestion");
         }
 
         suggestion.setTitle(dto.getTitle());
@@ -173,10 +175,10 @@ public class SuggestionService {
         log.info("Deleting suggestion {} by user {}", suggestionId, userId);
         
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> new RuntimeException("Suggestion not found: " + suggestionId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
         if (!suggestion.getUser().getId().equals(userId)) {
-            throw new RuntimeException("You are not authorized to delete this suggestion");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
         suggestionRepository.delete(suggestion);

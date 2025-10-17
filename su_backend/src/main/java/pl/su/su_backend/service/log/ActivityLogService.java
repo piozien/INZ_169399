@@ -13,6 +13,8 @@ import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.log.ActivityLogRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +33,7 @@ public class ActivityLogService {
 
     public void log(UUID actingUserId, ActionType actionType, String action) {
         Users user = usersRepository.findById(actingUserId)
-                .orElseThrow(() -> new RuntimeException("Acting user not found: " + actingUserId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         ActivityLog logEntry = ActivityLog.builder()
                 .user(user)
                 .actionType(actionType)
@@ -44,10 +46,10 @@ public class ActivityLogService {
     @Transactional(readOnly = true)
     public List<ActivityLogResponseDto> listForUser(UUID userId, String currentUserEmail) {
         Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("Current user not found: " + currentUserEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.ACTIVITY_LOG_VIEW)) {
-            throw new RuntimeException("You are not allowed to view activity logs");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         return activityLogRepository.findByUser_IdOrderByCreatedAtDesc(userId).stream()

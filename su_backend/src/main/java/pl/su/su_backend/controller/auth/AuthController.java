@@ -55,6 +55,7 @@ public class AuthController {
         }
     }
 
+
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDto> refreshToken(@Valid @RequestBody RefreshTokenRequestDto refreshTokenRequestDto) {
         log.info("Token refresh request");

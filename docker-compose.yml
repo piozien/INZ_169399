@@ -1,18 +1,4 @@
 services:
-  # Mailpit - SMTP Server for Development
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: su_mailpit
-    restart: unless-stopped
-    ports:
-      - "1025:1025"  # SMTP port
-      - "8025:8025"  # Web UI port
-    networks:
-      - su_network
-    environment:
-      MP_MAX_MESSAGES: 500
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   # PostgreSQL Database
   database:
@@ -71,13 +57,8 @@ services:
       MS_CALENDAR_EVENTS_PATH_USER: ${MS_CALENDAR_EVENTS_PATH_USER}
       
       # Email Configuration
-      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
-      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
-      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
-      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
-      SPRING_MAIL_FROM: ${SPRING_MAIL_FROM}
-      SPRING_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH}
-      SPRING_MAIL_SMTP_STARTTLS: ${SPRING_MAIL_SMTP_STARTTLS}
+      ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING}
+      ACS_SENDER_ADDRESS: ${ACS_SENDER_ADDRESS}
       
       # OAuth2 Microsoft Configuration
       OAUTH2_MICROSOFT_CLIENT_ID: ${OAUTH2_MICROSOFT_CLIENT_ID}
@@ -92,8 +73,6 @@ services:
     depends_on:
       database:
         condition: service_healthy
-      mailpit:
-        condition: service_started
     networks:
       - su_network
     healthcheck:
