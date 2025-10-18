@@ -18,8 +18,7 @@ public class ClassBudgetRequestDto {
     @NotNull(message = "Class ID is required")
     private UUID classId;
     
-    @NotNull(message = "Year is required")
-    private Integer year;
+    private String year;
     
     @NotNull(message = "Initial amount is required")
     private BigDecimal initialAmount;

@@ -47,7 +47,4 @@ public class CouncilTransaction {
 	@JoinColumn(name = "added_by", nullable = false)
 	private Users addedBy;
 
-	@Column(nullable = false)
-	@Builder.Default
-	private Boolean confirmed = false;
 }

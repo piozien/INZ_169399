@@ -28,15 +28,18 @@ public class ClassBudget {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "class_id", nullable = false)
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "class_id", nullable = false, unique = true)
 	private Classes classes;
 
 	@Column
-	private Integer year;
+	private String year;
 
 	@Column(name = "initial_amount", precision = 10, scale = 2)
 	private BigDecimal initialAmount;
+
+	@Column(name = "balance", precision = 12, scale = 2, nullable = false)
+	private BigDecimal balance;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "created_by", nullable = false)
@@ -53,6 +56,9 @@ public class ClassBudget {
 	public void onCreate() {
 		if (createdAt == null) {
 			createdAt = LocalDateTime.now();
+		}
+		if (balance == null) {
+			balance = initialAmount != null ? initialAmount : BigDecimal.ZERO;
 		}
 	}
 }

@@ -15,8 +15,10 @@ public class CouncilBudgetMapper {
         return CouncilBudgetResponseDto.builder()
                 .id(budget.getId())
                 .councilId(budget.getCouncil() != null ? budget.getCouncil().getId() : null)
+                .councilName(budget.getCouncil() != null ? budget.getCouncil().getName() : null)
                 .year(budget.getYear())
                 .initialAmount(budget.getInitialAmount())
+                .balance(budget.getBalance())
                 .createdById(budget.getCreatedBy() != null ? budget.getCreatedBy().getId() : null)
                 .createdAt(budget.getCreatedAt())
                 .build();

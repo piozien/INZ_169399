@@ -44,7 +44,7 @@ public class ClassBudgetController {
 
     @GetMapping("/my-classes")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ClassBudgetResponseDto>> getMyClassBudgets(@AuthenticationPrincipal User principal) {
+    public ResponseEntity<List<ClassBudgetResponseDto>> getMyClassBudget(@AuthenticationPrincipal User principal) {
         log.info("Fetching budgets for user: {}", principal.getUsername());
         try {
             List<ClassBudgetResponseDto> budgets = budgetService.getAllBudgets();

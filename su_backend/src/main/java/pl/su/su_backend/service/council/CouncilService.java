@@ -27,6 +27,7 @@ import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.event.EventService;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,7 +74,20 @@ public class CouncilService {
         }
         
         Council council = getCouncilEntity();
-        CouncilBudget budget = CouncilBudgetMapper.toEntity(dto, council, user);
+        
+        String year = dto.getYear() != null ? dto.getYear() : String.valueOf(java.time.LocalDateTime.now().getYear());
+        if (councilBudgetRepository.findByCouncil_IdAndYear(council.getId(), year).isPresent()) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget for council and year " + year + " already exists");
+        }
+        
+        CouncilBudget budget = CouncilBudget.builder()
+                .council(council)
+                .year(year)
+                .initialAmount(dto.getInitialAmount() != null ? dto.getInitialAmount() : BigDecimal.ZERO)
+                .createdBy(user)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        
         CouncilBudget savedBudget = councilBudgetRepository.save(budget);
         
         activityLogService.log(user.getId(), ActionType.BUDGET_CREATE, "Created council budget for year: " + dto.getYear());
@@ -111,9 +125,62 @@ public class CouncilService {
         CouncilTransaction transaction = CouncilTransactionMapper.toEntity(dto, budget, user);
         CouncilTransaction savedTransaction = councilTransactionRepository.save(transaction);
         
+        updateBudgetBalance(dto.getBudgetId());
+        
         activityLogService.log(user.getId(), ActionType.TRANSACTION_CREATE, "Created council transaction: " + dto.getDescription());
         
         return CouncilTransactionMapper.toResponse(savedTransaction);
+    }
+
+    public CouncilTransactionResponseDto updateTransaction(UUID transactionId, CouncilTransactionRequestDto dto, String currentUserEmail) {
+        log.info("Updating council transaction {} by user: {}", transactionId, currentUserEmail);
+        
+        Users user = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        
+        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_EDIT)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+        
+        CouncilTransaction transaction = councilTransactionRepository.findById(transactionId)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Transaction not found"));
+        
+        transaction.setType(dto.getType());
+        transaction.setAmount(dto.getAmount());
+        transaction.setDescription(dto.getDescription());
+        transaction.setDate(dto.getDate());
+        
+        CouncilTransaction updatedTransaction = councilTransactionRepository.save(transaction);
+        
+        updateBudgetBalance(transaction.getBudget().getId());
+        
+        activityLogService.log(user.getId(), ActionType.TRANSACTION_EDIT, "Updated council transaction: "
+         + dto.getDescription());
+        
+        return CouncilTransactionMapper.toResponse(updatedTransaction);
+    }
+
+    public void deleteTransaction(UUID transactionId, String currentUserEmail) {
+        log.info("Deleting council transaction {} by user: {}", transactionId, currentUserEmail);
+        
+        Users user = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        
+        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_DELETE)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+        
+        CouncilTransaction transaction = councilTransactionRepository.findById(transactionId)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR,
+                 "Transaction not found"));
+        
+        UUID budgetId = transaction.getBudget().getId();
+        councilTransactionRepository.delete(transaction);
+        
+        updateBudgetBalance(budgetId);
+        
+        activityLogService.log(user.getId(), ActionType.TRANSACTION_DELETE, "Deleted council transaction: "
+         + transaction.getDescription());
     }
 
     public List<CouncilTransactionResponseDto> getTransactionsByBudget(UUID budgetId, String currentUserEmail) {
@@ -283,6 +350,35 @@ public class CouncilService {
                 "Created council: " + dto.getName() + " for academic year: " + dto.getAcademicYear());
         
         return CouncilMapper.toResponseDto(council);
+    }
+
+    @Transactional
+    public void updateBudgetBalance(UUID budgetId) {
+        log.info("Updating balance for council budget: {}", budgetId);
+        
+        CouncilBudget budget = councilBudgetRepository.findById(budgetId)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found: "
+                 + budgetId));
+        
+        BigDecimal totalIncome = BigDecimal.ZERO;
+        BigDecimal totalExpenses = BigDecimal.ZERO;
+
+        for (CouncilTransaction transaction : budget.getTransactions()) {
+            if (transaction.getType() == pl.su.su_backend.model.enums.TransactionType.INCOME) {
+                totalIncome = totalIncome.add(transaction.getAmount());
+            } else if (transaction.getType() == pl.su.su_backend.model.enums.TransactionType.EXPENSE) {
+                totalExpenses = totalExpenses.add(transaction.getAmount());
+            }
+        }
+
+        BigDecimal newBalance = (budget.getInitialAmount() != null ? budget.getInitialAmount() : BigDecimal.ZERO)
+                .add(totalIncome)
+                .subtract(totalExpenses);
+        
+        budget.setBalance(newBalance);
+        councilBudgetRepository.save(budget);
+        
+        log.info("Council budget balance updated to: {}", newBalance);
     }
 
 }

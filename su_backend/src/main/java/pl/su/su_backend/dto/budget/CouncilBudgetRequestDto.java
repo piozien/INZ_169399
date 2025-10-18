@@ -18,8 +18,7 @@ public class CouncilBudgetRequestDto {
 	@NotNull(message = "Council ID is required")
 	private UUID councilId;
 
-	@NotNull(message = "Year is required")
-	private Integer year;
+	private String year;
 
 	@NotNull(message = "Initial amount is required")
 	private BigDecimal initialAmount;

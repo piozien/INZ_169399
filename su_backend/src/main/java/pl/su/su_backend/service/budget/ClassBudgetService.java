@@ -51,7 +51,7 @@ public class ClassBudgetService {
             throw new RuntimeException("You are not authorized to create budgets for this class");
         }
 
-        Integer year = dto.getYear() != null ? dto.getYear() : LocalDateTime.now().getYear();
+        String year = dto.getYear() != null ? dto.getYear() : String.valueOf(LocalDateTime.now().getYear());
         if (budgetRepository.findByClasses_IdAndYear(dto.getClassId(), year).isPresent()) {
             throw new RuntimeException("Budget for class " + classes.getName() + " and year " + year + " already exists");
         }
@@ -87,7 +87,7 @@ public class ClassBudgetService {
         List<ClassBudget> budgets = budgetRepository.findByClasses_IdOrderByYearDesc(classId);
         List<ClassBudgetResponseDto> result = new ArrayList<>();
         for (ClassBudget budget : budgets) {
-            result.add(ClassBudgetMapper.toResponse(budget));
+            result.add(toResponseDto(budget));
         }
         return result;
     }
@@ -112,7 +112,7 @@ public class ClassBudgetService {
     @Transactional(readOnly = true)
     public ClassBudgetResponseDto getCurrentYearBudget(UUID classId) {
         log.info("Fetching current year budget for class: {}", classId);
-        Integer currentYear = LocalDateTime.now().getYear();
+        String currentYear = String.valueOf(LocalDateTime.now().getYear());
         ClassBudget budget = budgetRepository.findByClasses_IdAndYear(classId, currentYear)
                 .orElseThrow(() -> new RuntimeException("Budget for class " + classId + " and year " + currentYear + " not found"));
         return toResponseDto(budget);
@@ -174,14 +174,11 @@ public class ClassBudgetService {
             }
         }
 
-        BigDecimal balance = budget.getInitialAmount().add(totalIncome).subtract(totalExpenses);
-
         ClassBudgetResponseDto dto = ClassBudgetMapper.toResponse(budget);
         
         dto.setTotalIncome(totalIncome);
         dto.setTotalExpenses(totalExpenses);
-        dto.setBalance(balance);
-        
+
         return dto;
     }
 
@@ -194,6 +191,34 @@ public class ClassBudgetService {
             result.add(toResponseDto(budget));
         }
         return result;
+    }
+
+    @Transactional
+    public void updateBudgetBalance(UUID budgetId) {
+        log.info("Updating balance for budget: {}", budgetId);
+        
+        ClassBudget budget = budgetRepository.findById(budgetId)
+                .orElseThrow(() -> new RuntimeException("Budget not found: " + budgetId));
+        
+        BigDecimal totalIncome = BigDecimal.ZERO;
+        BigDecimal totalExpenses = BigDecimal.ZERO;
+
+        for (ClassTransaction transaction : budget.getTransactions()) {
+            if (transaction.getType() == TransactionType.INCOME) {
+                totalIncome = totalIncome.add(transaction.getAmount());
+            } else if (transaction.getType() == TransactionType.EXPENSE) {
+                totalExpenses = totalExpenses.add(transaction.getAmount());
+            }
+        }
+
+        BigDecimal newBalance = (budget.getInitialAmount() != null ? budget.getInitialAmount() : BigDecimal.ZERO)
+                .add(totalIncome)
+                .subtract(totalExpenses);
+        
+        budget.setBalance(newBalance);
+        budgetRepository.save(budget);
+        
+        log.info("Budget balance updated to: {}", newBalance);
     }
 
 }

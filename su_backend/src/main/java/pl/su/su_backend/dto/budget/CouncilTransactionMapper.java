@@ -20,7 +20,6 @@ public class CouncilTransactionMapper {
                 .description(transaction.getDescription())
                 .date(transaction.getDate())
                 .addedById(transaction.getAddedBy() != null ? transaction.getAddedBy().getId() : null)
-                .confirmed(transaction.getConfirmed())
                 .build();
     }
 
@@ -40,7 +39,6 @@ public class CouncilTransactionMapper {
                 .description(dto.getDescription())
                 .date(dto.getDate())
                 .addedBy(addedBy)
-                .confirmed(false)
                 .build();
     }
 }

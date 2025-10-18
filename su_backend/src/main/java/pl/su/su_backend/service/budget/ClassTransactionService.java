@@ -36,6 +36,7 @@ public class ClassTransactionService {
     private final UsersRepository usersRepository;
     private final ActivityLogService activityLogService;
     private final PermissionService permissionService;
+    private final ClassBudgetService budgetService;
 
     public ClassTransactionResponseDto createTransaction(ClassTransactionRequestDto dto, UUID addedById) {
         log.info("Creating transaction for budget {} by user {}", dto.getBudgetId(), addedById);
@@ -64,10 +65,11 @@ public class ClassTransactionService {
                 .date(dto.getDate())
                 .addedBy(addedBy)
                 .payerUser(payerUser)
-                .confirmed(false)
                 .build();
 
         ClassTransaction savedTransaction = transactionRepository.save(transaction);
+        
+        budgetService.updateBudgetBalance(dto.getBudgetId());
         
         activityLogService.log(addedById, ActionType.TRANSACTION_CREATE, 
                 "Created transaction: " + dto.getDescription() + " (" + dto.getAmount() + " zł)");
@@ -155,14 +157,6 @@ public class ClassTransactionService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<ClassTransactionResponseDto> getUnconfirmedTransactions() {
-        log.info("Fetching unconfirmed transactions");
-        return transactionRepository.findByConfirmedFalseOrderByDateDesc().stream()
-                .map(ClassTransactionMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
     public ClassTransactionResponseDto updateTransaction(UUID transactionId, ClassTransactionRequestDto dto, UUID updatedById) {
         log.info("Updating transaction {} by user {}", transactionId, updatedById);
         
@@ -170,7 +164,8 @@ public class ClassTransactionService {
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
         
         if (!transaction.getAddedBy().getId().equals(updatedById) && 
-            !permissionService.canAccessClassBudget(updatedById, transaction.getBudget().getClasses().getId(), PermissionCode.CLASS_TRANSACTION_EDIT)) {
+            !permissionService.canAccessClassBudget(updatedById, transaction.getBudget().getClasses().getId(),
+                    PermissionCode.CLASS_TRANSACTION_EDIT)) {
             throw new RuntimeException("You are not authorized to edit this transaction");
         }
 
@@ -187,6 +182,8 @@ public class ClassTransactionService {
 
         ClassTransaction updatedTransaction = transactionRepository.save(transaction);
         
+        budgetService.updateBudgetBalance(transaction.getBudget().getId());
+        
         activityLogService.log(updatedById, ActionType.TRANSACTION_EDIT, 
                 "Updated transaction: " + dto.getDescription());
         
@@ -194,21 +191,6 @@ public class ClassTransactionService {
         return ClassTransactionMapper.toResponse(updatedTransaction);
     }
 
-    public ClassTransactionResponseDto confirmTransaction(UUID transactionId, UUID confirmedById) {
-        log.info("Confirming transaction {} by user {}", transactionId, confirmedById);
-        
-        ClassTransaction transaction = transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
-
-        transaction.setConfirmed(true);
-        ClassTransaction updatedTransaction = transactionRepository.save(transaction);
-        
-        activityLogService.log(confirmedById, ActionType.TRANSACTION_CONFIRM, 
-                "Confirmed transaction: " + transaction.getDescription());
-        
-        log.info("Transaction confirmed successfully");
-        return ClassTransactionMapper.toResponse(updatedTransaction);
-    }
 
     public void deleteTransaction(UUID transactionId, UUID deletedById) {
         log.info("Deleting transaction {} by user {}", transactionId, deletedById);
@@ -217,11 +199,16 @@ public class ClassTransactionService {
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
 
         if (!transaction.getAddedBy().getId().equals(deletedById) && 
-            !permissionService.canAccessClassBudget(deletedById, transaction.getBudget().getClasses().getId(), PermissionCode.CLASS_TRANSACTION_DELETE)) {
+            !permissionService.canAccessClassBudget(deletedById, transaction.getBudget().getClasses().getId(),
+                    PermissionCode.CLASS_TRANSACTION_DELETE)) {
             throw new RuntimeException("You are not authorized to delete this transaction");
         }
 
+        ClassBudget budget = transaction.getBudget();
+        UUID budgetId = budget.getId();
         transactionRepository.delete(transaction);
+        
+        budgetService.updateBudgetBalance(budgetId);
         
         activityLogService.log(deletedById, ActionType.TRANSACTION_DELETE, 
                 "Deleted transaction: " + transaction.getDescription());
