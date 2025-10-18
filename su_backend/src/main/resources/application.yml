@@ -63,15 +63,15 @@ app:
     expiration: ${JWT_EXPIRATION}
     refresh-token:
       expiration: ${JWT_REFRESH_EXPIRATION}
-  
+
   # Password Reset Configuration
   password-reset:
     expiration-hours: ${PASSWORD_RESET_EXPIRATION_HOURS}
-  
+
   # Frontend URL for password reset links
   frontend:
     url: ${FRONTEND_URL}
-  
+
   # Scheduling configuration
   scheduling:
     enabled: ${SCHEDULING_ENABLED}
@@ -87,4 +87,3 @@ app:
       events-path:
         me: ${MS_CALENDAR_EVENTS_PATH_ME}
         user: ${MS_CALENDAR_EVENTS_PATH_USER}
-

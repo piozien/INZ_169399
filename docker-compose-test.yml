@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # MailHog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: su-mailhog-test
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    environment:
+      - MH_STORAGE=maildir
+      - MH_MAILDIR_PATH=/maildir
+    volumes:
+      - mailhog_test_data:/maildir
+    networks:
+      - su-test-network
+
+  # H2 Database for testing
+  h2:
+    image: oscarfonts/h2:latest
+    container_name: su-h2-test
+    ports:
+      - "8082:8082"  # H2 Console port
+    environment:
+      - H2_OPTIONS=-web -webAllowOthers -tcp -tcpAllowOthers -browser
+    networks:
+      - su-test-network
+
+  # Backend testing container
+  backend-test:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    container_name: su-backend-test
+    ports:
+      - "8080:8080"  # Application port
+      - "5005:5005"  # Debug port
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      - SPRING_MAIL_HOST=mailhog
+      - SPRING_MAIL_PORT=1025
+      - JWT_SECRET=test-secret-key
+      - JWT_EXPIRATION=3600000
+    depends_on:
+      - mailhog
+    networks:
+      - su-test-network
+    volumes:
+      - ./su_backend:/app/su_backend
+      - maven_cache:/root/.m2
+
+volumes:
+  mailhog_test_data:
+  maven_cache:
+
+networks:
+  su-test-network:
+    driver: bridge

@@ -1,0 +1,89 @@
+# Test profile configuration
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+
+  h2:
+    console:
+      enabled: false
+
+  flyway:
+    enabled: false
+
+  # Mail configuration for tests (MailHog)
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: 
+    password: 
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 3000
+          writetimeout: 5000
+
+# JWT Configuration for tests
+app:
+  jwt:
+    secret: test-secret-key
+    expiration: 3600000  # 1 hour
+    refresh-token:
+      expiration: 86400000  # 24 hours
+  
+  # Password Reset Configuration
+  password-reset:
+    expiration-hours: 1
+  
+  # Frontend URL for tests
+  frontend:
+    url: http://localhost:3000
+  
+  # Scheduling configuration
+  scheduling:
+    enabled: false
+
+  # Microsoft Graph / Outlook Calendar (disabled in tests)
+  microsoft:
+    graph:
+      base-url: https://graph.microsoft.com/v1.0
+    calendar:
+      enabled: false
+      use-shared-owner: false
+      owner-user-id: 
+      events-path:
+        me: /me/calendar/events
+        user: /users/{userId}/calendar/events
+
+# Logging for tests
+logging:
+  level:
+    org.springframework: WARN
+    pl.su.su_backend: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+
+# Management endpoints for tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
