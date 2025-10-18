@@ -38,10 +38,10 @@ public class ClassesController {
             var current = usersRepository.findByEmail(principal.getUsername())
                     .orElseThrow(() -> new RuntimeException("Current user not found"));
             if (current.getClasses() == null) return ResponseEntity.ok(List.of());
-            return ResponseEntity.ok(List.of(classesService.get(current.getClasses().getId())));
+            return ResponseEntity.ok(List.of(classesService.get(current.getClasses().getId(), principal.getUsername())));
         }
 
-        return ResponseEntity.ok(classesService.list());
+        return ResponseEntity.ok(classesService.list(principal.getUsername()));
     }
 
     @GetMapping("/{id}")
@@ -57,7 +57,7 @@ public class ClassesController {
                 return ResponseEntity.status(403).build();
             }
         }
-        return ResponseEntity.ok(classesService.get(id));
+        return ResponseEntity.ok(classesService.get(id, principal.getUsername()));
     }
 
     @PostMapping
@@ -65,7 +65,7 @@ public class ClassesController {
     public ResponseEntity<ClassesResponseDto> create(@RequestBody ClassesRequestDto dto, @AuthenticationPrincipal User principal) {
         log.info("Creating class by user: {}", principal.getUsername());
         try {
-            return ResponseEntity.ok(classesService.create(dto));
+            return ResponseEntity.ok(classesService.create(dto, principal.getUsername()));
         } catch (Exception e) {
             log.error("Failed to create class: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -79,7 +79,7 @@ public class ClassesController {
                                                      @AuthenticationPrincipal User principal) {
         log.info("Updating class {} by user: {}", id, principal.getUsername());
         try {
-            return ResponseEntity.ok(classesService.update(id, dto));
+            return ResponseEntity.ok(classesService.update(id, dto, principal.getUsername()));
         } catch (Exception e) {
             log.error("Failed to update class {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -91,7 +91,7 @@ public class ClassesController {
     public ResponseEntity<Void> delete(@PathVariable UUID id, @AuthenticationPrincipal User principal) {
         log.info("Deleting class {} by user: {}", id, principal.getUsername());
         try {
-            classesService.delete(id);
+            classesService.delete(id, principal.getUsername());
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             log.error("Failed to delete class {}: {}", id, e.getMessage());
@@ -104,7 +104,7 @@ public class ClassesController {
     public ResponseEntity<List<UserResponseDto>> users(@PathVariable UUID id, @AuthenticationPrincipal User principal) {
         log.info("Fetching users for class {} by user: {}", id, principal.getUsername());
         try {
-            return ResponseEntity.ok(classesService.getUsers(id));
+            return ResponseEntity.ok(classesService.getUsers(id, principal.getUsername()));
         } catch (Exception e) {
             log.error("Failed to fetch users for class {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -116,7 +116,7 @@ public class ClassesController {
     public ResponseEntity<Void> detachUser(@PathVariable UUID userId, @AuthenticationPrincipal User principal) {
         log.info("Detaching user {} from class by user: {}", userId, principal.getUsername());
         try {
-            classesService.detachUser(userId);
+            classesService.detachUser(userId, principal.getUsername());
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             log.error("Failed to detach user {} from class: {}", userId, e.getMessage());

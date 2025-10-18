@@ -47,7 +47,7 @@ public class ClassBudgetController {
     public ResponseEntity<List<ClassBudgetResponseDto>> getMyClassBudget(@AuthenticationPrincipal User principal) {
         log.info("Fetching budgets for user: {}", principal.getUsername());
         try {
-            List<ClassBudgetResponseDto> budgets = budgetService.getAllBudgets();
+            List<ClassBudgetResponseDto> budgets = budgetService.getAllBudgets(principal.getUsername());
             return ResponseEntity.ok(budgets);
         } catch (Exception e) {
             log.error("Failed to fetch budgets for user {}: {}", principal.getUsername(), e.getMessage());
@@ -85,10 +85,11 @@ public class ClassBudgetController {
 
     @GetMapping("/class/{classId}/current")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClassBudgetResponseDto> getCurrentYearBudget(@PathVariable UUID classId) {
-        log.info("Fetching current year budget for class: {}", classId);
+    public ResponseEntity<ClassBudgetResponseDto> getCurrentYearBudget(@PathVariable UUID classId,
+                                                                       @AuthenticationPrincipal User principal) {
+        log.info("Fetching current year budget for class: {} by user: {}", classId, principal.getUsername());
         try {
-            ClassBudgetResponseDto budget = budgetService.getCurrentYearBudget(classId);
+            ClassBudgetResponseDto budget = budgetService.getCurrentYearBudget(classId, principal.getUsername());
             return ResponseEntity.ok(budget);
         } catch (Exception e) {
             log.error("Failed to fetch current year budget for class {}: {}", classId, e.getMessage());

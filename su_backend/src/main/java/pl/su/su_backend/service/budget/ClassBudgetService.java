@@ -110,8 +110,16 @@ public class ClassBudgetService {
     }
 
     @Transactional(readOnly = true)
-    public ClassBudgetResponseDto getCurrentYearBudget(UUID classId) {
-        log.info("Fetching current year budget for class: {}", classId);
+    public ClassBudgetResponseDto getCurrentYearBudget(UUID classId, String currentUserEmail) {
+        log.info("Fetching current year budget for class: {} by user: {}", classId, currentUserEmail);
+        
+        Users user = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+        
+        if (!permissionService.canAccessClassBudget(user.getId(), classId, PermissionCode.CLASS_BUDGET_VIEW)) {
+            throw new RuntimeException("You are not authorized to view budgets for this class");
+        }
+        
         String currentYear = String.valueOf(LocalDateTime.now().getYear());
         ClassBudget budget = budgetRepository.findByClasses_IdAndYear(classId, currentYear)
                 .orElseThrow(() -> new RuntimeException("Budget for class " + classId + " and year " + currentYear + " not found"));
@@ -183,8 +191,16 @@ public class ClassBudgetService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClassBudgetResponseDto> getAllBudgets() {
-        log.info("Fetching all budgets");
+    public List<ClassBudgetResponseDto> getAllBudgets(String currentUserEmail) {
+        log.info("Fetching all budgets by user: {}", currentUserEmail);
+        
+        Users user = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserEmail));
+        
+        if (!permissionService.hasPermission(user.getId(), PermissionCode.CLASS_BUDGET_VIEW)) {
+            throw new RuntimeException("You are not authorized to view all budgets");
+        }
+        
         List<ClassBudget> budgets = budgetRepository.findAll();
         List<ClassBudgetResponseDto> result = new ArrayList<>();
         for (ClassBudget budget : budgets) {
