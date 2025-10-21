@@ -68,7 +68,7 @@ public class EventController {
     public ResponseEntity<List<EventResponseDto>> getAllEventsForAdmin(@AuthenticationPrincipal User principal) {
         log.info("Fetching all events for admin: {}", principal.getUsername());
         try {
-            List<EventResponseDto> events = eventService.getAllEventsForAdmin(principal.getUsername());
+            List<EventResponseDto> events = eventService.getAllEvents(principal.getUsername());
             return ResponseEntity.ok(events);
         } catch (Exception e) {
             log.error("Failed to fetch all events for admin: {}", e.getMessage());

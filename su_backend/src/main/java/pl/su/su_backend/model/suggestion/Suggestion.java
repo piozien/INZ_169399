@@ -44,7 +44,7 @@ public class Suggestion {
 	@Column(nullable = false)
 	private SuggestionStatus status;
 
-	@Column(name = "rejection_reason", columnDefinition = "TEXT")
+	@Column(name = "rejection_reason")
 	private String rejectionReason;
 
 	@Column(name = "created_at", nullable = false)

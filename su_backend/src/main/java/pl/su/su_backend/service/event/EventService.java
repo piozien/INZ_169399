@@ -49,9 +49,12 @@ public class EventService {
         Users creator = usersRepository.findById(createdById)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
 
-        // Check if user has permission to create events
         if (!permissionService.hasPermission(createdById, PermissionCode.EVENT_CREATE)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+
+        if (dto.getStartDate().isAfter(dto.getEndDate())) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Start date must be before end date");
         }
 
         Event event = Event.builder()
@@ -93,20 +96,16 @@ public class EventService {
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         
-        // Check if user has permission to view events
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
         List<Event> events;
         
-        // Check if user has SU permissions (can see DRAFT and PENDING events)
         if (permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            // SU members can see all events (DRAFT, PENDING, APPROVED)
             events = eventRepository.findAllByOrderByStartDateAsc();
             log.info("SU user {} can see all events including drafts", currentUserEmail);
         } else {
-            // Regular users can only see APPROVED events
             events = eventRepository.findByStatusOrderByStartDateAsc(APPROVED);
             log.info("Regular user {} can only see approved events", currentUserEmail);
         }
@@ -118,35 +117,12 @@ public class EventService {
         return result;
     }
 
-    @Transactional(readOnly = true)
-    public List<EventResponseDto> getAllEventsForAdmin(String currentUserEmail) {
-        log.info("Fetching all events for admin: {}", currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        // Check if user has permission to view events
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        // Check if user has admin/SU permissions (can see all events including drafts)
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        List<Event> events = eventRepository.findAllByOrderByStartDateAsc();
-        List<EventResponseDto> result = new ArrayList<>();
-        for (Event event : events) {
-            result.add(EventMapper.toResponse(event));
-        }
-        return result;
-    }
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> getUpcomingEvents() {
         log.info("Fetching upcoming events");
-        List<Event> events = eventRepository.findByStartDateGreaterThanEqualOrderByStartDateAsc(LocalDateTime.now());
+        List<Event> events = eventRepository.findByStatusAndEndDateGreaterThanOrderByStartDateAsc(
+                EventStatus.APPROVED, LocalDateTime.now());
         List<EventResponseDto> result = new ArrayList<>();
         for (Event event : events) {
             result.add(EventMapper.toResponse(event));
@@ -157,6 +133,11 @@ public class EventService {
     @Transactional(readOnly = true)
     public List<EventResponseDto> getEventsInDateRange(LocalDateTime startDate, LocalDateTime endDate) {
         log.info("Fetching events in date range: {} to {}", startDate, endDate);
+        
+        if (startDate.isAfter(endDate)) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Start date must be before end date");
+        }
+        
         List<Event> events = eventRepository.findByStartDateBetweenOrderByStartDateAsc(startDate, endDate);
         List<EventResponseDto> result = new ArrayList<>();
         for (Event event : events) {
@@ -172,7 +153,6 @@ public class EventService {
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
 
-        // Check if user has permission to view events
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
@@ -180,7 +160,6 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
-        // Check if user can access this specific event based on status
         if (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.PENDING) {
             // Only SU members can see DRAFT and PENDING events
             if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
@@ -202,12 +181,15 @@ public class EventService {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
+        if (dto.getStartDate().isAfter(dto.getEndDate())) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Start date must be before end date");
+        }
+
         event.setTitle(dto.getTitle());
         event.setDescription(dto.getDescription());
         event.setStartDate(dto.getStartDate());
         event.setEndDate(dto.getEndDate());
         event.setLocation(dto.getLocation());
-        // Keep existing calendarEventId; update on Graph when enabled
         try {
             calendarService.updateCalendarEvent(accessToken, event.getCalendarEventId(), event);
         } catch (Exception ex) {
@@ -364,6 +346,10 @@ public class EventService {
     public EventResponseDto approveEvent(UUID eventId, UUID approvedById) {
         log.info("Approving event {} by user {}", eventId, approvedById);
         
+        if (!permissionService.hasPermission(approvedById, PermissionCode.EVENT_APPROVE)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+        
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
@@ -380,7 +366,7 @@ public class EventService {
         log.info("Submitting event {} for approval by user {}", eventId, submittedById);
         
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
         if (!event.getStatus().equals(DRAFT)) {
             throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Only DRAFT events can be submitted");
@@ -397,6 +383,10 @@ public class EventService {
 
     public EventResponseDto rejectEvent(UUID eventId, UUID rejectedById) {
         log.info("Rejecting event {} by user {}", eventId, rejectedById);
+        
+        if (!permissionService.hasPermission(rejectedById, PermissionCode.EVENT_APPROVE)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
         
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));

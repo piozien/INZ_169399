@@ -117,18 +117,6 @@ public class ClassTransactionController {
         }
     }
 
-    @GetMapping("/unconfirmed")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ClassTransactionResponseDto>> getUnconfirmedTransactions(@AuthenticationPrincipal User principal) {
-        log.info("Fetching unconfirmed transactions by user: {}", principal.getUsername());
-        try {
-            List<ClassTransactionResponseDto> transactions = transactionService.getUnconfirmedTransactions();
-            return ResponseEntity.ok(transactions);
-        } catch (Exception e) {
-            log.error("Failed to fetch unconfirmed transactions: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
     @PutMapping("/{transactionId}")
     @PreAuthorize("isAuthenticated()")
@@ -146,20 +134,6 @@ public class ClassTransactionController {
         }
     }
 
-    @PutMapping("/{transactionId}/confirm")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClassTransactionResponseDto> confirmTransaction(@PathVariable UUID transactionId,
-                                                                         @AuthenticationPrincipal User principal) {
-        log.info("Confirming transaction {} by user {}", transactionId, principal.getUsername());
-        try {
-            UUID userId = userService.getCurrentUserId(principal.getUsername());
-            ClassTransactionResponseDto transaction = transactionService.confirmTransaction(transactionId, userId);
-            return ResponseEntity.ok(transaction);
-        } catch (Exception e) {
-            log.error("Failed to confirm transaction {}: {}", transactionId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
-    }
 
     @DeleteMapping("/{transactionId}")
     @PreAuthorize("isAuthenticated()")

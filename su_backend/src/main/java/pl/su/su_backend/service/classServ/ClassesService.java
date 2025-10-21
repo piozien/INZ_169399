@@ -69,7 +69,7 @@ public class ClassesService {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
-        var c = classesRepository.findById(id).orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found"));
+        Classes c = classesRepository.findById(id).orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found"));
         return ClassesMapper.toResponse(c);
     }
 
@@ -94,8 +94,12 @@ public class ClassesService {
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.CLASS_DELETE)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
-        
+
+        classesRepository.findById(id)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found"));
+
         classesRepository.deleteById(id);
+
     }
 
     @Transactional(readOnly = true)
@@ -105,6 +109,9 @@ public class ClassesService {
         
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.CLASS_VIEW)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+        if (!classesRepository.findById(classId).isPresent()) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found");
         }
         
         return usersRepository.findByClasses_Id(classId).stream()
@@ -120,7 +127,7 @@ public class ClassesService {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
-        var user = usersRepository.findById(userId).orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        Users user = usersRepository.findById(userId).orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
         user.setClasses(null);
         usersRepository.save(user);
     }
