@@ -26,202 +26,150 @@ import java.util.UUID;
 @RequestMapping("/api/council")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class CouncilController {
 
     private final CouncilService councilService;
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_CREATE')")
     public ResponseEntity<CouncilResponseDto> createCouncil(@Valid @RequestBody CouncilRequestDto dto,
                                                           @AuthenticationPrincipal User principal) {
         log.info("Creating council: {} for academic year: {} by user: {}", dto.getName(), dto.getAcademicYear(), principal.getUsername());
-        try {
-            CouncilResponseDto council = councilService.createCouncil(dto, principal.getUsername());
-            return ResponseEntity.status(HttpStatus.CREATED).body(council);
-        } catch (Exception e) {
-            log.error("Failed to create council: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        CouncilResponseDto council = councilService.createCouncil(dto, principal.getUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(council);
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CouncilResponseDto> getCouncil(@AuthenticationPrincipal User principal) {
-        log.info("Fetching council by user: {}", principal.getUsername());
-        try {
-            CouncilResponseDto council = councilService.getCouncil();
-            return ResponseEntity.ok(council);
-        } catch (Exception e) {
-            log.error("Failed to fetch council: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @PreAuthorize("hasPermission(null, 'COUNCIL_VIEW')")
+    public ResponseEntity<List<CouncilResponseDto>> getCouncil(@AuthenticationPrincipal User principal) {
+        log.info("Fetching councils for user: {}", principal.getUsername());
+        List<CouncilResponseDto> councils = councilService.getCouncil(principal.getUsername());
+        return ResponseEntity.ok(councils);
     }
 
     @PostMapping("/budgets")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_BUDGET_CREATE')")
     public ResponseEntity<CouncilBudgetResponseDto> createBudget(@Valid @RequestBody CouncilBudgetRequestDto dto,
                                                                @AuthenticationPrincipal User principal) {
         log.info("Creating council budget by user: {}", principal.getUsername());
-        try {
-            CouncilBudgetResponseDto budget = councilService.createBudget(dto, principal.getUsername());
-            return ResponseEntity.status(HttpStatus.CREATED).body(budget);
-        } catch (Exception e) {
-            log.error("Failed to create council budget: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        CouncilBudgetResponseDto budget = councilService.createBudget(dto, principal.getUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(budget);
     }
 
     @GetMapping("/budgets")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_BUDGET_VIEW')")
     public ResponseEntity<List<CouncilBudgetResponseDto>> getAllBudgets(@AuthenticationPrincipal User principal) {
         log.info("Fetching all council budgets for user: {}", principal.getUsername());
-        try {
-            List<CouncilBudgetResponseDto> budgets = councilService.getAllBudgets(principal.getUsername());
-            return ResponseEntity.ok(budgets);
-        } catch (Exception e) {
-            log.error("Failed to fetch council budgets: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<CouncilBudgetResponseDto> budgets = councilService.getAllBudgets(principal.getUsername());
+        return ResponseEntity.ok(budgets);
     }
 
     @PostMapping("/transactions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_TRANSACTION_CREATE')")
     public ResponseEntity<CouncilTransactionResponseDto> createTransaction(@Valid @RequestBody CouncilTransactionRequestDto dto,
                                                                          @AuthenticationPrincipal User principal) {
         log.info("Creating council transaction by user: {}", principal.getUsername());
-        try {
-            CouncilTransactionResponseDto transaction = councilService.createTransaction(dto, principal.getUsername());
-            return ResponseEntity.status(HttpStatus.CREATED).body(transaction);
-        } catch (Exception e) {
-            log.error("Failed to create council transaction: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        CouncilTransactionResponseDto transaction = councilService.createTransaction(dto, principal.getUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(transaction);
     }
 
     @GetMapping("/budgets/{budgetId}/transactions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_TRANSACTION_VIEW')")
     public ResponseEntity<List<CouncilTransactionResponseDto>> getTransactionsByBudget(@PathVariable UUID budgetId,
                                                                                       @AuthenticationPrincipal User principal) {
         log.info("Fetching transactions for budget: {} by user: {}", budgetId, principal.getUsername());
-        try {
-            List<CouncilTransactionResponseDto> transactions = councilService.getTransactionsByBudget(budgetId, principal.getUsername());
-            return ResponseEntity.ok(transactions);
-        } catch (Exception e) {
-            log.error("Failed to fetch transactions for budget {}: {}", budgetId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<CouncilTransactionResponseDto> transactions = councilService.getTransactionsByBudget(budgetId, principal.getUsername());
+        return ResponseEntity.ok(transactions);
+    }
+
+    @PutMapping("/transactions/{transactionId}")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_TRANSACTION_EDIT')")
+    public ResponseEntity<CouncilTransactionResponseDto> updateTransaction(@PathVariable UUID transactionId,
+                                                                          @Valid @RequestBody CouncilTransactionRequestDto dto,
+                                                                          @AuthenticationPrincipal User principal) {
+        log.info("Updating council transaction {} by user: {}", transactionId, principal.getUsername());
+        CouncilTransactionResponseDto transaction = councilService.updateTransaction(transactionId, dto, principal.getUsername());
+        return ResponseEntity.ok(transaction);
+    }
+
+    @DeleteMapping("/transactions/{transactionId}")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_TRANSACTION_DELETE')")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable UUID transactionId,
+                                                @AuthenticationPrincipal User principal) {
+        log.info("Deleting council transaction {} by user: {}", transactionId, principal.getUsername());
+        councilService.deleteTransaction(transactionId, principal.getUsername());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/events/draft")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'EVENT_VIEW_DRAFTS')")
     public ResponseEntity<List<EventResponseDto>> getDraftEvents(@AuthenticationPrincipal User principal) {
         log.info("Fetching draft events for SU by user: {}", principal.getUsername());
-        try {
-            List<EventResponseDto> events = councilService.getDraftEvents(principal.getUsername());
-            return ResponseEntity.ok(events);
-        } catch (Exception e) {
-            log.error("Failed to fetch draft events: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<EventResponseDto> events = councilService.getDraftEvents(principal.getUsername());
+        return ResponseEntity.ok(events);
     }
 
     @GetMapping("/events/pending")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
     public ResponseEntity<List<EventResponseDto>> getPendingEvents(@AuthenticationPrincipal User principal) {
         log.info("Fetching pending events for SU review by user: {}", principal.getUsername());
-        try {
-            List<EventResponseDto> events = councilService.getPendingEvents(principal.getUsername());
-            return ResponseEntity.ok(events);
-        } catch (Exception e) {
-            log.error("Failed to fetch pending events: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<EventResponseDto> events = councilService.getPendingEvents(principal.getUsername());
+        return ResponseEntity.ok(events);
     }
 
     @PutMapping("/events/{eventId}/approve")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
     public ResponseEntity<EventResponseDto> approveEvent(@PathVariable UUID eventId,
                                                        @AuthenticationPrincipal User principal) {
         log.info("Approving event {} by SU user: {}", eventId, principal.getUsername());
-        try {
-            EventResponseDto event = councilService.approveEvent(eventId, principal.getUsername());
-            return ResponseEntity.ok(event);
-        } catch (Exception e) {
-            log.error("Failed to approve event {}: {}", eventId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        EventResponseDto event = councilService.approveEvent(eventId, principal.getUsername());
+        return ResponseEntity.ok(event);
     }
 
     @PutMapping("/events/{eventId}/reject")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
     public ResponseEntity<EventResponseDto> rejectEvent(@PathVariable UUID eventId,
                                                       @AuthenticationPrincipal User principal) {
         log.info("Rejecting event {} by SU user: {}", eventId, principal.getUsername());
-        try {
-            EventResponseDto event = councilService.rejectEvent(eventId, principal.getUsername());
-            return ResponseEntity.ok(event);
-        } catch (Exception e) {
-            log.error("Failed to reject event {}: {}", eventId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        EventResponseDto event = councilService.rejectEvent(eventId, principal.getUsername());
+        return ResponseEntity.ok(event);
     }
 
     @PutMapping("/events/{eventId}/submit")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'EVENT_EDIT')")
     public ResponseEntity<EventResponseDto> submitEventForApproval(@PathVariable UUID eventId,
                                                                  @AuthenticationPrincipal User principal) {
         log.info("Submitting event {} for approval by SU user: {}", eventId, principal.getUsername());
-        try {
-            EventResponseDto event = councilService.submitEventForApproval(eventId, principal.getUsername());
-            return ResponseEntity.ok(event);
-        } catch (Exception e) {
-            log.error("Failed to submit event {} for approval: {}", eventId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        EventResponseDto event = councilService.submitEventForApproval(eventId, principal.getUsername());
+        return ResponseEntity.ok(event);
     }
 
     @PostMapping("/{councilId}/members/{userId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_MEMBER_MANAGE')")
     public ResponseEntity<CouncilResponseDto> addMemberToCouncil(@PathVariable UUID councilId,
                                                                @PathVariable UUID userId,
                                                                @AuthenticationPrincipal User principal) {
         log.info("Adding member {} to council {} by user: {}", userId, councilId, principal.getUsername());
-        try {
-            CouncilResponseDto council = councilService.addMemberToCouncil(councilId, userId, principal.getUsername());
-            return ResponseEntity.ok(council);
-        } catch (Exception e) {
-            log.error("Failed to add member {} to council {}: {}", userId, councilId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        CouncilResponseDto council = councilService.addMemberToCouncil(councilId, userId, principal.getUsername());
+        return ResponseEntity.ok(council);
     }
 
     @DeleteMapping("/{councilId}/members/{userId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_MEMBER_MANAGE')")
     public ResponseEntity<CouncilResponseDto> removeMemberFromCouncil(@PathVariable UUID councilId,
                                                                     @PathVariable UUID userId,
                                                                     @AuthenticationPrincipal User principal) {
         log.info("Removing member {} from council {} by user: {}", userId, councilId, principal.getUsername());
-        try {
-            CouncilResponseDto council = councilService.removeMemberFromCouncil(councilId, userId, principal.getUsername());
-            return ResponseEntity.ok(council);
-        } catch (Exception e) {
-            log.error("Failed to remove member {} from council {}: {}", userId, councilId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        CouncilResponseDto council = councilService.removeMemberFromCouncil(councilId, userId, principal.getUsername());
+        return ResponseEntity.ok(council);
     }
 
     @GetMapping("/{councilId}/members")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_VIEW')")
     public ResponseEntity<List<UserResponseDto>> getCouncilMembers(@PathVariable UUID councilId,
                                                                   @AuthenticationPrincipal User principal) {
         log.info("Fetching members of council {} by user: {}", councilId, principal.getUsername());
-        try {
-            List<UserResponseDto> members = councilService.getCouncilMembers(councilId, principal.getUsername());
-            return ResponseEntity.ok(members);
-        } catch (Exception e) {
-            log.error("Failed to fetch members of council {}: {}", councilId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        List<UserResponseDto> members = councilService.getCouncilMembers(councilId, principal.getUsername());
+        return ResponseEntity.ok(members);
     }
 }

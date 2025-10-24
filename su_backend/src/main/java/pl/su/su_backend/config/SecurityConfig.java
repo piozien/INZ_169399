@@ -18,6 +18,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.PermissionEvaluator;
+import pl.su.su_backend.service.auth.PermissionService;
+import pl.su.su_backend.model.enums.PermissionCode;
+import java.io.Serializable;
 
 @Configuration
 @EnableWebSecurity
@@ -27,6 +33,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtRequestFilter jwtRequestFilter;
+    private final PermissionService permissionService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,11 +46,20 @@ public class SecurityConfig {
     }
 
     @Bean
+    public MethodSecurityExpressionHandler methodSecurityExpressionHandler() {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setPermissionEvaluator(new CustomPermissionEvaluator(permissionService));
+        return handler;
+    }
+
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            OAuth2AuthenticationSuccessHandler successHandler,
-                                           OAuth2AuthenticationFailureHandler failureHandler) throws Exception {
+                                           OAuth2AuthenticationFailureHandler failureHandler,
+                                           @Value("${app.frontend.url}") String frontendUrl) throws Exception {
         http
-                .cors(c -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource(frontendUrl)))
                 .csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)

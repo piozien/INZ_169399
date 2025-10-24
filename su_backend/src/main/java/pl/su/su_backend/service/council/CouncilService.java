@@ -46,12 +46,28 @@ public class CouncilService {
     private final PermissionService permissionService;
 
     @Transactional(readOnly = true)
-    public CouncilResponseDto getCouncil() {
-        List<Council> councils = councilRepository.findAll();
-        if (councils.isEmpty()) {
-            throw ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "No council found");
+    public List<CouncilResponseDto> getCouncil(String currentUserEmail) {
+        Users currentUser = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
-        return CouncilMapper.toResponseDto(councils.getFirst());
+
+        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL)) {
+            List<Council> allCouncils = councilRepository.findAll();
+            return allCouncils.stream()
+                    .map(CouncilMapper::toResponseDto)
+                    .toList();
+        }
+
+        List<Council> userCouncils = councilRepository.findAll().stream()
+                .filter(council -> council.getMembers().contains(currentUser))
+                .toList();
+        
+        return userCouncils.stream()
+                .map(CouncilMapper::toResponseDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)

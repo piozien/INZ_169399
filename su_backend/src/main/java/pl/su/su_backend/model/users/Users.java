@@ -15,6 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -25,6 +26,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.su.su_backend.model.classes.Classes;
+import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.StatusEnum;
 
@@ -70,15 +72,20 @@ public class Users {
     @Column(name = "refresh_token")
     private String refreshToken;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true,
+     fetch = FetchType.EAGER)
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();
+
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<Council> councils = new HashSet<>();
 
     @PrePersist
     public void onCreate() {
         if(createdAt == null){
-            createdAt = LocalDateTime.now();
-        }
+        createdAt = LocalDateTime.now();
+    }
         if (status == null) {
             status = StatusEnum.PENDING;
         }

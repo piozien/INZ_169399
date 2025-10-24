@@ -115,6 +115,11 @@ public class UserService {
                 .orElseThrow(() ->ApiException.unauthorized(
                         ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
 
+        if (StatusEnum.BLOCKED.equals(user.getStatus())) {
+            log.warn("Blocked user attempted login: {}", user.getEmail());
+            throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
+        }
+
         log.info("User logged in successfully: {}", user.getEmail());
         activityLogService.log(user.getId(), ActionType.LOGIN, "User logged in");
 

@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.user.*;
+import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.service.user.UserService;
 import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.config.JwtConfig;
@@ -20,7 +21,6 @@ import java.util.UUID;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final UserService userService;
@@ -87,7 +87,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().build();
             }
             String email = jwtConfig.extractEmail(token);
-            var user = usersRepository.findByEmail(email)
+            Users user = usersRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
             if (user.getStatus() != StatusEnum.CONFIRMED) {
                 user.setStatus(StatusEnum.CONFIRMED);
@@ -103,7 +103,7 @@ public class AuthController {
     @PostMapping("/activate/resend")
     public ResponseEntity<Void> resendActivation(@RequestParam String email) {
         try {
-            var user = usersRepository.findByEmail(email)
+            Users user = usersRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
             if (user.getStatus() == StatusEnum.CONFIRMED) {
                 return ResponseEntity.ok().build();

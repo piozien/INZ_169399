@@ -11,6 +11,7 @@ import pl.su.su_backend.model.event.Event;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -70,6 +71,33 @@ public class CalendarService {
         graphWebClient.delete()
                 .uri(path)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+    
+    public void addAttendeeToEvent(String accessToken, String calendarEventId, String attendeeEmail) {
+        if (!calendarEnabled || calendarEventId == null) return;
+        
+        String path = resolveEventsPath() + "/" + calendarEventId;
+        
+        Map<String, Object> attendee = Map.of(
+            "emailAddress", Map.of(
+                "address", attendeeEmail,
+                "name", attendeeEmail
+            ),
+            "type", "required"
+        );
+        
+        Map<String, Object> payload = Map.of(
+            "attendees", List.of(attendee)
+        );
+        
+        graphWebClient.patch()
+                .uri(path)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(payload)
                 .retrieve()
                 .toBodilessEntity()
                 .block();

@@ -36,7 +36,7 @@ public class CouncilBudget {
 	@Column
 	private String year;
 
-	@Column(name = "initial_amount", precision = 10, scale = 2)
+	@Column(name = "initial_amount", precision = 12, scale = 2)
 	private BigDecimal initialAmount;
 
 	@Column(name = "balance", precision = 12, scale = 2, nullable = false)
