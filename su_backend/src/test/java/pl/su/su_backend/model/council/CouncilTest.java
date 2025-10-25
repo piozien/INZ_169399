@@ -198,4 +198,44 @@ public class CouncilTest {
 
         Assertions.assertEquals("2024/2025", council.getAcademicYear());
     }
+
+    @Test
+    void canSetAndGetJoinCode() {
+        Council council = Council.builder()
+                .name("Test Council")
+                .academicYear("2025/26")
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusMonths(6))
+                .joinCode("SU20250001")
+                .build();
+
+        Assertions.assertEquals("SU20250001", council.getJoinCode());
+    }
+
+    @Test
+    void joinCodeCanBeUpdated() {
+        Council council = Council.builder()
+                .name("Test Council")
+                .academicYear("2025/26")
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusMonths(6))
+                .joinCode("SU20250001")
+                .build();
+
+        council.setJoinCode("SU20250002");
+        Assertions.assertEquals("SU20250002", council.getJoinCode());
+    }
+
+    @Test
+    void joinCodeCanBeNull() {
+        Council council = Council.builder()
+                .name("Test Council")
+                .academicYear("2025/26")
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusMonths(6))
+                .joinCode(null)
+                .build();
+
+        Assertions.assertNull(council.getJoinCode());
+    }
 }
