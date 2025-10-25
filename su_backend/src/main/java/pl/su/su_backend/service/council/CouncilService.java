@@ -30,6 +30,7 @@ import pl.su.su_backend.service.event.EventService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -360,12 +361,29 @@ public class CouncilService {
         }
         
         Council council = CouncilMapper.toEntity(dto);
+        
+        String joinCode = generateJoinCodeForCouncil(dto.getAcademicYear());
+        council.setJoinCode(joinCode);
+        
         council = councilRepository.save(council);
         
         activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE,
-                "Created council: " + dto.getName() + " for academic year: " + dto.getAcademicYear());
+                "Created council: " + dto.getName() + " for academic year: " + dto.getAcademicYear() + " with join code: " + joinCode);
         
         return CouncilMapper.toResponseDto(council);
+    }
+
+    private String generateJoinCodeForCouncil(String academicYear) {
+        String year = academicYear.split("/")[0]; // "2024/2025" -> "2024"
+        String prefix = "SU" + year;
+        
+        String code;
+        do {
+            int randomNumber = new Random().nextInt(10000); // 0-9999
+            code = prefix + String.format("%04d", randomNumber);
+        } while (councilRepository.findByJoinCode(code).isPresent());
+        
+        return code;
     }
 
     @Transactional
@@ -375,7 +393,16 @@ public class CouncilService {
         CouncilBudget budget = councilBudgetRepository.findById(budgetId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found: "
                  + budgetId));
+
+        BigDecimal newBalance = getBigDecimal(budget);
+
+        budget.setBalance(newBalance);
+        councilBudgetRepository.save(budget);
         
+        log.info("Council budget balance updated to: {}", newBalance);
+    }
+
+    private static BigDecimal getBigDecimal(CouncilBudget budget) {
         BigDecimal totalIncome = BigDecimal.ZERO;
         BigDecimal totalExpenses = BigDecimal.ZERO;
 
@@ -390,11 +417,42 @@ public class CouncilService {
         BigDecimal newBalance = (budget.getInitialAmount() != null ? budget.getInitialAmount() : BigDecimal.ZERO)
                 .add(totalIncome)
                 .subtract(totalExpenses);
-        
-        budget.setBalance(newBalance);
-        councilBudgetRepository.save(budget);
-        
-        log.info("Council budget balance updated to: {}", newBalance);
+        return newBalance;
     }
+
+
+    public CouncilResponseDto joinCouncilByCode(String joinCode, String currentUserEmail) {
+        log.info("User {} attempting to join council with code: {}", currentUserEmail, joinCode);
+        
+        Users currentUser = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_JOIN)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied - no permission to join council");
+        }
+        
+        Council council = councilRepository.findByJoinCode(joinCode)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Invalid join code"));
+        
+        if (!council.getIsActive()) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council is not active");
+        }
+        
+        if (council.getMembers().contains(currentUser)) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "User is already a member of this council");
+        }
+
+        council.getMembers().add(currentUser);
+        council = councilRepository.save(council);
+        
+        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED,
+                "Joined council using code: " + joinCode + " (pending admin approval)");
+        
+        log.info("User {} successfully joined council {} - pending admin approval", currentUserEmail, council.getName());
+        
+        return CouncilMapper.toResponseDto(council);
+    }
+
+
 
 }

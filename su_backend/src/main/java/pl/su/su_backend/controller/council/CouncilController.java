@@ -172,4 +172,18 @@ public class CouncilController {
         List<UserResponseDto> members = councilService.getCouncilMembers(councilId, principal.getUsername());
         return ResponseEntity.ok(members);
     }
+
+    @PostMapping("/join/{joinCode}")
+    @PreAuthorize("hasPermission(null, 'COUNCIL_JOIN')")
+    public ResponseEntity<CouncilResponseDto> joinCouncilByCode(
+            @PathVariable String joinCode,
+            @AuthenticationPrincipal User principal) {
+        
+        log.info("User {} attempting to join council with code: {}", principal.getUsername(), joinCode);
+        
+        CouncilResponseDto response = councilService.joinCouncilByCode(joinCode, principal.getUsername());
+        
+        return ResponseEntity.ok(response);
+    }
+
 }
