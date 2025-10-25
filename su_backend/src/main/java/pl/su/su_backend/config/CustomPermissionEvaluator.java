@@ -1,5 +1,5 @@
-// https://www.baeldung.com/spring-security-create-new-custom-security-expression
-// https://docs.spring.io/spring-security/site/docs/4.2.5.RELEASE/apidocs/org/springframework/security/access/PermissionEvaluator.html
+// https://www.baeldung.com/spring-security-create-new-custom-security-expression - 24.10.2025; 21:00 - 25.10.2025 13:30
+// https://docs.spring.io/spring-security/site/docs/4.2.5.RELEASE/apidocs/org/springframework/security/access/PermissionEvaluator.html 24.10.2025; 21:00 - 25.10.2025 13:30
 package pl.su.su_backend.config;
 
 import lombok.extern.slf4j.Slf4j;

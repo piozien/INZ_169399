@@ -20,10 +20,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
-import org.springframework.security.access.PermissionEvaluator;
 import pl.su.su_backend.service.auth.PermissionService;
-import pl.su.su_backend.model.enums.PermissionCode;
-import java.io.Serializable;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -51,6 +50,7 @@ public class SecurityConfig {
         handler.setPermissionEvaluator(new CustomPermissionEvaluator(permissionService));
         return handler;
     }
+
 
 
     @Bean
@@ -99,11 +99,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${app.frontend.url}") String frontendUrl) {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(java.util.List.of(frontendUrl));
-        cfg.setAllowedMethods(java.util.List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(java.util.List.of("Authorization","Content-Type","X-Requested-With"));
+        cfg.setAllowedOrigins(List.of(frontendUrl));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With"));
         cfg.setAllowCredentials(true);
-        cfg.setExposedHeaders(java.util.List.of("Set-Cookie"));
+        cfg.setExposedHeaders(List.of("Set-Cookie"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;

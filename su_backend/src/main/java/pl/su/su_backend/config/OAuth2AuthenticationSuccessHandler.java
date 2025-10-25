@@ -3,31 +3,38 @@ package pl.su.su_backend.config;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import pl.su.su_backend.dto.user.LoginResponseDto;
 import pl.su.su_backend.model.enums.AuthProvider;
+import pl.su.su_backend.model.enums.StatusEnum;
+import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.user.UserService;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService;
+    private final UsersRepository usersRepository;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public OAuth2AuthenticationSuccessHandler(UserService userService) {
-        this.userService = userService;
-    }
-
     @Override
+    @Transactional
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         if (!(authentication instanceof OAuth2AuthenticationToken token)) {
@@ -42,6 +49,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 principal.getAttribute("mail"),
                 principal.getAttribute("preferred_username")
         );
+        String microsoftUserId = (String) principal.getAttribute("sub");
         String given = firstNonNull(
                 principal.getAttribute("given_name"), // Open ID Connect
                 principal.getAttribute("givenName")    // Microsoft Graph
@@ -60,9 +68,34 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                     email
             );
         }
-        AuthProvider provider = AuthProvider.MICROSOFT;
 
-        LoginResponseDto login = userService.loginOrRegisterOAuth2(email, name, null, provider);
+        log.info("Microsoft OAuth2 login - Email: {}, Name: {}", email, name);
+
+        Users existingUser = usersRepository.findByEmail(email).orElse(null);
+        
+        if (existingUser != null) {
+            if (existingUser.getStatus() == StatusEnum.BLOCKED) {
+                log.warn("Blocked user {} attempted to login via Microsoft OAuth2", email);
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Account is blocked");
+                return;
+            }
+            
+            if (existingUser.getAuthProvider() == AuthProvider.LOCAL) {
+                log.info("Found local account for email: {}, changing provider to Microsoft", email);
+                existingUser.setAuthProvider(AuthProvider.MICROSOFT);
+                existingUser.setExternalId(microsoftUserId);
+                usersRepository.save(existingUser);
+                log.info("Successfully changed provider to Microsoft, status preserved: {}", existingUser.getStatus());
+            } else if (existingUser.getAuthProvider() == AuthProvider.MICROSOFT) {
+                log.info("User {} already has Microsoft account", email);
+            }
+        } else {
+            log.warn("User {} not found in system, cannot login via Microsoft OAuth2", email);
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "User not found. Please register first.");
+            return;
+        }
+
+        LoginResponseDto login = userService.loginOrRegisterOAuth2(email, name, null, AuthProvider.MICROSOFT);
 
         int accessTtl = login.getExpiresIn() != null ? Math.toIntExact(login.getExpiresIn()) : 3600;
         setCookie(response, "ACCESS_TOKEN", login.getAccessToken(), accessTtl);

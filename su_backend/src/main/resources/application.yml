@@ -95,3 +95,8 @@ app:
       events-path:
         me: ${MS_CALENDAR_EVENTS_PATH_ME}
         user: ${MS_CALENDAR_EVENTS_PATH_USER}
+    # System-level credentials for getSystemMicrosoftToken()
+    client-id: ${MS_GRAPH_CLIENT_ID}
+    client-secret: ${MS_GRAPH_CLIENT_SECRET}
+    tenant-id: ${MS_GRAPH_TENANT_ID}
+    scope: ${MS_GRAPH_SCOPE}

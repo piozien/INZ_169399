@@ -1,9 +1,18 @@
+// https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow 24.10 - 25.10 - 13:30
+// https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-1.0 24.10 - 25.10 - 13:30
 package pl.su.su_backend.service.event;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.LinkedMultiValueMap;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.dto.event.EventResponseDto;
 import pl.su.su_backend.dto.event.ParticipantResponseDto;
@@ -26,6 +35,7 @@ import pl.su.su_backend.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static pl.su.su_backend.model.enums.EventStatus.*;
@@ -42,6 +52,12 @@ public class EventService {
     private final ActivityLogService activityLogService;
     private final CalendarService calendarService;
     private final PermissionService permissionService;
+    
+    @Autowired
+    private Environment environment;
+    
+    @Autowired
+    private WebClient webClient;
 
     public EventResponseDto createEvent(EventRequestDto dto, UUID createdById, String accessToken) {
         log.info("Creating event: {} by user: {}", dto.getTitle(), createdById);
@@ -241,6 +257,13 @@ public class EventService {
         if (participantRepository.existsByEvent_IdAndUser_Id(eventId, userId)) {
             throw ApiException.conflict(ErrorCode.VALIDATION_ERROR, "Participant already exists");
         }
+        
+        if (event.getStatus() != EventStatus.APPROVED) {
+            if (!permissionService.hasPermission(userId, PermissionCode.EVENT_EDIT)) {
+                throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Only approved events can be joined");
+            }
+        }
+        
 
         EventParticipant participant = EventParticipant.builder()
                 .id(new EventParticipant.Id(eventId, userId))
@@ -253,10 +276,82 @@ public class EventService {
 
         EventParticipant savedParticipant = participantRepository.save(participant);
         
+        // Send Microsoft Calendar invitation if user has Microsoft account
+        if (user.getAuthProvider() != null && user.getAuthProvider().name().equals("MICROSOFT")) {
+            try {
+                sendCalendarInvitation(event, user);
+            } catch (Exception ex) {
+                log.warn("Failed to send calendar invitation to user {}: {}", user.getEmail(), ex.getMessage());
+            }
+        }
+        
         activityLogService.log(userId, ActionType.EVENT_JOIN, "Joined event: " + event.getTitle());
         
         log.info("Participant added successfully");
         return EventMapper.toResponse(savedParticipant);
+    }
+    
+    private void sendCalendarInvitation(Event event, Users user) {
+        log.info("Sending calendar invitation to user {} for event {}", user.getEmail(), event.getTitle());
+        
+        // Check if event has calendar event ID
+        if (event.getCalendarEventId() == null) {
+            log.warn("Event {} has no calendar event ID, cannot send invitation", event.getId());
+            return;
+        }
+        
+        try {
+            String systemToken = getSystemMicrosoftToken();
+            
+            if (systemToken != null) {
+                calendarService.addAttendeeToEvent(systemToken, event.getCalendarEventId(), user.getEmail());
+                log.info("Calendar invitation sent to {}", user.getEmail());
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send calendar invitation to {}: {}", user.getEmail(), ex.getMessage());
+        }
+    }
+    
+    private String getSystemMicrosoftToken() {
+        try {
+            // Client Credentials Flow for system-level access
+            String clientId = environment.getProperty("app.microsoft.client-id");
+            String clientSecret = environment.getProperty("app.microsoft.client-secret");
+            String tenantId = environment.getProperty("app.microsoft.tenant-id");
+            String scope = environment.getProperty("app.microsoft.scope");
+            
+            if (clientId == null || clientSecret == null || tenantId == null) {
+                log.warn("Microsoft Graph credentials not configured");
+                return null;
+            }
+            
+            String tokenUrl = "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
+            
+            MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+            requestBody.add("client_id", clientId);
+            requestBody.add("client_secret", clientSecret);
+            requestBody.add("scope", scope);
+            requestBody.add("grant_type", "client_credentials");
+            
+            Map<String, Object> response = webClient.post()
+                .uri(tokenUrl)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(requestBody))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+            
+            if (response != null && response.containsKey("access_token")) {
+                return (String) response.get("access_token");
+            }
+            
+            log.error("Failed to get Microsoft Graph token");
+            return null;
+            
+        } catch (Exception ex) {
+            log.error("Error getting Microsoft Graph token: {}", ex.getMessage());
+            return null;
+        }
     }
 
     public void removeParticipant(UUID eventId, UUID userId, UUID removedById) {
@@ -265,7 +360,6 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Event not found"));
 
-        // Check if user can remove (creator, has edit permission, or removing themselves)
         if (!event.getCreatedBy().getId().equals(removedById) && 
             !userId.equals(removedById) && 
             !permissionService.hasPermission(removedById, PermissionCode.EVENT_EDIT)) {
@@ -329,8 +423,6 @@ public class EventService {
         
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        // Check if user has permission to view draft events (SU members)
         if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW_DRAFTS)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }

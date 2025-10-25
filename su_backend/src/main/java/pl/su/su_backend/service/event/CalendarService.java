@@ -1,3 +1,4 @@
+// https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-1.0 24.10 - 25.10 - 13:30
 package pl.su.su_backend.service.event;
 
 import lombok.RequiredArgsConstructor;
