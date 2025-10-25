@@ -27,6 +27,7 @@ import static org.mockito.Mockito.*;
 
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
+import pl.su.su_backend.service.log.ActivityLogService;
 
 @ExtendWith(MockitoExtension.class)
 public class SuggestionServiceTest {
@@ -36,9 +37,9 @@ public class SuggestionServiceTest {
     @Mock
     private SuggestionRepository suggestionRepository;
     @Mock
-    private ActivityLogService activityLogService;
-    @Mock
     private PermissionService permissionService;
+    @Mock
+    private ActivityLogService activityLogService;
 
     @InjectMocks
     private SuggestionService suggestionService;

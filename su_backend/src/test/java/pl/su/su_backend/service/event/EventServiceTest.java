@@ -60,12 +60,13 @@ public class EventServiceTest {
         testUser = Fixtures.user("Test User", "test@test.com");
         testUser.setId(UUID.randomUUID());
 
-        testEventRequestDto = Fixtures.eventRequestDto("Test Event", "Test description", 
+        testEventRequestDto = Fixtures.eventRequestDto("Test Event", "Test description",
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2));
-        
-        savedEvent = Fixtures.eventWithCreator("Test Event", "Test description", 
+
+        savedEvent = Fixtures.eventWithCreator("Test Event", "Test description",
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2), testUser);
         savedEvent.setId(UUID.randomUUID());
+        savedEvent.setStatus(EventStatus.APPROVED);
     }
 
     @Test
@@ -173,7 +174,6 @@ public class EventServiceTest {
         // Given
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(permissionService.hasPermission(testUser.getId(), PermissionCode.EVENT_VIEW)).thenReturn(true);
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.EVENT_APPROVE)).thenReturn(true);
         when(eventRepository.findById(savedEvent.getId())).thenReturn(Optional.of(savedEvent));
 
         // When
