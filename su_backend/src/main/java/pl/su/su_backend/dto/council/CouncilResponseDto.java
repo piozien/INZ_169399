@@ -23,6 +23,7 @@ public class CouncilResponseDto {
     private LocalDate startDate;
     private LocalDate endDate;
     private Boolean isActive;
+    private String joinCode;
     private LocalDateTime createdAt;
     private List<UserResponseDto> members;
 }

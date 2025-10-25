@@ -36,6 +36,7 @@ public enum PermissionCode {
     COUNCIL_EDIT("council.edit", "Edit council"),
     COUNCIL_DELETE("council.delete", "Delete council"),
     COUNCIL_MEMBER_MANAGE("council_member.manage", "Manage council members"),
+    COUNCIL_JOIN("council.join", "Join council using code"),
 
     // Council Budget Management
     COUNCIL_BUDGET_VIEW("council_budget.view", "View council budgets"),

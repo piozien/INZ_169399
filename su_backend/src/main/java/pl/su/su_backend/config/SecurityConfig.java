@@ -108,4 +108,11 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", cfg);
         return source;
     }
+    
+    @Bean
+    public WebClient webClient() {
+        return WebClient.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024))
+                .build();
+    }
 }

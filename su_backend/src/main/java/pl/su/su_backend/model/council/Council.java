@@ -46,6 +46,9 @@ public class Council {
 	@Builder.Default
 	private Boolean isActive = true;
 
+	@Column(name = "join_code", nullable = false, unique = true)
+	private String joinCode;
+
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(
 		name = "council_members",
