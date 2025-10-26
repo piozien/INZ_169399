@@ -76,7 +76,7 @@ class ClassBudgetServiceTest {
         when(budgetRepository.save(any(ClassBudget.class))).thenReturn(testBudget);
 
         // When
-        ClassBudgetResponseDto result = classBudgetService.createBudget(testRequestDto, testUser.getId());
+        ClassBudgetResponseDto result = classBudgetService.createBudget(testClass.getId(), testRequestDto, testUser.getId());
 
         // Then
         assertNotNull(result);
@@ -91,12 +91,11 @@ class ClassBudgetServiceTest {
     void createBudget_ShouldThrowException_WhenClassNotFound() {
         // Given
         UUID nonExistentClassId = UUID.randomUUID();
-        testRequestDto.setClassId(nonExistentClassId);
         when(classesRepository.findById(nonExistentClassId)).thenReturn(Optional.empty());
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class, 
-            () -> classBudgetService.createBudget(testRequestDto, testUser.getId()));
+            () -> classBudgetService.createBudget(nonExistentClassId, testRequestDto, testUser.getId()));
         
         assertTrue(exception.getMessage().contains("Class not found"));
         verify(classesRepository).findById(nonExistentClassId);
@@ -111,7 +110,7 @@ class ClassBudgetServiceTest {
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class, 
-            () -> classBudgetService.createBudget(testRequestDto, nonExistentUserId));
+            () -> classBudgetService.createBudget(testClass.getId(), testRequestDto, nonExistentUserId));
         
         assertTrue(exception.getMessage().contains("User not found"));
         verify(usersRepository).findById(nonExistentUserId);
@@ -127,7 +126,7 @@ class ClassBudgetServiceTest {
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class, 
-            () -> classBudgetService.createBudget(testRequestDto, testUser.getId()));
+            () -> classBudgetService.createBudget(testClass.getId(), testRequestDto, testUser.getId()));
         
         assertTrue(exception.getMessage().contains("not authorized"));
         verify(permissionService).canAccessClassBudget(testUser.getId(), testClass.getId(),
@@ -145,7 +144,7 @@ class ClassBudgetServiceTest {
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class, 
-            () -> classBudgetService.createBudget(testRequestDto, testUser.getId()));
+            () -> classBudgetService.createBudget(testClass.getId(), testRequestDto, testUser.getId()));
         
         assertTrue(exception.getMessage().contains("already exists"));
         verify(budgetRepository).findByClasses_IdAndYear(testClass.getId(), "2025");
@@ -153,7 +152,7 @@ class ClassBudgetServiceTest {
 
     
     @Test
-    void getClassBudgets_ShouldReturnBudgets_WhenHasPermission() {
+    void getBudget_ShouldReturnBudget_WhenHasPermission() {
         // Given
         when(usersRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
         when(permissionService.canAccessClassBudget(testUser.getId(), testClass.getId(),
@@ -161,32 +160,31 @@ class ClassBudgetServiceTest {
         when(budgetRepository.findByClasses_IdOrderByYearDesc(testClass.getId())).thenReturn(List.of(testBudget));
 
         // When
-        List<ClassBudgetResponseDto> result = classBudgetService.getClassBudgets(testClass.getId(), testEmail);
+        ClassBudgetResponseDto result = classBudgetService.getBudget(testClass.getId(), testEmail);
 
         // Then
         assertNotNull(result);
-        assertEquals(1, result.size());
         verify(usersRepository).findByEmail(testEmail);
         verify(permissionService).canAccessClassBudget(testUser.getId(), testClass.getId(), PermissionCode.CLASS_BUDGET_VIEW);
         verify(budgetRepository).findByClasses_IdOrderByYearDesc(testClass.getId());
     }
 
     @Test
-    void getClassBudgets_ShouldThrowException_WhenUserNotFound() {
+    void getBudget_ShouldThrowException_WhenUserNotFound() {
         // Given
         String nonExistentEmail = "nonexistent@test.com";
         when(usersRepository.findByEmail(nonExistentEmail)).thenReturn(Optional.empty());
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class, 
-            () -> classBudgetService.getClassBudgets(testClass.getId(), nonExistentEmail));
+            () -> classBudgetService.getBudget(testClass.getId(), nonExistentEmail));
         
         assertTrue(exception.getMessage().contains("User not found"));
         verify(usersRepository).findByEmail(nonExistentEmail);
     }
 
     @Test
-    void getClassBudgets_ShouldThrowException_WhenNoPermission() {
+    void getBudget_ShouldThrowException_WhenNoPermission() {
         // Given
         when(usersRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
         when(permissionService.canAccessClassBudget(testUser.getId(), testClass.getId(),
@@ -194,9 +192,9 @@ class ClassBudgetServiceTest {
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class, 
-            () -> classBudgetService.getClassBudgets(testClass.getId(), testEmail));
+            () -> classBudgetService.getBudget(testClass.getId(), testEmail));
         
-        assertTrue(exception.getMessage().contains("Access denied"));
+        assertTrue(exception.getMessage().contains("You are not authorized to view budgets for this class"));
         verify(permissionService).canAccessClassBudget(testUser.getId(), testClass.getId(), PermissionCode.CLASS_BUDGET_VIEW);
     }
 

@@ -84,6 +84,10 @@ public class CouncilService {
         Council council = councilRepository.findById(councilId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
+        if (!council.getMembers().contains(user)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You must be a member of the council to create budgets");
+        }
+        
         String year = dto.getYear() != null ? dto.getYear() : String.valueOf(java.time.LocalDateTime.now().getYear());
         if (councilBudgetRepository.findByCouncil_IdAndYear(council.getId(), year).isPresent()) {
             throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget for council and year " + year + " already exists");
@@ -112,6 +116,13 @@ public class CouncilService {
         
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_BUDGET_VIEW)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+        
+        Council council = councilRepository.findById(councilId)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
+        
+        if (!council.getMembers().contains(user)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You must be a member of the council to view budgets");
         }
         
         CouncilBudget budget = councilBudgetRepository.findByCouncil_IdOrderByYearDesc(councilId)

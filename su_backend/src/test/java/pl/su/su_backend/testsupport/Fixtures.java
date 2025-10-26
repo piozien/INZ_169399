@@ -31,6 +31,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 public final class Fixtures {
 
@@ -76,6 +79,24 @@ public final class Fixtures {
                 .build();
         user.setId(UUID.randomUUID());
         return user;
+    }
+    
+    public static Users userWithStatusNoId(String fullName, String email, StatusEnum status) {
+        return Users.builder()
+                .fullName(fullName)
+                .email(email)
+                .password("password123")
+                .status(status)
+                .build();
+    }
+
+    public static Council councilNoId(String name, String academicYear, LocalDate start, LocalDate end) {
+        return Council.builder()
+                .name(name)
+                .academicYear(academicYear)
+                .startDate(start)
+                .endDate(end)
+                .build();
     }
 
     public static Users userWithClass(String fullName, String email, Classes schoolClass) {
@@ -473,5 +494,25 @@ public final class Fixtures {
                 .createdAt(LocalDateTime.now())
                 .status(status)
                 .build();
+    }
+
+    // ===== HTTP HELPER METHODS =====
+    public static HttpEntity<String> httpEntityWithToken(String token, String jsonBody) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(jsonBody, headers);
+    }
+
+    public static HttpEntity<String> httpEntityWithToken(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        return new HttpEntity<>(headers);
+    }
+
+    public static HttpEntity<String> httpEntityWithoutToken(String jsonBody) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(jsonBody, headers);
     }
 }

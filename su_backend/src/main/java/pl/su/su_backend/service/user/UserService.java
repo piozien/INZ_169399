@@ -282,6 +282,7 @@ public class UserService {
         log.info("User soft deleted (blocked) successfully with ID: {}", userId);
     }
 
+    // function to check if an email address is available during registration
     @Transactional(readOnly = true)
     public boolean userExists(String email) {
         return usersRepository.findByEmail(email).isPresent();

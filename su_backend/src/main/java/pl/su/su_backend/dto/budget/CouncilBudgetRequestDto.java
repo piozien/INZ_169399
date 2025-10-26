@@ -15,7 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CouncilBudgetRequestDto {
 
-	@NotNull(message = "Council ID is required")
 	private UUID councilId;
 
 	private String year;
