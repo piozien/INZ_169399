@@ -71,17 +71,8 @@ public class CouncilService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    protected Council getCouncilEntity() {
-        List<Council> councils = councilRepository.findAll();
-        if (councils.isEmpty()) {
-            throw ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "No council found");
-        }
-        return councils.getFirst();
-    }
-
-    public CouncilBudgetResponseDto createBudget(CouncilBudgetRequestDto dto, String currentUserEmail) {
-        log.info("Creating council budget by user: {}", currentUserEmail);
+    public CouncilBudgetResponseDto createBudget(UUID councilId, CouncilBudgetRequestDto dto, String currentUserEmail) {
+        log.info("Creating council budget for council {} by user: {}", councilId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
@@ -90,7 +81,8 @@ public class CouncilService {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
-        Council council = getCouncilEntity();
+        Council council = councilRepository.findById(councilId)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
         String year = dto.getYear() != null ? dto.getYear() : String.valueOf(java.time.LocalDateTime.now().getYear());
         if (councilBudgetRepository.findByCouncil_IdAndYear(council.getId(), year).isPresent()) {
@@ -112,8 +104,8 @@ public class CouncilService {
         return CouncilBudgetMapper.toResponse(savedBudget);
     }
 
-    public List<CouncilBudgetResponseDto> getAllBudgets(String currentUserEmail) {
-        log.info("Fetching all council budgets for user: {}", currentUserEmail);
+    public CouncilBudgetResponseDto getBudget(UUID councilId, String currentUserEmail) {
+        log.info("Fetching council budget for council {} by user: {}", councilId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
@@ -122,12 +114,16 @@ public class CouncilService {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
-        List<CouncilBudget> budgets = councilBudgetRepository.findAll();
-        return CouncilBudgetMapper.toResponseList(budgets);
+        CouncilBudget budget = councilBudgetRepository.findByCouncil_IdOrderByYearDesc(councilId)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found for council"));
+        
+        return CouncilBudgetMapper.toResponse(budget);
     }
 
-    public CouncilTransactionResponseDto createTransaction(CouncilTransactionRequestDto dto, String currentUserEmail) {
-        log.info("Creating council transaction by user: {}", currentUserEmail);
+    public CouncilTransactionResponseDto createTransaction(UUID councilId, CouncilTransactionRequestDto dto, String currentUserEmail) {
+        log.info("Creating council transaction for council {} by user: {}", councilId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
@@ -138,6 +134,10 @@ public class CouncilService {
         
         CouncilBudget budget = councilBudgetRepository.findById(dto.getBudgetId())
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found"));
+        
+        if (!budget.getCouncil().getId().equals(councilId)) {
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget does not belong to specified council");
+        }
         
         CouncilTransaction transaction = CouncilTransactionMapper.toEntity(dto, budget, user);
         CouncilTransaction savedTransaction = councilTransactionRepository.save(transaction);
@@ -452,7 +452,21 @@ public class CouncilService {
         
         return CouncilMapper.toResponseDto(council);
     }
-
-
+    
+    public CouncilResponseDto getCouncilById(UUID id, String currentUserEmail) {
+        log.info("Fetching council by ID: {} for user: {}", id, currentUserEmail);
+        
+        Users currentUser = usersRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+        
+        Council council = councilRepository.findById(id)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Council not found"));
+        
+        return CouncilMapper.toResponseDto(council);
+    }
 
 }

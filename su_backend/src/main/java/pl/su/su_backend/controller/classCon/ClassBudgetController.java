@@ -14,7 +14,6 @@ import pl.su.su_backend.dto.budget.ClassBudgetResponseDto;
 import pl.su.su_backend.service.budget.ClassBudgetService;
 import pl.su.su_backend.service.user.UserService;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,48 +25,23 @@ public class ClassBudgetController {
     private final ClassBudgetService budgetService;
     private final UserService userService;
 
-    @PostMapping
+    @PostMapping("/{classId}/budget")
     @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_CREATE')")
-    public ResponseEntity<ClassBudgetResponseDto> createBudget(@Valid @RequestBody ClassBudgetRequestDto dto,
+    public ResponseEntity<ClassBudgetResponseDto> createBudget(@PathVariable UUID classId,
+                                                              @Valid @RequestBody ClassBudgetRequestDto dto,
                                                               @AuthenticationPrincipal User principal) {
-        log.info("Creating budget for class {} by user {}", dto.getClassId(), principal.getUsername());
+        log.info("Creating budget for class {} by user {}", classId, principal.getUsername());
         UUID userId = userService.getCurrentUserId(principal.getUsername());
-        ClassBudgetResponseDto budget = budgetService.createBudget(dto, userId);
+        ClassBudgetResponseDto budget = budgetService.createBudget(classId, dto, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(budget);
     }
 
-    @GetMapping("/my-classes")
+    @GetMapping("/{classId}/budget")
     @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_VIEW')")
-    public ResponseEntity<List<ClassBudgetResponseDto>> getMyClassBudget(@AuthenticationPrincipal User principal) {
-        log.info("Fetching budgets for user: {}", principal.getUsername());
-        List<ClassBudgetResponseDto> budgets = budgetService.getAllBudgets(principal.getUsername());
-        return ResponseEntity.ok(budgets);
-    }
-
-    @GetMapping("/class/{classId}")
-    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_VIEW')")
-    public ResponseEntity<List<ClassBudgetResponseDto>> getClassBudgets(@PathVariable UUID classId,
-                                                                        @AuthenticationPrincipal User principal) {
-        log.info("Fetching budgets for class: {} by user: {}", classId, principal.getUsername());
-        List<ClassBudgetResponseDto> budgets = budgetService.getClassBudgets(classId, principal.getUsername());
-        return ResponseEntity.ok(budgets);
-    }
-
-    @GetMapping("/{budgetId}")
-    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_VIEW')")
-    public ResponseEntity<ClassBudgetResponseDto> getBudgetById(@PathVariable UUID budgetId,
-                                                               @AuthenticationPrincipal User principal) {
-        log.info("Fetching budget with ID: {} by user: {}", budgetId, principal.getUsername());
-        ClassBudgetResponseDto budget = budgetService.getBudgetById(budgetId, principal.getUsername());
-        return ResponseEntity.ok(budget);
-    }
-
-    @GetMapping("/class/{classId}/current")
-    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_VIEW')")
-    public ResponseEntity<ClassBudgetResponseDto> getCurrentYearBudget(@PathVariable UUID classId,
-                                                                       @AuthenticationPrincipal User principal) {
-        log.info("Fetching current year budget for class: {} by user: {}", classId, principal.getUsername());
-        ClassBudgetResponseDto budget = budgetService.getCurrentYearBudget(classId, principal.getUsername());
+    public ResponseEntity<ClassBudgetResponseDto> getBudget(@PathVariable UUID classId,
+                                                           @AuthenticationPrincipal User principal) {
+        log.info("Fetching budget for class: {} by user: {}", classId, principal.getUsername());
+        ClassBudgetResponseDto budget = budgetService.getBudget(classId, principal.getUsername());
         return ResponseEntity.ok(budget);
     }
 

@@ -40,21 +40,21 @@ public class ClassBudgetService {
     private final ActivityLogService activityLogService;
     private final PermissionService permissionService;
 
-    public ClassBudgetResponseDto createBudget(ClassBudgetRequestDto dto, UUID createdById) {
-        log.info("Creating budget for class {} by user {}", dto.getClassId(), createdById);
+    public ClassBudgetResponseDto createBudget(UUID classId, ClassBudgetRequestDto dto, UUID createdById) {
+        log.info("Creating budget for class {} by user {}", classId, createdById);
         
-        Classes classes = classesRepository.findById(dto.getClassId())
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.CLASS_NOT_FOUND, "Class not found: " + dto.getClassId()));
+        Classes classes = classesRepository.findById(classId)
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.CLASS_NOT_FOUND, "Class not found: " + classId));
         
         Users createdBy = usersRepository.findById(createdById)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + createdById));
 
-        if (!permissionService.canAccessClassBudget(createdById, dto.getClassId(), PermissionCode.CLASS_BUDGET_CREATE)) {
+        if (!permissionService.canAccessClassBudget(createdById, classId, PermissionCode.CLASS_BUDGET_CREATE)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You are not authorized to create budgets for this class");
         }
 
         String year = dto.getYear() != null ? dto.getYear() : String.valueOf(LocalDateTime.now().getYear());
-        if (budgetRepository.findByClasses_IdAndYear(dto.getClassId(), year).isPresent()) {
+        if (budgetRepository.findByClasses_IdAndYear(classId, year).isPresent()) {
             throw ApiException.badRequest(ErrorCode.BUDGET_ALREADY_EXISTS, "Budget for class " + classes.getName() +
                     " and year " + year + " already exists");
         }
@@ -77,22 +77,22 @@ public class ClassBudgetService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClassBudgetResponseDto> getClassBudgets(UUID classId, String currentUserEmail) {
-        log.info("Fetching budgets for class: {} by user: {}", classId, currentUserEmail);
+    public ClassBudgetResponseDto getBudget(UUID classId, String currentUserEmail) {
+        log.info("Fetching budget for class: {} by user: {}", classId, currentUserEmail);
         
         Users user = usersRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + currentUserEmail));
         
         if (!permissionService.canAccessClassBudget(user.getId(), classId, PermissionCode.CLASS_BUDGET_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied: User must have class budget viewing permission");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You are not authorized to view budgets for this class");
         }
         
-        List<ClassBudget> budgets = budgetRepository.findByClasses_IdOrderByYearDesc(classId);
-        List<ClassBudgetResponseDto> result = new ArrayList<>();
-        for (ClassBudget budget : budgets) {
-            result.add(toResponseDto(budget));
-        }
-        return result;
+        ClassBudget budget = budgetRepository.findByClasses_IdOrderByYearDesc(classId)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.BUDGET_NOT_FOUND, "Budget not found for class"));
+        
+        return toResponseDto(budget);
     }
 
     @Transactional(readOnly = true)
