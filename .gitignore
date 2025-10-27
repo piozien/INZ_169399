@@ -156,3 +156,5 @@ sketch
 su_frontend/.dockerignore
 
 *.sql
+
+*.tex

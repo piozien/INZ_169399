@@ -26,5 +26,4 @@ public class ClassTransactionResponseDto {
     private String addedByFullName;
     private UUID payerUserId;
     private String payerUserFullName;
-    private Boolean confirmed;
 }

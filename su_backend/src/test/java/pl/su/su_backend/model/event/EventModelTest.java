@@ -17,9 +17,9 @@ class EventModelTest {
                 .description("Desc")
                 .startDate(LocalDateTime.now())
                 .endDate(LocalDateTime.now().plusHours(2))
+                .status(null)
                 .build();
 
-        // @PrePersist
         event.onCreate();
 
         Assertions.assertEquals(EventStatus.DRAFT, event.getStatus());

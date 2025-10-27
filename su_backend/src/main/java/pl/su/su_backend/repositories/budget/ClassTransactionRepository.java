@@ -21,7 +21,5 @@ public interface ClassTransactionRepository extends JpaRepository<ClassTransacti
     
     List<ClassTransaction> findByDateBetweenOrderByDateDesc(LocalDateTime startDate, LocalDateTime endDate);
     
-    List<ClassTransaction> findByConfirmedFalseOrderByDateDesc();
-    
     List<ClassTransaction> findByBudgetIdAndDateBetween(UUID budgetId, LocalDate startDate, LocalDate endDate);
 }

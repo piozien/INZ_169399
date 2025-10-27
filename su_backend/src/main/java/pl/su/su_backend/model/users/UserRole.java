@@ -3,6 +3,7 @@ package pl.su.su_backend.model.users;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,6 +27,7 @@ public class UserRole {
 	@Setter
 	@NoArgsConstructor
 	@AllArgsConstructor
+	@EqualsAndHashCode
 	public static class Id implements Serializable {
 		private UUID userId;
 		private UUID roleId;
@@ -39,7 +41,7 @@ public class UserRole {
 	@JoinColumn(name = "user_id")
 	private Users user;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@MapsId("roleId")
 	@JoinColumn(name = "role_id")
 	private Role role;

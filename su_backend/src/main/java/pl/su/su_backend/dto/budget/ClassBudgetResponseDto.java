@@ -18,12 +18,12 @@ public class ClassBudgetResponseDto {
     private UUID id;
     private UUID classId;
     private String className;
-    private Integer year;
+    private String year;
     private BigDecimal initialAmount;
+    private BigDecimal balance;
     private UUID createdById;
     private String createdByFullName;
     private LocalDateTime createdAt;
     private BigDecimal totalIncome;
     private BigDecimal totalExpenses;
-    private BigDecimal balance;
 }

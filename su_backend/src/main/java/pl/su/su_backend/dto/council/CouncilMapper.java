@@ -23,6 +23,7 @@ public class CouncilMapper {
                 .startDate(council.getStartDate())
                 .endDate(council.getEndDate())
                 .isActive(council.getIsActive())
+                .joinCode(council.getJoinCode())
                 .createdAt(council.getCreatedAt())
                 .members(council.getMembers() != null ? 
                     council.getMembers().stream()

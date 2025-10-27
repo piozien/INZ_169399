@@ -115,6 +115,11 @@ public class UserService {
                 .orElseThrow(() ->ApiException.unauthorized(
                         ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
 
+        if (StatusEnum.BLOCKED.equals(user.getStatus())) {
+            log.warn("Blocked user attempted login: {}", user.getEmail());
+            throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
+        }
+
         log.info("User logged in successfully: {}", user.getEmail());
         activityLogService.log(user.getId(), ActionType.LOGIN, "User logged in");
 
@@ -277,6 +282,7 @@ public class UserService {
         log.info("User soft deleted (blocked) successfully with ID: {}", userId);
     }
 
+    // function to check if an email address is available during registration
     @Transactional(readOnly = true)
     public boolean userExists(String email) {
         return usersRepository.findByEmail(email).isPresent();

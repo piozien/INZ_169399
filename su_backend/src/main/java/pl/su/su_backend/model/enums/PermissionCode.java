@@ -31,10 +31,12 @@ public enum PermissionCode {
 
     // Council Management
     COUNCIL_VIEW("council.view", "View council"),
+    COUNCIL_VIEW_ALL("council.view_all", "View all councils"),
     COUNCIL_CREATE("council.create", "Create council"),
     COUNCIL_EDIT("council.edit", "Edit council"),
     COUNCIL_DELETE("council.delete", "Delete council"),
     COUNCIL_MEMBER_MANAGE("council_member.manage", "Manage council members"),
+    COUNCIL_JOIN("council.join", "Join council using code"),
 
     // Council Budget Management
     COUNCIL_BUDGET_VIEW("council_budget.view", "View council budgets"),
@@ -58,6 +60,7 @@ public enum PermissionCode {
 
     // Suggestion Management
     SUGGESTION_VIEW("suggestion.view", "View suggestions"),
+    SUGGESTION_VIEW_ANONYMOUS("suggestion.view_anonymous", "View anonymous suggestion authors"),
     SUGGESTION_CREATE("suggestion.create", "Create suggestions"),
     SUGGESTION_EDIT("suggestion.edit", "Edit suggestions"),
     SUGGESTION_DELETE("suggestion.delete", "Delete suggestions"),
@@ -69,7 +72,11 @@ public enum PermissionCode {
     REPORT_GENERATE("report.generate", "Generate reports"),
 
     // Activity Log Management
-    ACTIVITY_LOG_VIEW("activity_log.view", "View activity logs");
+    ACTIVITY_LOG_VIEW("activity_log.view", "View activity logs"),
+
+
+    // Admin Management
+    ADMIN("admin", "Full administrative access");
 
     private final String code;
     private final String description;

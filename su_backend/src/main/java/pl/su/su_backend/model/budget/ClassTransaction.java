@@ -51,7 +51,4 @@ public class ClassTransaction {
 	@JoinColumn(name = "payer_user")
 	private Users payerUser;
 
-	@Column(nullable = false)
-	@Builder.Default
-	private Boolean confirmed = false;
 }

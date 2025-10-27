@@ -11,5 +11,5 @@ public interface ClassBudgetRepository extends JpaRepository<ClassBudget, UUID> 
     
     List<ClassBudget> findByClasses_IdOrderByYearDesc(UUID classId);
     
-    Optional<ClassBudget> findByClasses_IdAndYear(UUID classId, Integer year);
+    Optional<ClassBudget> findByClasses_IdAndYear(UUID classId, String year);
 }

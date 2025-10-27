@@ -13,7 +13,7 @@ import pl.su.su_backend.model.enums.StatusEnum;
 import java.util.UUID;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserRequestDto {

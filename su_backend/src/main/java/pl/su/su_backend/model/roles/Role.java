@@ -38,7 +38,7 @@ public class Role {
 	@Builder.Default
 	private Set<UserRole> userRoles = new HashSet<>();
 
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 		name = "role_permissions",
 		joinColumns = @JoinColumn(name = "role_id"),
