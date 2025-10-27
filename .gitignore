@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/intellij+all,java,dotenv,visualstudiocode,react
-# Edit at https://www.toptal.com/developers/gitignore?templates=intellij+all,java,dotenv,visualstudiocode,react
+# Created by https://www.toptal.com/developers/gitignore/api/intellij+all,java,dotenv,nextjs,react,visualstudiocode
+# Edit at https://www.toptal.com/developers/gitignore?templates=intellij+all,java,dotenv,nextjs,react,visualstudiocode
 
 ### dotenv ###
 .env
@@ -118,6 +118,42 @@ fabric.properties
 hs_err_pid*
 replay_pid*
 
+### NextJS ###
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
 ### react ###
 .DS_*
 logs
@@ -151,10 +187,5 @@ sketch
 # Ignore all local history of files
 .history
 .ionide
-# End of https://www.toptal.com/developers/gitignore/api/intellij+all,java,dotenv,visualstudiocode,react
 
-su_frontend/.dockerignore
-
-*.sql
-
-*.tex
+# End of https://www.toptal.com/developers/gitignore/api/intellij+all,java,dotenv,nextjs,react,visualstudiocode
