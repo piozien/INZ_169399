@@ -18,15 +18,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import pl.su.su_backend.service.auth.PermissionService;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity()
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtRequestFilter jwtRequestFilter;
+    private final PermissionService permissionService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,11 +45,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    public MethodSecurityExpressionHandler methodSecurityExpressionHandler() {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setPermissionEvaluator(new CustomPermissionEvaluator(permissionService));
+        return handler;
+    }
+
+
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            OAuth2AuthenticationSuccessHandler successHandler,
-                                           OAuth2AuthenticationFailureHandler failureHandler) throws Exception {
+                                           OAuth2AuthenticationFailureHandler failureHandler,
+                                           @Value("${app.frontend.url}") String frontendUrl) throws Exception {
         http
-                .cors(c -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource(frontendUrl)))
                 .csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
@@ -83,13 +99,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${app.frontend.url}") String frontendUrl) {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(java.util.List.of(frontendUrl));
-        cfg.setAllowedMethods(java.util.List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(java.util.List.of("Authorization","Content-Type","X-Requested-With"));
+        cfg.setAllowedOrigins(List.of(frontendUrl));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With"));
         cfg.setAllowCredentials(true);
-        cfg.setExposedHeaders(java.util.List.of("Set-Cookie"));
+        cfg.setExposedHeaders(List.of("Set-Cookie"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
+    }
+    
+    @Bean
+    public WebClient webClient() {
+        return WebClient.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024))
+                .build();
     }
 }

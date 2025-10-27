@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCode;
@@ -34,13 +36,13 @@ public class RoleAssignmentService {
 
     public void assignRoleByEmail(String actingEmail, UUID targetUserId, RoleCode roleCode, String reason) {
         Users acting = usersRepository.findByEmail(actingEmail)
-                .orElseThrow(() -> new RuntimeException("Acting user not found: " + actingEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found: " + actingEmail));
         assignRole(acting.getId(), targetUserId, roleCode, reason);
     }
 
     public void revokeRoleByEmail(String actingEmail, UUID targetUserId, RoleCode roleCode, String reason) {
         Users acting = usersRepository.findByEmail(actingEmail)
-                .orElseThrow(() -> new RuntimeException("Acting user not found: " + actingEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found: " + actingEmail));
         revokeRole(acting.getId(), targetUserId, roleCode, reason);
     }
 
@@ -48,14 +50,14 @@ public class RoleAssignmentService {
         Users acting = getUserOrThrow(actingUserId);
         Users target = getUserOrThrow(targetUserId);
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.ROLE_NOT_FOUND, "Role not found: " + roleCode));
 
         if (target.isBlocked()) {
-            throw new RuntimeException("Cannot modify roles of blocked user");
+            throw ApiException.badRequest(ErrorCode.USER_BLOCKED, "Cannot modify roles of blocked user");
         }
 
         if (!permissionService.hasPermission(acting.getId(), PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("You are not allowed to assign roles");
+            throw ApiException.forbidden(ErrorCode.INSUFFICIENT_PERMISSIONS, "You are not allowed to assign roles");
         }
 
         if (userRoleRepository.existsByUser_IdAndRole_Id(target.getId(), role.getId())) {
@@ -79,23 +81,23 @@ public class RoleAssignmentService {
         Users acting = getUserOrThrow(actingUserId);
         Users target = getUserOrThrow(targetUserId);
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleCode));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.ROLE_NOT_FOUND, "Role not found: " + roleCode));
 
         if (!permissionService.hasPermission(acting.getId(), PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("You are not allowed to revoke roles");
+            throw ApiException.forbidden(ErrorCode.INSUFFICIENT_PERMISSIONS, "You are not allowed to revoke roles");
         }
 
         RoleCode actingHighestRole = getHighestRole(acting);
         RoleCode targetHighestRole = getHighestRole(target);
         
         if (!actingHighestRole.hasHigherOrEqualRankThan(targetHighestRole)) {
-            throw new RuntimeException("You cannot revoke roles from users with higher or equal rank than yours");
+                throw ApiException.forbidden(ErrorCode.CANNOT_MODIFY_HIGHER_RANK, "You cannot revoke roles from users with higher or equal rank than yours");
         }
 
         if (roleCode == RoleCode.ADMINISTRATOR) {
             long admins = userRoleRepository.findByRole_Id(role.getId()).size();
             if (admins <= 1) {
-                throw new RuntimeException("Cannot revoke the last ADMINISTRATOR role");
+                throw ApiException.badRequest(ErrorCode.CANNOT_REVOKE_LAST_ADMIN, "Cannot revoke the last ADMINISTRATOR role");
             }
         }
 
@@ -111,7 +113,7 @@ public class RoleAssignmentService {
 
     private Users getUserOrThrow(UUID userId) {
         return usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + userId));
     }
 
 

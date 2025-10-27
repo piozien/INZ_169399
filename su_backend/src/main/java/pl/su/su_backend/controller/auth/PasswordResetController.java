@@ -13,7 +13,6 @@ import pl.su.su_backend.service.auth.PasswordResetService;
 @RequestMapping("/api/password-reset")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class PasswordResetController {
 
     private final PasswordResetService passwordResetService;
@@ -58,15 +57,4 @@ public class PasswordResetController {
         }
     }
 
-    @PostMapping("/cleanup")
-    public ResponseEntity<Void> cleanupExpiredTokens() {
-        log.info("Cleaning up expired tokens");
-        try {
-            passwordResetService.cleanupExpiredTokens();
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Failed to cleanup tokens: {}", e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-    }
 }

@@ -17,23 +17,17 @@ import java.util.UUID;
 @RequestMapping("/api/logs")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class ActivityLogController {
 
     private final ActivityLogService activityLogService;
 
     @GetMapping("/users/{userId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'ACTIVITY_LOG_VIEW')")
     public ResponseEntity<List<ActivityLogResponseDto>> listForUser(@PathVariable UUID userId, 
                                                                     @AuthenticationPrincipal User principal) {
         log.info("Fetching activity logs for user {} by {}", userId, principal.getUsername());
-        try {
-            List<ActivityLogResponseDto> logs = activityLogService.listForUser(userId, principal.getUsername());
-            return ResponseEntity.ok(logs);
-        } catch (Exception e) {
-            log.error("Failed to fetch activity logs for user {}: {}", userId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        List<ActivityLogResponseDto> logs = activityLogService.listForUser(userId, principal.getUsername());
+        return ResponseEntity.ok(logs);
     }
 }
 

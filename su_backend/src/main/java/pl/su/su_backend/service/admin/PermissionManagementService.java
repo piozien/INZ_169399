@@ -28,7 +28,7 @@ public class PermissionManagementService {
     private final PermissionService permissionService;
 
     @Transactional(readOnly = true)
-    public List<PermissionCode> getRolePermissions(RoleCode roleCode, String currentUserEmail) {
+    public List<String> getRolePermissions(RoleCode roleCode, String currentUserEmail) {
         log.info("Fetching permissions for role {} by user: {}", roleCode, currentUserEmail);
 
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
@@ -39,7 +39,7 @@ public class PermissionManagementService {
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Role not found"));
 
         return role.getPermissions().stream()
-                .map(permission -> PermissionCode.valueOf(permission.getName().toUpperCase()))
+                .map(Permission::getName)
                 .collect(Collectors.toList());
     }
 
@@ -69,7 +69,8 @@ public class PermissionManagementService {
         log.info("Assigning permission {} to role {} by user: {}", permissionCode, roleCode, currentUserEmail);
         
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
-            throw new RuntimeException("Access denied: User must have permission management access");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied: User must have permission:" +
+                    " user assign");
         }
 
         Role role = roleRepository.findByRoleCode(roleCode)
@@ -114,17 +115,17 @@ public class PermissionManagementService {
     }
 
     @Transactional(readOnly = true)
-    public Map<RoleCode, List<PermissionCode>> getPermissionMatrix(String currentUserEmail) {
+    public Map<RoleCode, List<String>> getPermissionMatrix(String currentUserEmail) {
         log.info("Fetching permission matrix by user: {}", currentUserEmail);
 
         if (!permissionService.hasPermission(currentUserEmail, PermissionCode.USER_ASSIGN_ROLE)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
-        Map<RoleCode, List<PermissionCode>> matrix = new HashMap<>();
+        Map<RoleCode, List<String>> matrix = new HashMap<>();
         
         for (RoleCode roleCode : RoleCode.values()) {
-            List<PermissionCode> permissions = getRolePermissions(roleCode, currentUserEmail);
+            List<String> permissions = getRolePermissions(roleCode, currentUserEmail);
             matrix.put(roleCode, permissions);
         }
         

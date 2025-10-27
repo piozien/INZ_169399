@@ -84,37 +84,6 @@ public class BudgetReportService {
         return buildCouncilBudgetReport(budget, transactions, fromDate, toDate, request.isIncludeTransactions());
     }
 
-    @Transactional(readOnly = true)
-    public List<BudgetReportDto> generateAllClassBudgetsReport(String currentUserEmail) {
-        log.info("Generating all class budgets report for user: {}", currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        List<ClassBudget> budgets;
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.CLASS_BUDGET_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        if (permissionService.hasPermission(user.getId(), PermissionCode.REPORT_GENERATE)) {
-            budgets = classBudgetRepository.findAll();
-        } else if (user.getClasses() != null) {
-            budgets = classBudgetRepository.findByClasses_IdOrderByYearDesc(user.getClasses().getId());
-        } else {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        List<BudgetReportDto> reports = new ArrayList<>();
-        for (ClassBudget budget : budgets) {
-            List<ClassTransaction> transactions = classTransactionRepository.findByBudget_IdOrderByDateDesc(budget.getId());
-            BudgetReportDto report = buildClassBudgetReport(budget, transactions, 
-                    LocalDate.now().minusMonths(1), LocalDate.now(), false, false);
-            reports.add(report);
-        }
-        
-        return reports;
-    }
 
     private BudgetReportDto buildClassBudgetReport(ClassBudget budget, List<ClassTransaction> transactions, 
                                                  LocalDate fromDate, LocalDate toDate, boolean includeTransactions, boolean showPayerInfo) {

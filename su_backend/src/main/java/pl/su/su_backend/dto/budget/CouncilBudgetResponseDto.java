@@ -17,11 +17,12 @@ public class CouncilBudgetResponseDto {
 
 	private UUID id;
 	private UUID councilId;
-	private Integer year;
+	private String councilName;
+	private String year;
 	private BigDecimal initialAmount;
+	private BigDecimal balance;
 	private UUID createdById;
 	private LocalDateTime createdAt;
 	private BigDecimal totalIncome;
 	private BigDecimal totalExpenses;
-	private BigDecimal balance;
 }

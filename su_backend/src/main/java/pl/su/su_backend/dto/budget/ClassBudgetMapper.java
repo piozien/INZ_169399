@@ -16,6 +16,7 @@ public class ClassBudgetMapper {
                 .className(budget.getClasses().getName())
                 .year(budget.getYear())
                 .initialAmount(budget.getInitialAmount())
+                .balance(budget.getBalance())
                 .createdById(budget.getCreatedBy().getId())
                 .createdByFullName(budget.getCreatedBy().getFullName())
                 .createdAt(budget.getCreatedAt())

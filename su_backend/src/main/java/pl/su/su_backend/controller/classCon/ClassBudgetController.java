@@ -14,116 +14,55 @@ import pl.su.su_backend.dto.budget.ClassBudgetResponseDto;
 import pl.su.su_backend.service.budget.ClassBudgetService;
 import pl.su.su_backend.service.user.UserService;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/class-budgets")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class ClassBudgetController {
 
     private final ClassBudgetService budgetService;
     private final UserService userService;
 
-    @PostMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClassBudgetResponseDto> createBudget(@Valid @RequestBody ClassBudgetRequestDto dto,
+    @PostMapping("/{classId}/budget")
+    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_CREATE')")
+    public ResponseEntity<ClassBudgetResponseDto> createBudget(@PathVariable UUID classId,
+                                                              @Valid @RequestBody ClassBudgetRequestDto dto,
                                                               @AuthenticationPrincipal User principal) {
-        log.info("Creating budget for class {} by user {}", dto.getClassId(), principal.getUsername());
-        try {
-            UUID userId = userService.getCurrentUserId(principal.getUsername());
-            ClassBudgetResponseDto budget = budgetService.createBudget(dto, userId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(budget);
-        } catch (Exception e) {
-            log.error("Failed to create budget: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        log.info("Creating budget for class {} by user {}", classId, principal.getUsername());
+        UUID userId = userService.getCurrentUserId(principal.getUsername());
+        ClassBudgetResponseDto budget = budgetService.createBudget(classId, dto, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(budget);
     }
 
-    @GetMapping("/my-classes")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ClassBudgetResponseDto>> getMyClassBudgets(@AuthenticationPrincipal User principal) {
-        log.info("Fetching budgets for user: {}", principal.getUsername());
-        try {
-            List<ClassBudgetResponseDto> budgets = budgetService.getAllBudgets();
-            return ResponseEntity.ok(budgets);
-        } catch (Exception e) {
-            log.error("Failed to fetch budgets for user {}: {}", principal.getUsername(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/class/{classId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ClassBudgetResponseDto>> getClassBudgets(@PathVariable UUID classId,
-                                                                        @AuthenticationPrincipal User principal) {
-        log.info("Fetching budgets for class: {} by user: {}", classId, principal.getUsername());
-        try {
-            List<ClassBudgetResponseDto> budgets = budgetService.getClassBudgets(classId, principal.getUsername());
-            return ResponseEntity.ok(budgets);
-        } catch (Exception e) {
-            log.error("Failed to fetch budgets for class {}: {}", classId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/{budgetId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClassBudgetResponseDto> getBudgetById(@PathVariable UUID budgetId,
-                                                               @AuthenticationPrincipal User principal) {
-        log.info("Fetching budget with ID: {} by user: {}", budgetId, principal.getUsername());
-        try {
-            ClassBudgetResponseDto budget = budgetService.getBudgetById(budgetId, principal.getUsername());
-            return ResponseEntity.ok(budget);
-        } catch (Exception e) {
-            log.error("Failed to fetch budget {}: {}", budgetId, e.getMessage());
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/class/{classId}/current")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClassBudgetResponseDto> getCurrentYearBudget(@PathVariable UUID classId) {
-        log.info("Fetching current year budget for class: {}", classId);
-        try {
-            ClassBudgetResponseDto budget = budgetService.getCurrentYearBudget(classId);
-            return ResponseEntity.ok(budget);
-        } catch (Exception e) {
-            log.error("Failed to fetch current year budget for class {}: {}", classId, e.getMessage());
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/{classId}/budget")
+    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_VIEW')")
+    public ResponseEntity<ClassBudgetResponseDto> getBudget(@PathVariable UUID classId,
+                                                           @AuthenticationPrincipal User principal) {
+        log.info("Fetching budget for class: {} by user: {}", classId, principal.getUsername());
+        ClassBudgetResponseDto budget = budgetService.getBudget(classId, principal.getUsername());
+        return ResponseEntity.ok(budget);
     }
 
     @PutMapping("/{budgetId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_EDIT')")
     public ResponseEntity<ClassBudgetResponseDto> updateBudget(@PathVariable UUID budgetId,
                                                               @Valid @RequestBody ClassBudgetRequestDto dto,
                                                               @AuthenticationPrincipal User principal) {
         log.info("Updating budget {} by user {}", budgetId, principal.getUsername());
-        try {
-            UUID userId = userService.getCurrentUserId(principal.getUsername());
-            ClassBudgetResponseDto budget = budgetService.updateBudget(budgetId, dto, userId);
-            return ResponseEntity.ok(budget);
-        } catch (Exception e) {
-            log.error("Failed to update budget {}: {}", budgetId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        UUID userId = userService.getCurrentUserId(principal.getUsername());
+        ClassBudgetResponseDto budget = budgetService.updateBudget(budgetId, dto, userId);
+        return ResponseEntity.ok(budget);
     }
 
     @DeleteMapping("/{budgetId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_DELETE')")
     public ResponseEntity<Void> deleteBudget(@PathVariable UUID budgetId,
                                            @AuthenticationPrincipal User principal) {
         log.info("Deleting budget {} by user {}", budgetId, principal.getUsername());
-        try {
-            UUID userId = userService.getCurrentUserId(principal.getUsername());
-            budgetService.deleteBudget(budgetId, userId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Failed to delete budget {}: {}", budgetId, e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        UUID userId = userService.getCurrentUserId(principal.getUsername());
+        budgetService.deleteBudget(budgetId, userId);
+        return ResponseEntity.noContent().build();
     }
 }

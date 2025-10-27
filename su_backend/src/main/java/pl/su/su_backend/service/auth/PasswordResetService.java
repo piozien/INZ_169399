@@ -13,6 +13,7 @@ import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
+import pl.su.su_backend.model.enums.StatusEnum;
 
 
 import java.security.SecureRandom;
@@ -75,6 +76,11 @@ public class PasswordResetService {
         }
 
         Users user = resetToken.getUser();
+
+        if (StatusEnum.BLOCKED.equals(user.getStatus())) {
+            log.warn("Blocked user attempted password reset: {}", user.getEmail());
+            throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
+        }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         usersRepository.save(user);

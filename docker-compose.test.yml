@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  su_database_test:
+    image: postgres:15
+    container_name: su_database_test
+    environment:
+      POSTGRES_DB: samorzad_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"  # Inny port niż produkcja (5432)
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - su_network_test
+
+volumes:
+  postgres_test_data:
+
+networks:
+  su_network_test:
+    driver: bridge

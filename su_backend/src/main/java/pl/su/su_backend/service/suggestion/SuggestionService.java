@@ -69,7 +69,7 @@ public class SuggestionService {
         }
         
         return suggestionRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(SuggestionMapper::toResponse)
+                .map(suggestion -> SuggestionMapper.toResponse(suggestion, user, permissionService))
                 .collect(Collectors.toList());
     }
 
@@ -95,12 +95,16 @@ public class SuggestionService {
         
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
-        return SuggestionMapper.toResponse(suggestion);
+        return SuggestionMapper.toResponse(suggestion, user, permissionService);
     }
 
     public SuggestionResponseDto approveSuggestion(UUID suggestionId, UUID approvedById) {
         log.info("Approving suggestion {} by user {}", suggestionId, approvedById);
         
+        if (!permissionService.hasPermission(approvedById, PermissionCode.SUGGESTION_APPROVE)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
@@ -122,6 +126,10 @@ public class SuggestionService {
     public SuggestionResponseDto rejectSuggestion(UUID suggestionId, String rejectionReason, UUID rejectedById) {
         log.info("Rejecting suggestion {} by user {} with reason: {}", suggestionId, rejectedById, rejectionReason);
         
+        if (!permissionService.hasPermission(rejectedById, PermissionCode.SUGGESTION_REJECT)) {
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+        }
+
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
@@ -150,7 +158,9 @@ public class SuggestionService {
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
-        if (!suggestion.getUser().getId().equals(userId)) {
+        boolean isOwner = suggestion.getUser().getId().equals(userId);
+        boolean canEdit = permissionService.hasPermission(userId, PermissionCode.SUGGESTION_EDIT);
+        if (!isOwner && !canEdit) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
@@ -177,7 +187,10 @@ public class SuggestionService {
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Suggestion not found"));
 
-        if (!suggestion.getUser().getId().equals(userId)) {
+        boolean isOwner = suggestion.getUser().getId().equals(userId);
+        boolean canDelete = permissionService.hasPermission(userId, PermissionCode.SUGGESTION_DELETE);
+        
+        if (!isOwner && !canDelete) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
 

@@ -23,5 +23,4 @@ public class CouncilTransactionResponseDto {
 	private String description;
 	private LocalDateTime date;
 	private UUID addedById;
-	private Boolean confirmed;
 }

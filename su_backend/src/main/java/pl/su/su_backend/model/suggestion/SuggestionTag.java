@@ -3,6 +3,7 @@ package pl.su.su_backend.model.suggestion;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +24,7 @@ public class SuggestionTag {
 	@Setter
 	@NoArgsConstructor
 	@AllArgsConstructor
+	@EqualsAndHashCode
 	public static class Id implements Serializable {
 		private java.util.UUID suggestionId;
 		private String tag;

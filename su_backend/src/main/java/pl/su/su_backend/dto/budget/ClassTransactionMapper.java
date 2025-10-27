@@ -20,7 +20,6 @@ public class ClassTransactionMapper {
                 .addedByFullName(transaction.getAddedBy().getFullName())
                 .payerUserId(transaction.getPayerUser() != null ? transaction.getPayerUser().getId() : null)
                 .payerUserFullName(transaction.getPayerUser() != null ? transaction.getPayerUser().getFullName() : null)
-                .confirmed(transaction.getConfirmed())
                 .build();
     }
 

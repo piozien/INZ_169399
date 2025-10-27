@@ -3,6 +3,7 @@ package pl.su.su_backend.model.event;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,6 +28,7 @@ public class EventParticipant {
 	@Setter
 	@NoArgsConstructor
 	@AllArgsConstructor
+	@EqualsAndHashCode
 	public static class Id implements Serializable {
 		private UUID eventId;
 		private UUID userId;
