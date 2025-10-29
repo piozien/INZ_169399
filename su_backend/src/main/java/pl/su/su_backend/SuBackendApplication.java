@@ -7,7 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SuBackendApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SuBackendApplication.class, args);
+		SpringApplication app = new SpringApplication(SuBackendApplication.class);
+        app.setAdditionalProfiles("dev");
+        app.run(args);
 	}
 
 }
