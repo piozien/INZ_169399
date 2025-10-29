@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8080}
+  port: ${PORT}
 
 spring:
   datasource:
@@ -39,12 +39,9 @@ spring:
             client-secret: ${OAUTH2_MICROSOFT_CLIENT_SECRET}
             scope: ${OAUTH2_MICROSOFT_SCOPE}
             authorization-grant-type: ${OAUTH2_MICROSOFT_GRANT_TYPE}
-            redirect-uri: ${OAUTH2_MICROSOFT_REDIRECT_URI}
         provider:
           microsoft:
-            authorization-uri: ${OAUTH2_MICROSOFT_AUTHORIZATION_URI}
-            token-uri: ${OAUTH2_MICROSOFT_TOKEN_URI}
-            user-info-uri: ${OAUTH2_MICROSOFT_USER_INFO_URI}
+            issuer-uri: ${OAUTH2_MICROSOFT_ISSUER_URI}
             user-name-attribute: ${OAUTH2_MICROSOFT_USER_NAME_ATTRIBUTE}
 
 management:
