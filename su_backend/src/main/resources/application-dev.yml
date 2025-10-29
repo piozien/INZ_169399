@@ -1,0 +1,71 @@
+server:
+  port: ${PORT}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          microsoft:
+            client-id: ${OAUTH2_MICROSOFT_CLIENT_ID}
+            client-secret: ${OAUTH2_MICROSOFT_CLIENT_SECRET}
+            scope: ${OAUTH2_MICROSOFT_SCOPE}
+            authorization-grant-type: ${OAUTH2_MICROSOFT_GRANT_TYPE}
+        provider:
+          microsoft:
+            issuer-uri: ${OAUTH2_MICROSOFT_ISSUER_URI}
+            user-name-attribute: sub
+
+logging:
+  level:
+    org.springframework: INFO
+    pl.su.su_backend: DEBUG
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret}
+    expiration: ${JWT_EXPIRATION:3600000}
+    refresh-token:
+      expiration: ${JWT_REFRESH_EXPIRATION:2592000000}
+  password-reset:
+    expiration-hours: ${PASSWORD_RESET_EXPIRATION_HOURS:2}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  scheduling:
+    enabled: ${SCHEDULING_ENABLED:true}
+
+  microsoft:
+    graph:
+      base-url: ${MS_GRAPH_BASE_URL:https://graph.microsoft.com/v1.0}
+    calendar:
+      enabled: ${MS_CALENDAR_ENABLED:false}
+      use-shared-owner: ${MS_CALENDAR_USE_SHARED_OWNER:false}
+      owner-user-id: ${MS_CALENDAR_OWNER_USER_ID:}
+      events-path:
+        me: ${MS_CALENDAR_EVENTS_PATH_ME:/me/events}
+        user: ${MS_CALENDAR_EVENTS_PATH_USER:/users/%s/events}
+    client-id: ${MS_GRAPH_CLIENT_ID}
+    client-secret: ${MS_GRAPH_CLIENT_SECRET}
+    tenant-id: ${MS_GRAPH_TENANT_ID}
+    scope: ${MS_GRAPH_SCOPE}

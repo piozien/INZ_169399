@@ -112,7 +112,7 @@ public class UserService {
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Users user = usersRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() ->ApiException.unauthorized(
+                .orElseThrow(() -> ApiException.unauthorized(
                         ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
 
         if (StatusEnum.BLOCKED.equals(user.getStatus())) {
@@ -133,7 +133,7 @@ public class UserService {
         String email = jwtConfig.extractEmail(refreshTokenRequestDto.getRefreshToken());
         Users user = usersRepository.findByEmail(email)
                 .orElseThrow(() -> ApiException.unauthorized(
-                       ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
+                        ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
 
         if (!tokenService.isRefreshTokenValid(user.getId(), refreshTokenRequestDto.getRefreshToken())) {
             throw ApiException.unauthorized(
