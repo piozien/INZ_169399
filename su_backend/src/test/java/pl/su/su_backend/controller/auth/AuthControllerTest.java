@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.testsupport.Fixtures;
+import pl.su.su_backend.testsupport.OAuth2TestConfig;
 
 import java.util.UUID;
 
@@ -27,11 +29,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@Import(OAuth2TestConfig.class)
 public class AuthControllerTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
-
 
     @Autowired
     private UsersRepository usersRepository;
