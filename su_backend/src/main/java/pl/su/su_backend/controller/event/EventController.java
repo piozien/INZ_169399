@@ -9,8 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.dto.event.EventResponseDto;
@@ -34,10 +33,13 @@ public class EventController {
 
     @PostMapping
     @PreAuthorize("hasPermission(null, 'EVENT_CREATE')")
-    public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto dto, @AuthenticationPrincipal User principal,
-                                                        @RegisteredOAuth2AuthorizedClient("microsoft") OAuth2AuthorizedClient client) {
+    public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto dto,
+                                                        @AuthenticationPrincipal User principal,
+                                                        @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
         log.info("Creating event: {} by user: {}", dto.getTitle(), principal.getUsername());
-        String accessToken = client != null ? client.getAccessToken().getTokenValue() : null;
+        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
+                ? authorizationHeader.substring(7)
+                : null;
         UUID userId = userService.getCurrentUserId(principal.getUsername());
         EventResponseDto event = eventService.createEvent(dto, userId, accessToken);
         return ResponseEntity.status(HttpStatus.CREATED).body(event);
@@ -80,23 +82,29 @@ public class EventController {
 
     @PutMapping("/{eventId}")
     @PreAuthorize("hasPermission(null, 'EVENT_EDIT')")
-    public ResponseEntity<EventResponseDto> updateEvent(@PathVariable UUID eventId, @Valid @RequestBody EventRequestDto dto,
+    public ResponseEntity<EventResponseDto> updateEvent(@PathVariable UUID eventId,
+                                                        @Valid @RequestBody EventRequestDto dto,
                                                         @AuthenticationPrincipal User principal,
-                                                        @RegisteredOAuth2AuthorizedClient("microsoft") OAuth2AuthorizedClient client) {
+                                                        @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
         log.info("Updating event: {} by user: {}", eventId, principal.getUsername());
         UUID updatedById = userService.getCurrentUserId(principal.getUsername());
-        String accessToken = client != null ? client.getAccessToken().getTokenValue() : null;
+        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
+                ? authorizationHeader.substring(7)
+                : null;
         EventResponseDto event = eventService.updateEvent(eventId, dto, updatedById, accessToken);
         return ResponseEntity.ok(event);
     }
 
     @DeleteMapping("/{eventId}")
     @PreAuthorize("hasPermission(null, 'EVENT_DELETE')")
-    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId, @AuthenticationPrincipal User principal,
-                                            @RegisteredOAuth2AuthorizedClient("microsoft") OAuth2AuthorizedClient client) {
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId,
+                                            @AuthenticationPrincipal User principal,
+                                            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
         log.info("Deleting event: {} by user: {}", eventId, principal.getUsername());
         UUID deletedById = userService.getCurrentUserId(principal.getUsername());
-        String accessToken = client != null ? client.getAccessToken().getTokenValue() : null;
+        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
+                ? authorizationHeader.substring(7)
+                : null;
         eventService.deleteEvent(eventId, deletedById, accessToken);
         return ResponseEntity.noContent().build();
     }

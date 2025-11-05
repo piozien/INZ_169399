@@ -142,6 +142,14 @@ public final class Fixtures {
         return c;
     }
 
+
+    public static Classes schoolClassNoId(String name, String year) {
+        return Classes.builder()
+                .name(name)
+                .year(year)
+                .build();
+    }
+
     public static ClassesRequestDto classesRequestDto() {
         return ClassesRequestDto.builder()
                 .name("1A")
@@ -283,6 +291,17 @@ public final class Fixtures {
         return event;
     }
 
+    public static Event eventWithCreatorNoId(String title, String description, LocalDateTime start, LocalDateTime end, Users creator) {
+        return Event.builder()
+                .title(title)
+                .description(description)
+                .startDate(start)
+                .endDate(end)
+                .createdBy(creator)
+                .status(EventStatus.DRAFT)
+                .build();
+    }
+
     public static EventParticipant eventParticipant(Event event, Users user, EventParticipantRole role) {
         EventParticipant.Id id = new EventParticipant.Id(event.getId(), user.getId());
         return EventParticipant.builder()
@@ -333,6 +352,17 @@ public final class Fixtures {
         return role;
     }
 
+    public static Role roleNoId(RoleCode roleCode) {
+        return roleNoId(roleCode, "Test " + roleCode.name() + " role");
+    }
+
+    public static Role roleNoId(RoleCode roleCode, String description) {
+        return Role.builder()
+                .roleCode(roleCode)
+                .description(description)
+                .build();
+    }
+
     public static Permission permission(String name, String description) {
         Permission permission = Permission.builder()
                 .name(name)
@@ -340,6 +370,13 @@ public final class Fixtures {
                 .build();
         permission.setId(UUID.randomUUID());
         return permission;
+    }
+
+    public static Permission permissionNoId(String name, String description) {
+        return Permission.builder()
+                .name(name)
+                .description(description)
+                .build();
     }
 
     // ===== LOG METHODS =====

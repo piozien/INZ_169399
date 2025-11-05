@@ -15,14 +15,14 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
-
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    validate-on-migrate: false
+    baseline-version: 0
+    validate-on-migrate: true
+    clean-disabled: true
+    target: 1
 
   # Mail configuration for tests (MailHog)
   mail:

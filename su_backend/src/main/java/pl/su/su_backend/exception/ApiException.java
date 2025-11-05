@@ -1,7 +1,9 @@
 package pl.su.su_backend.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public class ApiException extends RuntimeException {
     private final ErrorCode code;
     private final HttpStatus status;
@@ -28,8 +30,10 @@ public class ApiException extends RuntimeException {
         return new ApiException(code, HttpStatus.BAD_REQUEST, msg);
     }
 
-    public ErrorCode getCode() { return code; }
-    public HttpStatus getStatus() { return status; }
+    public static ApiException notFound(ErrorCode code, String msg) {
+        return new ApiException(code, HttpStatus.NOT_FOUND, msg);
+    }
+
 }
 
 
