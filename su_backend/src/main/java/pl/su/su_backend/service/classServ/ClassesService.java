@@ -42,8 +42,8 @@ public class ClassesService {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
         }
         
-        classesRepository.findByName(dto.getName()).ifPresent(c -> {
-            throw ApiException.conflict(ErrorCode.VALIDATION_ERROR, "Class already exists");
+        classesRepository.findByNameAndYear(dto.getName(), dto.getYear()).ifPresent(c -> {
+            throw ApiException.conflict(ErrorCode.VALIDATION_ERROR, "Class with this name already exists for this year");
         });
         Classes c = ClassesMapper.toEntity(dto);
         return ClassesMapper.toResponse(classesRepository.save(c));
@@ -99,6 +99,13 @@ public class ClassesService {
         }
         
         Classes c = classesRepository.findById(id).orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Class not found"));
+        
+        classesRepository.findByNameAndYear(dto.getName(), dto.getYear()).ifPresent(existingClass -> {
+            if (!existingClass.getId().equals(id)) {
+                throw ApiException.conflict(ErrorCode.VALIDATION_ERROR, "Class with this name already exists for this year");
+            }
+        });
+        
         c.setName(dto.getName());
         c.setYear(dto.getYear());
         return ClassesMapper.toResponse(classesRepository.save(c));
