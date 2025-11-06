@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface ClassesRepository extends JpaRepository<Classes, UUID> {
     Optional<Classes> findByName(String name);
+    Optional<Classes> findByNameAndYear(String name, String year);
 }
