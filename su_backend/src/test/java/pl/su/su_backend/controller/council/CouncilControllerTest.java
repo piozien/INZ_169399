@@ -7,24 +7,29 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.flywaydb.core.Flyway;
 import pl.su.su_backend.config.JwtConfig;
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.roles.Role;
-import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
+import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
+import pl.su.su_backend.repositories.permission.PermissionRepository;
+import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.testsupport.Fixtures;
+import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.testsupport.OAuth2TestConfig;
+import pl.su.su_backend.testsupport.RolePermissionTestHelper;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,236 +38,203 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(OAuth2TestConfig.class)
 class CouncilControllerTest {
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+	@Autowired
+	private TestRestTemplate restTemplate;
 
-    @Autowired
-    private UsersRepository usersRepository;
+	@Autowired
+	private UsersRepository usersRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
+	@Autowired
+	private RoleRepository roleRepository;
 
-    @Autowired
-    private CouncilRepository councilRepository;
+	@Autowired
+	private UserRoleRepository userRoleRepository;
 
-    @Autowired
-    private JwtConfig jwtConfig;
+	@Autowired
+	private CouncilRepository councilRepository;
 
-    private Users testUser;
-    private Users przewodniczacyUser;
-    private Council testCouncil;
-    private String validToken;
-    private String przewodniczacyToken;
+	@Autowired
+	private JwtConfig jwtConfig;
 
-    @BeforeEach
-    void setUp() {
-        councilRepository.deleteAll();
-        usersRepository.deleteAll();
-        
-        testUser = Fixtures.userWithStatusNoId("Test User", "test@test.com", StatusEnum.CONFIRMED);
-        testUser.setAuthProvider(AuthProvider.LOCAL);
-        testUser = usersRepository.save(testUser);
+	@Autowired
+	private PermissionRepository permissionRepository;
 
-        Role uczenRole = roleRepository.findByRoleCode(RoleCode.UCZEN)
-                .orElseThrow(() -> new RuntimeException("UCZEN role not found"));
+	private Users opiekunUser;
+	private Users przewodniczacyUser;
+	private Users uczenUser;
+	private String opiekunToken;
+	private String przewodniczacyToken;
+	private String uczenToken;
+	private Council testCouncil;
 
-        UserRole userRole = UserRole.builder()
-                .user(testUser)
-                .role(uczenRole)
-                .assignedAt(LocalDateTime.now())
-                .build();
+	@Autowired
+	private Flyway flyway;
 
-        UserRole.Id userRoleId = new UserRole.Id();
-        userRoleId.setUserId(testUser.getId());
-        userRoleId.setRoleId(uczenRole.getId());
-        userRole.setId(userRoleId);
+	@BeforeEach
+	void setUp() {
+		flyway.migrate();
 
-        testUser.getUserRoles().add(userRole);
-        testUser = usersRepository.save(testUser);
+		userRoleRepository.deleteAll();
+		councilRepository.deleteAll();
+		usersRepository.deleteAll();
 
-        przewodniczacyUser = Fixtures.userWithStatusNoId("Przewodniczacy User", "przewodniczacy@test.com", StatusEnum.CONFIRMED);
-        przewodniczacyUser.setAuthProvider(AuthProvider.LOCAL);
-        przewodniczacyUser = usersRepository.save(przewodniczacyUser);
+		Role opiekunRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.OPIEKUN_SU,
+				PermissionCode.COUNCIL_VIEW,
+				PermissionCode.COUNCIL_VIEW_ALL,
+				PermissionCode.COUNCIL_CREATE,
+				PermissionCode.COUNCIL_EDIT,
+				PermissionCode.COUNCIL_MEMBER_MANAGE,
+				PermissionCode.COUNCIL_JOIN);
+		Role przewodniczacyRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.PRZEWODNICZACY_SU,
+				PermissionCode.COUNCIL_VIEW,
+				PermissionCode.COUNCIL_MEMBER_MANAGE,
+				PermissionCode.COUNCIL_JOIN);
+		Role uczenRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.UCZEN,
+				PermissionCode.COUNCIL_VIEW,
+				PermissionCode.COUNCIL_JOIN);
 
-        Role przewodniczacyRole = roleRepository.findByRoleCode(RoleCode.PRZEWODNICZACY_SU)
-                .orElseThrow(() -> new RuntimeException("PRZEWODNICZACY_SU role not found"));
+        opiekunUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
+                "Opiekun", "opiekun@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, opiekunRole);
+        przewodniczacyUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
+                "Przewodniczacy", "przewodniczacy@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, przewodniczacyRole);
+        uczenUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
+                "Uczen", "uczen@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, uczenRole);
 
-        UserRole przewodniczacyUserRole = UserRole.builder()
-                .user(przewodniczacyUser)
-                .role(przewodniczacyRole)
-                .assignedAt(LocalDateTime.now())
-                .build();
+		opiekunToken = jwtConfig.generateToken(opiekunUser.getEmail());
+		przewodniczacyToken = jwtConfig.generateToken(przewodniczacyUser.getEmail());
+		uczenToken = jwtConfig.generateToken(uczenUser.getEmail());
 
-        UserRole.Id przewodniczacyUserRoleId = new UserRole.Id();
-        przewodniczacyUserRoleId.setUserId(przewodniczacyUser.getId());
-        przewodniczacyUserRoleId.setRoleId(przewodniczacyRole.getId());
-        przewodniczacyUserRole.setId(przewodniczacyUserRoleId);
+		testCouncil = Fixtures.councilNoId("Test Council", "2025/26",
+				LocalDate.now(), LocalDate.now().plusMonths(6));
+		testCouncil.setJoinCode("SU20250001");
+		testCouncil.setIsActive(true);
+		testCouncil.getMembers().add(opiekunUser);
+		testCouncil = councilRepository.save(testCouncil);
+		councilRepository.flush();
+	}
 
-        przewodniczacyUser.getUserRoles().add(przewodniczacyUserRole);
-        przewodniczacyUser = usersRepository.save(przewodniczacyUser);
+	@Test
+    void createCouncil_ShouldReturnCreated_WhenOpiekunHasPermission() {
+        CouncilRequestDto request = Fixtures.councilRequestDto("Samorzad Uczniowski 2025/26", "2025/26",
+                LocalDate.parse("2025-12-01"), LocalDate.parse("2026-06-30"));
 
-        testCouncil = Fixtures.councilNoId("Test Council", "2025/26", 
-                LocalDate.now(), LocalDate.now().plusMonths(6));
-        testCouncil.setJoinCode("SU20250001");
-        testCouncil.setIsActive(true);
-        testCouncil = councilRepository.save(testCouncil);
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				"/api/council",
+				Fixtures.httpEntityWithToken(opiekunToken, request),
+				String.class
+		);
 
-        validToken = jwtConfig.generateToken(testUser.getEmail());
-        przewodniczacyToken = jwtConfig.generateToken(przewodniczacyUser.getEmail());
-    }
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+		assertThat(response.getBody()).contains("Samorzad Uczniowski 2025/26");
+	}
 
-    @Test
-    void joinCouncilByCode_ShouldJoinSuccessfully_WhenValidCode() throws Exception {
-        // Given
-        Council joinTestCouncil = Fixtures.councilNoId("Join Test Council", "2025/26", 
-                LocalDate.now(), LocalDate.now().plusMonths(6));
-        joinTestCouncil.setJoinCode("SU20250002");
-        joinTestCouncil.setIsActive(true);
-        joinTestCouncil = councilRepository.save(joinTestCouncil);
+	@Test
+    void createCouncil_ShouldReturnForbidden_WhenPrzewodniczacyNoPermission() {
+        CouncilRequestDto request = Fixtures.councilRequestDto("Samorzad Uczniowski 2025/26", "2025/26",
+                LocalDate.parse("2025-12-01"), LocalDate.parse("2026-06-30"));
 
-        // When
-        ResponseEntity<String> response = restTemplate.postForEntity("/api/council/join/" + joinTestCouncil.getJoinCode(), 
-                Fixtures.httpEntityWithToken(validToken), String.class);
-        
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        assertThat(response.getBody()).contains("Join Test Council");
-        assertThat(response.getBody()).contains("SU20250002");
-    }
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				"/api/council",
+				Fixtures.httpEntityWithToken(przewodniczacyToken, request),
+				String.class
+		);
 
-    @Test
-    void joinCouncilByCode_ShouldReturnBadRequest_WhenInvalidCode() throws Exception {
-        // When
-        ResponseEntity<String> response = restTemplate.postForEntity("/api/council/join/INVALID_CODE", 
-                Fixtures.httpEntityWithToken(validToken), String.class);
-        
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(400);
-    }
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+	}
 
-    @Test
-    void joinCouncilByCode_ShouldReturnUnauthorized_WhenNoToken() throws Exception {
-        // When
-        ResponseEntity<String> response = restTemplate.postForEntity("/api/council/join/" + testCouncil.getJoinCode(), 
-                Fixtures.httpEntityWithoutToken(""), String.class);
-        
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(401);
-    }
+	@Test
+    void createCouncil_ShouldReturnForbidden_WhenUczenNoPermission() {
+        CouncilRequestDto request = Fixtures.councilRequestDto("Samorzad Uczniowski 2025/26", "2025/26",
+                LocalDate.parse("2025-12-01"), LocalDate.parse("2026-06-30"));
 
-    @Test
-    void joinCouncilByCode_ShouldReturnBadRequest_WhenUserAlreadyMember() throws Exception {
-        // Given
-        testCouncil.getMembers().add(testUser);
-        testCouncil = councilRepository.save(testCouncil);
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				"/api/council",
+				Fixtures.httpEntityWithToken(uczenToken, request),
+				String.class
+		);
 
-        // When
-        ResponseEntity<String> response = restTemplate.postForEntity("/api/council/join/" + testCouncil.getJoinCode(), 
-                Fixtures.httpEntityWithToken(validToken), String.class);
-        
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(400);
-        assertThat(response.getBody()).contains("already a member");
-    }
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+	}
 
-    // PRZEWODNICZACY_SU
-    @Test
-    void createCouncil_ShouldReturnForbidden_WhenPrzewodniczacy() throws Exception {
-        // Given 
-        String councilJson = """
-            {
-                "name": "New Council",
-                "academicYear": "2025/26",
-                "startDate": "2025-01-01",
-                "endDate": "2025-12-31"
-            }
-            """;
+	@Test
+	void getCouncil_ShouldReturnOk_WhenOpiekunHasPermission() {
+		ResponseEntity<String> response = restTemplate.exchange(
+				"/api/council",
+				HttpMethod.GET,
+				Fixtures.httpEntityWithToken(opiekunToken),
+				String.class
+		);
 
-        // When
-        ResponseEntity<String> response = restTemplate.postForEntity("/api/council",
-                Fixtures.httpEntityWithToken(przewodniczacyToken, councilJson), String.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody()).contains("Test Council");
+	}
 
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(403);
-    }
+	@Test
+	void getCouncil_ShouldReturnOk_WhenUczenHasPermission() {
+		testCouncil.getMembers().add(uczenUser);
+		councilRepository.save(testCouncil);
+		councilRepository.flush();
 
-    @Test
-    void getAllCouncils_ShouldReturnCouncilsList_WhenPrzewodniczacy() throws Exception {
-        // Given
-        testCouncil.getMembers().add(przewodniczacyUser);
-        testCouncil = councilRepository.save(testCouncil);
+		ResponseEntity<String> response = restTemplate.exchange(
+				"/api/council",
+				HttpMethod.GET,
+				Fixtures.httpEntityWithToken(uczenToken),
+				String.class
+		);
 
-        // When
-        ResponseEntity<String> response = restTemplate.exchange("/api/council",
-                HttpMethod.GET,
-                Fixtures.httpEntityWithToken(przewodniczacyToken), String.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody()).contains("Test Council");
+	}
 
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        assertThat(response.getBody()).contains("Test Council");
-    }
+	@Test
+	void getCouncilById_ShouldReturnOk_WhenOpiekunHasPermission() {
+		ResponseEntity<String> response = restTemplate.exchange(
+				"/api/council/" + testCouncil.getId(),
+				HttpMethod.GET,
+				Fixtures.httpEntityWithToken(opiekunToken),
+				String.class
+		);
 
-    @Test
-    void getCouncilById_ShouldReturnCouncil_WhenPrzewodniczacy() throws Exception {
-        // Given 
-        testCouncil.getMembers().add(przewodniczacyUser);
-        testCouncil = councilRepository.save(testCouncil);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody()).contains("Test Council");
+	}
 
-        // When
-        ResponseEntity<String> response = restTemplate.exchange("/api/council/" + testCouncil.getId(),
-                HttpMethod.GET,
-                Fixtures.httpEntityWithToken(przewodniczacyToken), String.class);
+	@Test
+	void joinCouncilByCode_ShouldReturnOk_WhenUczenHasPermission() {
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				"/api/council/join/" + testCouncil.getJoinCode(),
+				Fixtures.httpEntityWithToken(uczenToken),
+				String.class
+		);
 
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        assertThat(response.getBody()).contains("Test Council");
-    }
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody()).contains("Test Council");
+	}
 
-    @Test
-    void createBudget_ShouldCreateSuccessfully_WhenPrzewodniczacy() throws Exception {
-        // Given - add przewodniczacy user to council as member
-        testCouncil.getMembers().add(przewodniczacyUser);
-        testCouncil = councilRepository.save(testCouncil);
+	@Test
+	void joinCouncilByCode_ShouldReturnBadRequest_WhenInvalidCode() {
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				"/api/council/join/INVALID_CODE",
+				Fixtures.httpEntityWithToken(uczenToken),
+				String.class
+		);
 
-        String budgetJson = """
-            {
-                "year": "2025",
-                "initialAmount": 1000.00
-            }
-            """;
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
 
-        // When
-        ResponseEntity<String> response = restTemplate.postForEntity("/api/council/" + testCouncil.getId() + "/budget",
-                Fixtures.httpEntityWithToken(przewodniczacyToken, budgetJson), String.class);
+	@Test
+	void joinCouncilByCode_ShouldReturnBadRequest_WhenUserAlreadyMember() {
+		testCouncil.getMembers().add(uczenUser);
+		councilRepository.save(testCouncil);
+		councilRepository.flush();
 
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(201);
-        assertThat(response.getBody()).contains("2025");
-    }
+		ResponseEntity<String> response = restTemplate.postForEntity(
+				"/api/council/join/" + testCouncil.getJoinCode(),
+				Fixtures.httpEntityWithToken(uczenToken),
+				String.class
+		);
 
-    @Test
-    void getBudget_ShouldReturnBudget_WhenPrzewodniczacy() throws Exception {
-        // Given - add przewodniczacy user to council as member and create budget
-        testCouncil.getMembers().add(przewodniczacyUser);
-        testCouncil = councilRepository.save(testCouncil);
-
-        // First create a budget
-        String budgetJson = """
-            {
-                "year": "2025",
-                "initialAmount": 1000.00
-            }
-            """;
-        restTemplate.postForEntity("/api/council/" + testCouncil.getId() + "/budget",
-                Fixtures.httpEntityWithToken(przewodniczacyToken, budgetJson), String.class);
-
-        // When
-        ResponseEntity<String> response = restTemplate.exchange("/api/council/" + testCouncil.getId() + "/budget",
-                HttpMethod.GET,
-                Fixtures.httpEntityWithToken(przewodniczacyToken), String.class);
-
-        // Then
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        assertThat(response.getBody()).contains("2025");
-    }
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody()).contains("already a member");
+	}
 }

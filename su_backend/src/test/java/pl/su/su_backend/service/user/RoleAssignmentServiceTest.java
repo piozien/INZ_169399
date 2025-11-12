@@ -20,6 +20,7 @@ import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.testsupport.Fixtures;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class RoleAssignmentServiceTest {
@@ -192,22 +194,24 @@ class RoleAssignmentServiceTest {
         String reason = "Demotion";
         UserRole actingUserRole = Fixtures.userRole(actingUser, adminRole);
         UserRole targetUserRole = Fixtures.userRole(targetUser, studentRole);
-        actingUser.setUserRoles(Set.of(actingUserRole));
-        targetUser.setUserRoles(Set.of(targetUserRole));
+        actingUser.setUserRoles(new HashSet<>(Set.of(actingUserRole)));
+        targetUser.setUserRoles(new HashSet<>(Set.of(targetUserRole)));
         
         when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));
         when(usersRepository.findById(targetUser.getId())).thenReturn(Optional.of(targetUser));
         when(roleRepository.findByRoleCode(RoleCode.UCZEN)).thenReturn(Optional.of(studentRole));
         when(permissionService.hasPermission(actingUser.getId(), PermissionCode.USER_ASSIGN_ROLE)).thenReturn(true);
         when(userRoleRepository.existsByUser_IdAndRole_Id(targetUser.getId(), studentRole.getId())).thenReturn(true);
-        doNothing().when(userRoleRepository).deleteByUser_IdAndRole_Id(any(UUID.class), any(UUID.class));
+        when(userRoleRepository.findById(new UserRole.Id(targetUser.getId(), studentRole.getId()))).thenReturn(Optional.of(targetUserRole));
+        doNothing().when(userRoleRepository).delete(any(UserRole.class));
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
         // When
         roleAssignmentService.revokeRole(actingUser.getId(), targetUser.getId(), RoleCode.UCZEN, reason);
 
         // Then
-        verify(userRoleRepository).deleteByUser_IdAndRole_Id(targetUser.getId(), studentRole.getId());
+        verify(userRoleRepository).delete(targetUserRole);
+        assertThat(targetUser.getUserRoles()).doesNotContain(targetUserRole);
         verify(activityLogService).log(eq(actingUser.getId()), eq(ActionType.REMOVE_ROLE), anyString());
     }
 
@@ -233,8 +237,8 @@ class RoleAssignmentServiceTest {
         String reason = "Demotion";
         UserRole actingUserRole = Fixtures.userRole(actingUser, studentRole);
         UserRole targetUserRole = Fixtures.userRole(targetUser, adminRole);
-        actingUser.setUserRoles(Set.of(actingUserRole));
-        targetUser.setUserRoles(Set.of(targetUserRole));
+        actingUser.setUserRoles(new HashSet<>(Set.of(actingUserRole)));
+        targetUser.setUserRoles(new HashSet<>(Set.of(targetUserRole)));
         
         when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));
         when(usersRepository.findById(targetUser.getId())).thenReturn(Optional.of(targetUser));
@@ -255,8 +259,8 @@ class RoleAssignmentServiceTest {
         String reason = "Demotion";
         UserRole actingUserRole = Fixtures.userRole(actingUser, adminRole);
         UserRole targetUserRole = Fixtures.userRole(targetUser, adminRole);
-        actingUser.setUserRoles(Set.of(actingUserRole));
-        targetUser.setUserRoles(Set.of(targetUserRole));
+        actingUser.setUserRoles(new HashSet<>(Set.of(actingUserRole)));
+        targetUser.setUserRoles(new HashSet<>(Set.of(targetUserRole)));
         
         when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));
         when(usersRepository.findById(targetUser.getId())).thenReturn(Optional.of(targetUser));
@@ -277,8 +281,8 @@ class RoleAssignmentServiceTest {
         // Given
         String reason = "Demotion";
         UserRole actingUserRole = Fixtures.userRole(actingUser, adminRole);
-        actingUser.setUserRoles(Set.of(actingUserRole));
-        targetUser.setUserRoles(Set.of());
+        actingUser.setUserRoles(new HashSet<>(Set.of(actingUserRole)));
+        targetUser.setUserRoles(new HashSet<>());
         
         when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));
         when(usersRepository.findById(targetUser.getId())).thenReturn(Optional.of(targetUser));
@@ -290,7 +294,7 @@ class RoleAssignmentServiceTest {
         roleAssignmentService.revokeRole(actingUser.getId(), targetUser.getId(), RoleCode.UCZEN, reason);
 
         // Then
-        verify(userRoleRepository, never()).deleteByUser_IdAndRole_Id(any(), any());
+        verify(userRoleRepository, never()).delete(any(UserRole.class));
         verify(activityLogService, never()).log(any(UUID.class), any(), anyString());
     }
 
@@ -302,8 +306,8 @@ class RoleAssignmentServiceTest {
         String reason = "Demotion";
         UserRole actingUserRole = Fixtures.userRole(actingUser, adminRole);
         UserRole targetUserRole = Fixtures.userRole(targetUser, studentRole);
-        actingUser.setUserRoles(Set.of(actingUserRole));
-        targetUser.setUserRoles(Set.of(targetUserRole));
+        actingUser.setUserRoles(new HashSet<>(Set.of(actingUserRole)));
+        targetUser.setUserRoles(new HashSet<>(Set.of(targetUserRole)));
         
         when(usersRepository.findByEmail(actingEmail)).thenReturn(Optional.of(actingUser));
         when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));
@@ -311,14 +315,16 @@ class RoleAssignmentServiceTest {
         when(roleRepository.findByRoleCode(RoleCode.UCZEN)).thenReturn(Optional.of(studentRole));
         when(permissionService.hasPermission(actingUser.getId(), PermissionCode.USER_ASSIGN_ROLE)).thenReturn(true);
         when(userRoleRepository.existsByUser_IdAndRole_Id(targetUser.getId(), studentRole.getId())).thenReturn(true);
-        doNothing().when(userRoleRepository).deleteByUser_IdAndRole_Id(any(UUID.class), any(UUID.class));
+        when(userRoleRepository.findById(new UserRole.Id(targetUser.getId(), studentRole.getId()))).thenReturn(Optional.of(targetUserRole));
+        doNothing().when(userRoleRepository).delete(any(UserRole.class));
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
         // When
         roleAssignmentService.revokeRoleByEmail(actingEmail, targetUser.getId(), RoleCode.UCZEN, reason);
 
         // Then
-        verify(userRoleRepository).deleteByUser_IdAndRole_Id(targetUser.getId(), studentRole.getId());
+        verify(userRoleRepository).delete(targetUserRole);
+        assertThat(targetUser.getUserRoles()).doesNotContain(targetUserRole);
         verify(activityLogService).log(eq(actingUser.getId()), eq(ActionType.REMOVE_ROLE), anyString());
     }
 

@@ -395,16 +395,6 @@ public class EventService {
         return result;
     }
 
-    @Transactional(readOnly = true)
-    public List<EventResponseDto> getApprovedEvents() {
-        log.info("Fetching approved events");
-        List<Event> events = eventRepository.findByStatusOrderByStartDateAsc(APPROVED);
-        List<EventResponseDto> result = new ArrayList<>();
-        for (Event event : events) {
-            result.add(EventMapper.toResponse(event));
-        }
-        return result;
-    }
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> getPendingEvents() {

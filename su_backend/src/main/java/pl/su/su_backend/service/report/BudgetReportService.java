@@ -24,6 +24,7 @@ import pl.su.su_backend.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -54,9 +55,11 @@ public class BudgetReportService {
         
         LocalDate fromDate = request.getFromDate() != null ? request.getFromDate() : LocalDate.now().minusMonths(1);
         LocalDate toDate = request.getToDate() != null ? request.getToDate() : LocalDate.now();
+        LocalDateTime startDateTime = fromDate.atStartOfDay();
+        LocalDateTime endDateTime = toDate.plusDays(1).atStartOfDay().minusNanos(1);
         
         List<ClassTransaction> transactions = classTransactionRepository.findByBudgetIdAndDateBetween(
-                budgetId, fromDate, toDate);
+                budgetId, startDateTime, endDateTime);
         
         return buildClassBudgetReport(budget, transactions, fromDate, toDate, request.isIncludeTransactions(), request.isShowPayerInfo());
     }
@@ -77,9 +80,11 @@ public class BudgetReportService {
         
         LocalDate fromDate = request.getFromDate() != null ? request.getFromDate() : LocalDate.now().minusMonths(1);
         LocalDate toDate = request.getToDate() != null ? request.getToDate() : LocalDate.now();
+        LocalDateTime startDateTime = fromDate.atStartOfDay();
+        LocalDateTime endDateTime = toDate.plusDays(1).atStartOfDay().minusNanos(1);
         
         List<CouncilTransaction> transactions = councilTransactionRepository.findByBudgetIdAndDateBetween(
-                budgetId, fromDate, toDate);
+                budgetId, startDateTime, endDateTime);
         
         return buildCouncilBudgetReport(budget, transactions, fromDate, toDate, request.isIncludeTransactions());
     }

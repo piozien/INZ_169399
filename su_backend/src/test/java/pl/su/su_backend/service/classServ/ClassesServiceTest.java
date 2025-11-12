@@ -60,7 +60,7 @@ class ClassesServiceTest {
         // Given
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(permissionService.hasPermission(testUser.getId(), PermissionCode.CLASS_CREATE)).thenReturn(true);
-        when(classesRepository.findByName(testRequestDto.getName())).thenReturn(Optional.empty());
+        when(classesRepository.findByNameAndYear(testRequestDto.getName(), testRequestDto.getYear())).thenReturn(Optional.empty());
         when(classesRepository.save(any(Classes.class))).thenReturn(savedClass);
 
         // When
@@ -74,7 +74,7 @@ class ClassesServiceTest {
 
         verify(usersRepository).findByEmail(testUser.getEmail());
         verify(permissionService).hasPermission(testUser.getId(), PermissionCode.CLASS_CREATE);
-        verify(classesRepository).findByName(testRequestDto.getName());
+        verify(classesRepository).findByNameAndYear(testRequestDto.getName(), testRequestDto.getYear());
         verify(classesRepository).save(any(Classes.class));
     }
 
@@ -114,7 +114,7 @@ class ClassesServiceTest {
         // Given
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(permissionService.hasPermission(testUser.getId(), PermissionCode.CLASS_CREATE)).thenReturn(true);
-        when(classesRepository.findByName(testRequestDto.getName())).thenReturn(Optional.of(savedClass));
+        when(classesRepository.findByNameAndYear(testRequestDto.getName(), testRequestDto.getYear())).thenReturn(Optional.of(savedClass));
 
         // When & Then
         ApiException exception = assertThrows(ApiException.class,
@@ -123,7 +123,7 @@ class ClassesServiceTest {
         assertEquals(ErrorCode.VALIDATION_ERROR, exception.getCode());
         verify(usersRepository).findByEmail(testUser.getEmail());
         verify(permissionService).hasPermission(testUser.getId(), PermissionCode.CLASS_CREATE);
-        verify(classesRepository).findByName(testRequestDto.getName());
+        verify(classesRepository).findByNameAndYear(testRequestDto.getName(), testRequestDto.getYear());
         verify(classesRepository, never()).save(any(Classes.class));
     }
 
@@ -256,6 +256,7 @@ class ClassesServiceTest {
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(permissionService.hasPermission(testUser.getId(), PermissionCode.CLASS_EDIT)).thenReturn(true);
         when(classesRepository.findById(savedClass.getId())).thenReturn(Optional.of(savedClass));
+        when(classesRepository.findByNameAndYear(updateDTO.getName(), updateDTO.getYear())).thenReturn(Optional.of(savedClass));
         when(classesRepository.save(any(Classes.class))).thenReturn(updatedClass);
 
         // When
