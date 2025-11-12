@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -15,8 +16,10 @@ public class LoginResponseDto {
 
     private String accessToken;
     private String refreshToken;
+    @Builder.Default
     private String tokenType = "Bearer";
     private Long expiresIn;
     private UserResponseDto user;
-    private List<String> roles;
+    @Builder.Default
+    private List<String> roles = new ArrayList<>();
 }

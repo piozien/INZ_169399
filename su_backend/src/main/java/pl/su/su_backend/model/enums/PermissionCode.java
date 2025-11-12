@@ -10,6 +10,7 @@ public enum PermissionCode {
     USER_EDIT("user.edit", "Edit users"),
     USER_DELETE("user.delete", "Delete users"),
     USER_ASSIGN_ROLE("user.assign_role", "Assign roles to users"),
+    ROLE_MANAGE("role.manage", "Manage user roles"),
 
     // Class Management
     CLASS_VIEW("class.view", "View classes"),

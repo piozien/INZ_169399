@@ -49,7 +49,7 @@ public class Council {
 	@Column(name = "join_code", nullable = false, unique = true)
 	private String joinCode;
 
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 		name = "council_members",
 		joinColumns = @JoinColumn(name = "council_id"),

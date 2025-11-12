@@ -106,7 +106,12 @@ public class RoleAssignmentService {
             return;
         }
 
-        userRoleRepository.deleteByUser_IdAndRole_Id(target.getId(), role.getId());
+        UserRole.Id id = new UserRole.Id(target.getId(), role.getId());
+        userRoleRepository.findById(id).ifPresent(userRole -> {
+            userRoleRepository.delete(userRole);
+            target.getUserRoles().removeIf(existing -> existing.getId().equals(id));
+        });
+        userRoleRepository.flush();
         activityLogService.log(actingUserId, ActionType.REMOVE_ROLE, "Revoked role " + roleCode + " from user " + targetUserId);
         log.info("Role {} revoked from user {} by {}. Reason: {}", roleCode, target.getEmail(), acting.getEmail(), reason);
     }
