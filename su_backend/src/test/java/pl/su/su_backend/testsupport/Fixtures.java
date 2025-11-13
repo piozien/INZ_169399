@@ -1,5 +1,6 @@
 package pl.su.su_backend.testsupport;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import pl.su.su_backend.dto.classes.ClassesRequestDto;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
@@ -37,6 +38,11 @@ import org.springframework.http.MediaType;
 
 public final class Fixtures {
 
+    public static final String RAW_TEST_PASSWORD = "password123";
+    public static final String RAW_NEW_PASSWORD = "newPassword123";
+    public static final String CLIENT_PASSWORD_SHA = DigestUtils.sha256Hex(RAW_TEST_PASSWORD);
+    public static final String CLIENT_NEW_PASSWORD_SHA = DigestUtils.sha256Hex(RAW_NEW_PASSWORD);
+
     private Fixtures() {
     }
 
@@ -60,13 +66,13 @@ public final class Fixtures {
     }
 
     public static Users userWithStatus(String fullName, String email, StatusEnum status) {
-        Users user = Users.builder().fullName(fullName).email(email).password("password123").status(status).build();
+        Users user = Users.builder().fullName(fullName).email(email).password(CLIENT_PASSWORD_SHA).status(status).build();
         user.setId(UUID.randomUUID());
         return user;
     }
 
     public static Users userWithStatusNoId(String fullName, String email, StatusEnum status) {
-        return Users.builder().fullName(fullName).email(email).password("password123").status(status).build();
+        return Users.builder().fullName(fullName).email(email).password(CLIENT_PASSWORD_SHA).status(status).build();
     }
 
     public static Council councilNoId(String name, String academicYear, LocalDate start, LocalDate end) {
@@ -183,7 +189,7 @@ public final class Fixtures {
     // ===== DTO METHODS =====
 
     public static UserRequestDto userRequestDto() {
-        return UserRequestDto.builder().fullName("Jan Kowalski").email("jan.kowalski@test.com").password("password123").authProvider(AuthProvider.LOCAL).build();
+        return UserRequestDto.builder().fullName("Jan Kowalski").email("jan.kowalski@test.com").password(CLIENT_PASSWORD_SHA).authProvider(AuthProvider.LOCAL).build();
     }
 
     public static UserRequestDto userRequestDto(String fullName, String email, String password) {
@@ -191,7 +197,7 @@ public final class Fixtures {
     }
 
     public static LoginRequestDto loginRequestDto() {
-        return LoginRequestDto.builder().email("jan.kowalski@test.com").password("password123").build();
+        return LoginRequestDto.builder().email("jan.kowalski@test.com").password(CLIENT_PASSWORD_SHA).build();
     }
 
     public static RefreshTokenRequestDto refreshTokenRequestDto(String refreshToken) {

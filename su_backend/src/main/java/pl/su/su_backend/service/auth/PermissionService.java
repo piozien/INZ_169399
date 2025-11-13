@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.user.UsersRepository;
 
@@ -23,6 +24,12 @@ public class PermissionService {
     public boolean hasPermission(UUID userId, PermissionCode permission) {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + userId));
+
+        if (user.getStatus() != StatusEnum.CONFIRMED) {
+            log.warn("User {} attempted to access resource with status: {}. Account must be activated.", 
+                    user.getEmail(), user.getStatus());
+            return false;
+        }
 
         log.info("User {} has {} roles", user.getEmail(), user.getUserRoles().size());
         
