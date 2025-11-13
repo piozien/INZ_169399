@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 function OAuth2RedirectHandlerComponent() {
@@ -13,33 +13,31 @@ function OAuth2RedirectHandlerComponent() {
     const error = searchParams.get("error");
 
     if (error) {
-      console.error("OAuth2 login error:", error);
-      router.push("/login?error=" + encodeURIComponent(error));
+      router.replace(`/oauth2/error?message=${encodeURIComponent(error)}`);
       return;
     }
 
     if (accessToken && refreshToken) {
-      console.log("Saving tokens...");
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      router.push("/dashboard");
-    } else {
-      console.warn("No tokens in the URL after OAuth2 redirection");
-      router.push("/login");
+      router.replace("/dashboard");
+      return;
     }
-  }, [searchParams, router]);
+
+    router.replace("/oauth2/error?message=Brak+tokenów+autoryzacyjnych");
+  }, [router, searchParams]);
 
   return null;
 }
 
 export default function OAuth2RedirectHandlerPage() {
   return (
-    <main>
-      <h1>Logowanie...</h1>
-      <p>Proszę czekać, trwa finalizowanie procesu logowania.</p>
-      <Suspense fallback={<div>Przetwarzanie danych...</div>}>
+    <section>
+      <h1>Finalizowanie logowania…</h1>
+      <p>Proszę czekać, trwa finalizowanie procesu uwierzytelniania.</p>
+      <Suspense fallback={<p>Przetwarzanie danych logowania…</p>}>
         <OAuth2RedirectHandlerComponent />
       </Suspense>
-    </main>
+    </section>
   );
 }

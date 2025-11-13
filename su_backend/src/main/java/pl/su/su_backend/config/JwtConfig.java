@@ -36,11 +36,21 @@ public class JwtConfig {
 
 
     public String generateToken(String email) {
-        return Jwts.builder()
+        return generateToken(email, null);
+    }
+
+    public String generateToken(String email, String fullName) {
+        io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration));
+        
+        if (fullName != null && !fullName.isEmpty()) {
+            builder.claim("name", fullName);
+        }
+        builder.claim("email", email);
+        
+        return builder.signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
