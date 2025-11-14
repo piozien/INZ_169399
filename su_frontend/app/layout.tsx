@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import QueryClientWrapper from "./query-client-provider";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: {
@@ -19,10 +19,11 @@ export default function RootLayout({
   return (
     <html lang="pl" suppressHydrationWarning>
       <body>
-        <QueryClientWrapper>
+        {}
+        <Providers>
           <Navbar />
           <main>{children}</main>
-        </QueryClientWrapper>
+        </Providers>
       </body>
     </html>
   );

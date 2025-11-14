@@ -9,10 +9,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 import pl.su.su_backend.dto.user.LoginResponseDto;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.service.user.UserService;
+import pl.su.su_backend.service.auth.CookieService;
 
 import java.io.IOException;
 
@@ -22,6 +22,7 @@ import java.io.IOException;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService;
+    private final CookieService cookieService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -42,12 +43,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         LoginResponseDto loginResponse = userService.loginOrRegisterOAuth2(email, name, externalId, AuthProvider.MICROSOFT);
 
-        String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/oauth2/success")
-                .queryParam("accessToken", loginResponse.getAccessToken())
-                .queryParam("refreshToken", loginResponse.getRefreshToken())
-                .build().toUriString();
+        cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());
 
-        response.sendRedirect(redirectUrl);
+        response.sendRedirect(frontendUrl + "/oauth2/success");
     }
 }
 

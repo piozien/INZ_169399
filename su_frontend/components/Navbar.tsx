@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { logout } from "@/lib/api";
 
 const publicNavigation = [
   { href: "/", label: "Strona główna" },
@@ -21,24 +24,23 @@ const protectedNavigation = [
 ];
 
 export default function Navbar() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: user, isLoading } = useCurrentUser();
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("accessToken");
-    setIsAuthenticated(!!token);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await logout();
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     router.push("/login");
   };
 
-  const navigation = mounted && isAuthenticated ? protectedNavigation : publicNavigation;
+  const isAuthenticated = mounted && !isLoading && user != null;
+  const navigation = isAuthenticated ? protectedNavigation : publicNavigation;
 
   return (
     <header>

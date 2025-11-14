@@ -100,9 +100,9 @@ public class SecurityConfig {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of(frontendUrl));
         cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With"));
+        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Cookie"));
         cfg.setAllowCredentials(true);
-        cfg.setExposedHeaders(List.of("Set-Cookie"));
+        cfg.setExposedHeaders(List.of("Set-Cookie","Cookie"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;

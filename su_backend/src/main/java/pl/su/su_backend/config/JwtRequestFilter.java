@@ -2,6 +2,7 @@ package pl.su.su_backend.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -51,12 +52,30 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     }
 
     private String parseJwt(HttpServletRequest request) {
-        String headerAuth = request.getHeader("Authorization");
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            log.info("Received {} cookies for request: {}", cookies.length, request.getRequestURI());
+            for (Cookie cookie : cookies) {
+                log.info("Cookie: {} = {}", cookie.getName(), cookie.getValue() != null ? "***" : "null");
+                if ("accessToken".equals(cookie.getName())) {
+                    String token = cookie.getValue();
+                    if (StringUtils.hasText(token)) {
+                        log.info("Found accessToken in cookie");
+                        return token;
+                    }
+                }
+            }
+        } else {
+            log.info("No cookies in request: {}", request.getRequestURI());
+        }
         
+        String headerAuth = request.getHeader("Authorization");
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
+            log.info("Found token in Authorization header");
             return headerAuth.substring(7);
         }
         
+        log.info("No JWT token found in request: {}", request.getRequestURI());
         return null;
     }
 

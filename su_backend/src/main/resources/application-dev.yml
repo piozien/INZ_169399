@@ -54,6 +54,9 @@ app:
     url: ${FRONTEND_URL:http://localhost:3000}
   scheduling:
     enabled: ${SCHEDULING_ENABLED:true}
+  cookie:
+    secure: false
+    same-site: Lax
 
   microsoft:
     graph:
