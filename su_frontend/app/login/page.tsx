@@ -18,7 +18,9 @@ function LoginForm() {
 
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
-      setSuccess("Rejestracja zakończona pomyślnie! Możesz się teraz zalogować.");
+      setSuccess(
+        "Rejestracja zakończona pomyślnie! Możesz się teraz zalogować."
+      );
     }
   }, [searchParams]);
 
@@ -50,10 +52,11 @@ function LoginForm() {
         throw new Error(message);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Wystąpił błąd podczas logowania");
+      setError(
+        err instanceof Error ? err.message : "Wystąpił błąd podczas logowania"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +105,11 @@ function LoginForm() {
 
       <div>
         <p>lub</p>
-        <button type="button" onClick={handleMicrosoftLogin} disabled={isLoading}>
+        <button
+          type="button"
+          onClick={handleMicrosoftLogin}
+          disabled={isLoading}
+        >
           Zaloguj się przez Microsoft
         </button>
       </div>
@@ -119,7 +126,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<main><h1>Ładowanie...</h1></main>}>
+    <Suspense
+      fallback={
+        <main>
+          <h1>Ładowanie...</h1>
+        </main>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

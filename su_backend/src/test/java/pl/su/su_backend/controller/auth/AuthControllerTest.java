@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,9 +26,9 @@ import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.testsupport.Fixtures;
 import pl.su.su_backend.testsupport.OAuth2TestConfig;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
+import static pl.su.su_backend.testsupport.CookieTestUtils.assertHasCookie;
+import static pl.su.su_backend.testsupport.CookieTestUtils.extractCookieValue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -183,9 +184,12 @@ public class AuthControllerTest {
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertNotNull(response.getBody().getAccessToken());
-        assertNotNull(response.getBody().getRefreshToken());
+        assertNull(response.getBody().getAccessToken());
+        assertNull(response.getBody().getRefreshToken());
         assertEquals(testUserEmail, response.getBody().getUser().getEmail());
+
+        assertHasCookie(response, "accessToken");
+        assertHasCookie(response, "refreshToken");
     }
 
     @Test
@@ -245,13 +249,13 @@ public class AuthControllerTest {
             LoginResponseDto.class
         );
 
-        String refreshToken = loginResponse.getBody().getRefreshToken();
+        String refreshTokenCookie = extractCookieValue(loginResponse, "refreshToken");
+        assertNotNull(refreshTokenCookie);
 
-        RefreshTokenRequestDto refreshRequest = RefreshTokenRequestDto.builder()
-            .refreshToken(refreshToken)
-            .build();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.COOKIE, "refreshToken=" + refreshTokenCookie);
 
-        HttpEntity<RefreshTokenRequestDto> request = new HttpEntity<>(refreshRequest);
+        HttpEntity<Void> request = new HttpEntity<>(null, headers);
 
         // When
         ResponseEntity<LoginResponseDto> response = restTemplate.postForEntity(
@@ -263,9 +267,11 @@ public class AuthControllerTest {
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertNotNull(response.getBody().getAccessToken());
-        assertNotNull(response.getBody().getRefreshToken());
+        assertNull(response.getBody().getAccessToken());
+        assertNull(response.getBody().getRefreshToken());
         assertEquals(testUserEmail, response.getBody().getUser().getEmail());
+        assertHasCookie(response, "accessToken");
+        assertHasCookie(response, "refreshToken");
     }
 
     @Test
@@ -289,32 +295,14 @@ public class AuthControllerTest {
     }
 
     @Test
-    void logout_ShouldReturnOk_WhenValidUserId() throws Exception {
-        // When
+    void logout_ShouldReturnOk_WhenCalledWithoutPrincipal() throws Exception {
         ResponseEntity<Void> response = restTemplate.postForEntity(
-            "/api/auth/logout?userId=" + testUser.getId(),
+            "/api/auth/logout",
             null,
             Void.class
         );
 
-        // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    void logout_ShouldReturnBadRequest_WhenInvalidUserId() throws Exception {
-        // Given
-        UUID invalidUserId = UUID.randomUUID();
-
-        // When
-        ResponseEntity<Void> response = restTemplate.postForEntity(
-            "/api/auth/logout?userId=" + invalidUserId,
-            null,
-            Void.class
-        );
-
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
 }

@@ -68,6 +68,9 @@ app:
     expiration: ${JWT_EXPIRATION}
     refresh-token:
       expiration: ${JWT_REFRESH_EXPIRATION}
+  cookie:
+    secure: true
+    same-site: None
 
   # Password Reset Configuration
   password-reset:

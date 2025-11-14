@@ -38,46 +38,46 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(OAuth2TestConfig.class)
 class CouncilControllerTest {
 
-	@Autowired
-	private TestRestTemplate restTemplate;
+    @Autowired
+    private TestRestTemplate restTemplate;
 
-	@Autowired
-	private UsersRepository usersRepository;
+    @Autowired
+    private UsersRepository usersRepository;
 
-	@Autowired
-	private RoleRepository roleRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
 	@Autowired
 	private UserRoleRepository userRoleRepository;
 
-	@Autowired
-	private CouncilRepository councilRepository;
+    @Autowired
+    private CouncilRepository councilRepository;
 
-	@Autowired
-	private JwtConfig jwtConfig;
+    @Autowired
+    private JwtConfig jwtConfig;
 
 	@Autowired
 	private PermissionRepository permissionRepository;
 
 	private Users opiekunUser;
-	private Users przewodniczacyUser;
+    private Users przewodniczacyUser;
 	private Users uczenUser;
 	private String opiekunToken;
 	private String przewodniczacyToken;
 	private String uczenToken;
-	private Council testCouncil;
+    private Council testCouncil;
 
 	@Autowired
 	private Flyway flyway;
 
-	@BeforeEach
-	void setUp() {
+    @BeforeEach
+    void setUp() {
 		flyway.migrate();
 
 		userRoleRepository.deleteAll();
-		councilRepository.deleteAll();
-		usersRepository.deleteAll();
-
+        councilRepository.deleteAll();
+        usersRepository.deleteAll();
+        
 		Role opiekunRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.OPIEKUN_SU,
 				PermissionCode.COUNCIL_VIEW,
 				PermissionCode.COUNCIL_VIEW_ALL,
@@ -104,16 +104,16 @@ class CouncilControllerTest {
 		przewodniczacyToken = jwtConfig.generateToken(przewodniczacyUser.getEmail());
 		uczenToken = jwtConfig.generateToken(uczenUser.getEmail());
 
-		testCouncil = Fixtures.councilNoId("Test Council", "2025/26",
-				LocalDate.now(), LocalDate.now().plusMonths(6));
-		testCouncil.setJoinCode("SU20250001");
-		testCouncil.setIsActive(true);
+        testCouncil = Fixtures.councilNoId("Test Council", "2025/26", 
+                LocalDate.now(), LocalDate.now().plusMonths(6));
+        testCouncil.setJoinCode("SU20250001");
+        testCouncil.setIsActive(true);
 		testCouncil.getMembers().add(opiekunUser);
-		testCouncil = councilRepository.save(testCouncil);
+        testCouncil = councilRepository.save(testCouncil);
 		councilRepository.flush();
-	}
+    }
 
-	@Test
+    @Test
     void createCouncil_ShouldReturnCreated_WhenOpiekunHasPermission() {
         CouncilRequestDto request = Fixtures.councilRequestDto("Samorzad Uczniowski 2025/26", "2025/26",
                 LocalDate.parse("2025-12-01"), LocalDate.parse("2026-06-30"));
@@ -126,9 +126,9 @@ class CouncilControllerTest {
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 		assertThat(response.getBody()).contains("Samorzad Uczniowski 2025/26");
-	}
+    }
 
-	@Test
+    @Test
     void createCouncil_ShouldReturnForbidden_WhenPrzewodniczacyNoPermission() {
         CouncilRequestDto request = Fixtures.councilRequestDto("Samorzad Uczniowski 2025/26", "2025/26",
                 LocalDate.parse("2025-12-01"), LocalDate.parse("2026-06-30"));
@@ -140,9 +140,9 @@ class CouncilControllerTest {
 		);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-	}
+    }
 
-	@Test
+    @Test
     void createCouncil_ShouldReturnForbidden_WhenUczenNoPermission() {
         CouncilRequestDto request = Fixtures.councilRequestDto("Samorzad Uczniowski 2025/26", "2025/26",
                 LocalDate.parse("2025-12-01"), LocalDate.parse("2026-06-30"));
@@ -154,9 +154,9 @@ class CouncilControllerTest {
 		);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-	}
+    }
 
-	@Test
+    @Test
 	void getCouncil_ShouldReturnOk_WhenOpiekunHasPermission() {
 		ResponseEntity<String> response = restTemplate.exchange(
 				"/api/council",
@@ -169,7 +169,7 @@ class CouncilControllerTest {
 		assertThat(response.getBody()).contains("Test Council");
 	}
 
-	@Test
+    @Test
 	void getCouncil_ShouldReturnOk_WhenUczenHasPermission() {
 		testCouncil.getMembers().add(uczenUser);
 		councilRepository.save(testCouncil);
@@ -184,22 +184,22 @@ class CouncilControllerTest {
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody()).contains("Test Council");
-	}
+    }
 
-	@Test
+    @Test
 	void getCouncilById_ShouldReturnOk_WhenOpiekunHasPermission() {
 		ResponseEntity<String> response = restTemplate.exchange(
 				"/api/council/" + testCouncil.getId(),
-				HttpMethod.GET,
+                HttpMethod.GET,
 				Fixtures.httpEntityWithToken(opiekunToken),
 				String.class
 		);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(response.getBody()).contains("Test Council");
-	}
+        assertThat(response.getBody()).contains("Test Council");
+    }
 
-	@Test
+    @Test
 	void joinCouncilByCode_ShouldReturnOk_WhenUczenHasPermission() {
 		ResponseEntity<String> response = restTemplate.postForEntity(
 				"/api/council/join/" + testCouncil.getJoinCode(),
@@ -208,10 +208,10 @@ class CouncilControllerTest {
 		);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(response.getBody()).contains("Test Council");
-	}
+        assertThat(response.getBody()).contains("Test Council");
+    }
 
-	@Test
+    @Test
 	void joinCouncilByCode_ShouldReturnBadRequest_WhenInvalidCode() {
 		ResponseEntity<String> response = restTemplate.postForEntity(
 				"/api/council/join/INVALID_CODE",
@@ -220,9 +220,9 @@ class CouncilControllerTest {
 		);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-	}
+    }
 
-	@Test
+    @Test
 	void joinCouncilByCode_ShouldReturnBadRequest_WhenUserAlreadyMember() {
 		testCouncil.getMembers().add(uczenUser);
 		councilRepository.save(testCouncil);

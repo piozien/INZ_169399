@@ -23,6 +23,7 @@ function ActivateComponent() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
         const response = await fetch(`${apiUrl}/api/auth/activate?token=${encodeURIComponent(token)}`, {
           method: "POST",
+          credentials: "include",
         });
 
         if (!response.ok) {
