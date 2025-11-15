@@ -3,7 +3,6 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { hashPassword } from "@/lib/security";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -31,7 +30,6 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const passwordDigest = await hashPassword(password);
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
       const response = await fetch(`${apiUrl}/api/auth/register`, {
         method: "POST",
@@ -42,7 +40,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           fullName,
           email,
-          password: passwordDigest,
+          password,
           authProvider: "LOCAL",
         }),
       });

@@ -134,11 +134,11 @@ class UserServiceTest {
         // Given
         LoginRequestDto loginDto = LoginRequestDto.builder()
                 .email(testUser.getEmail())
-                .password(Fixtures.CLIENT_PASSWORD_SHA)
+                .password(Fixtures.RAW_TEST_PASSWORD)
                 .build();
         testUser.setPassword("stored-password");
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(passwordEncoder.matches(eq(Fixtures.CLIENT_PASSWORD_SHA), eq("stored-password"))).thenReturn(true);
+        when(passwordEncoder.matches(eq(Fixtures.RAW_TEST_PASSWORD), eq("stored-password"))).thenReturn(true);
         when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
         when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);

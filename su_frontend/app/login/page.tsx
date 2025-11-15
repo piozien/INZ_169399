@@ -1,21 +1,37 @@
 "use client";
 
 import { useState, FormEvent, Suspense, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { hashPassword } from "@/lib/security";
-import { GraduationCap } from "lucide-react";
+
+import SchoolRounded from "@/components/icons/SchoolRounded";
+import MicrosoftIcon from "@/components/icons/MicrosoftIcon";
+import FormField from "@/components/FormField";
+import { LoginRequestDTO } from "@/types/auth.types";
+import { login } from "@/lib/api/auth";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      router.push("/dashboard");
+    },
+    onError: (err) => {
+      setError(
+        err instanceof Error ? err.message : "Wystąpił błąd podczas logowania"
+      );
+    },
+  });
 
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
@@ -28,39 +44,13 @@ function LoginForm() {
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
 
-    try {
-      const passwordDigest = await hashPassword(password);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password: passwordDigest }),
-      });
+    const payload: LoginRequestDTO = {
+      email: email,
+      password: password,
+    };
 
-      if (!response.ok) {
-        let message = "Nieprawidłowy email lub hasło";
-        try {
-          const errorData = await response.json();
-          message = errorData.message ?? message;
-        } catch {
-          // ignore
-        }
-        throw new Error(message);
-      }
-
-      router.push("/dashboard");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Wystąpił błąd podczas logowania"
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    loginMutation.mutate(payload);
   };
 
   const handleMicrosoftLogin = () => {
@@ -70,59 +60,84 @@ function LoginForm() {
   };
 
   return (
-    <main>
-      <div>
-        <GraduationCap size={60} />
-        <h1>Zaloguj się</h1>
-        <p>Użyj swojego adresu email i hasła, aby zalogować się do portalu samorządu szkolnego.</p>
+    <main className="min-h-screen flex items-center justify-center p-3">
+      <div className="w-full text-center max-w-[404px] rounded-[11.83px] px-3 py-10 flex flex-col justify-center items-center bg-secondarybg">
+        <div className="flex items-center flex-col">
+          <SchoolRounded />
+          <h1 className="text-[23.42px] font-semibold mt-4">Zaloguj się</h1>
+          <p className="mt-3 text-sm max-w-[350px] text-neutral-300">
+            Użyj swojego adresu email i hasła, aby zalogować się do portalu
+            samorządu szkolnego.
+          </p>
+        </div>
 
-        <form onSubmit={handleEmailLogin}>
-          <div>
-            <label htmlFor="email">ADRES E-MAIL:</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div>
-            <label htmlFor="password">Hasło:</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          {error && <p>{error}</p>}
-          {success && <p>{success}</p>}
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? "Logowanie..." : "Zaloguj się"}
+        <form
+          onSubmit={handleEmailLogin}
+          className="w-10/12 mt-8 flex flex-col gap-5"
+        >
+          <FormField
+            id="email"
+            label="ADRES E-MAIL:"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="jan@kowalski.pl"
+            disabled={loginMutation.isPending}
+          />
+
+          <FormField
+            id="password"
+            label="Hasło:"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Twoje hasło"
+            disabled={loginMutation.isPending}
+          />
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {success && <p className="text-green-500 text-sm">{success}</p>}
+
+          <button
+            type="submit"
+            disabled={loginMutation.isPending}
+            className="w-full py-4 px-3 rounded-[22px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors"
+          >
+            {loginMutation.isPending ? "Logowanie..." : "Zaloguj się"}
           </button>
         </form>
 
-        <div>
-          <p>lub</p>
+        <div className="w-10/12 mt-8 flex flex-col gap-5 items-center">
+          <div className="w-full flex items-center gap-4">
+            <div className="flex-1 border-b border-neutral-400" />
+            <p className="text-sm text-neutral-400">lub</p>
+            <div className="flex-1 border-b border-neutral-400" />
+          </div>
+
           <button
             type="button"
             onClick={handleMicrosoftLogin}
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
+            className="w-full py-4 px-3 rounded-[22px] bg-white cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3"
           >
-            Zaloguj się przez Microsoft
+            <MicrosoftIcon />
+            <span>Zaloguj się przez Microsoft</span>
           </button>
         </div>
 
-        <p>
-          Nie masz konta? <Link href="/register">Zarejestruj się</Link>
-        </p>
-        <p>
-          <Link href="/">Wróć do strony głównej</Link>
-        </p>
+        <div className="mt-auto pt-4 text-sm">
+          <p>
+            Nie masz konta?
+            <Link href="/register" className="text-secondary font-medium">
+              Zarejestruj się
+            </Link>
+          </p>
+          <p className="mt-2">
+            <Link href="/" className="text-secondary font-medium">
+              Wróć do strony głównej
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   );

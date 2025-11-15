@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
-import { logout } from "@/lib/api";
+import { logout } from "@/lib/api/auth";
 
 export default function DashboardPage() {
   const router = useRouter();

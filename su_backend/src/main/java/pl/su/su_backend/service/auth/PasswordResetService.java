@@ -14,13 +14,9 @@ import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.StatusEnum;
-import org.apache.commons.codec.digest.DigestUtils;
-
-
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -112,19 +108,10 @@ public class PasswordResetService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    private static final Pattern SHA256_PATTERN = Pattern.compile("^[0-9a-fA-F]{64}$");
-
     private String normalizeClientSecret(String candidate) {
         if (candidate == null) {
             return null;
         }
-        String trimmed = candidate.trim();
-        if (trimmed.isEmpty()) {
-            return trimmed;
-        }
-        if (SHA256_PATTERN.matcher(trimmed).matches()) {
-            return trimmed.toLowerCase();
-        }
-        return DigestUtils.sha256Hex(trimmed);
+        return candidate.trim();
     }
 }
