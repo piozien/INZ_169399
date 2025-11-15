@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import ConditionalNavbar from "@/components/ConditionalNavbar";
 import Providers from "./providers";
+import ThemeScript from "@/components/ThemeScript";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
@@ -18,10 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl" suppressHydrationWarning>
-      <body>
-        {}
+      <head>
+        <ThemeScript />
+      </head>
+      <body className={inter.className}>
         <Providers>
-          <Navbar />
+          <ConditionalNavbar />
           <main>{children}</main>
         </Providers>
       </body>

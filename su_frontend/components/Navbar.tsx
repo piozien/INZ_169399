@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { logout } from "@/lib/api";
+import { useTheme } from "@/lib/contexts/ThemeContext";
+import { Sun, Moon } from "lucide-react";
 
 const publicNavigation = [
   { href: "/", label: "Strona główna" },
@@ -28,6 +30,7 @@ export default function Navbar() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useCurrentUser();
+  const { theme, toggleTheme, mounted: themeMounted } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -51,6 +54,22 @@ export default function Navbar() {
               <Link href={item.href}>{item.label}</Link>
             </li>
           ))}
+          {themeMounted && (
+            <li>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Przełącz motyw"
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+            </li>
+          )}
           {mounted && isAuthenticated && (
             <li>
               <button type="button" onClick={handleLogout}>
