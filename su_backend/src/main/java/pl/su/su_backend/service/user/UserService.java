@@ -3,7 +3,6 @@ package pl.su.su_backend.service.user;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import io.jsonwebtoken.JwtException;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +29,6 @@ import pl.su.su_backend.repositories.classRep.ClassesRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.auth.TokenService;
-
-import java.util.regex.Pattern;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -571,19 +568,10 @@ public class UserService {
                 .build();
     }
 
-    private static final Pattern SHA256_PATTERN = Pattern.compile("^[0-9a-fA-F]{64}$");
-
     private String normalizeClientSecret(String candidate) {
         if (candidate == null) {
             return null;
         }
-        String trimmed = candidate.trim();
-        if (trimmed.isEmpty()) {
-            return trimmed;
-        }
-        if (SHA256_PATTERN.matcher(trimmed).matches()) {
-            return trimmed.toLowerCase();
-        }
-        return DigestUtils.sha256Hex(trimmed);
+        return candidate.trim();
     }
 }

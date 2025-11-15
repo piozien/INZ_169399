@@ -43,7 +43,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         LoginResponseDto loginResponse = userService.loginOrRegisterOAuth2(email, name, externalId, AuthProvider.MICROSOFT);
 
+        log.info("OAuth2 login successful for user: {}, setting auth cookies before redirect", email);
         cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());
+        log.info("Auth cookies set, redirecting to: {}", frontendUrl + "/oauth2/success");
 
         response.sendRedirect(frontendUrl + "/oauth2/success");
     }

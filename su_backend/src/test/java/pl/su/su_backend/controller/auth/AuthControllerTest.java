@@ -2,7 +2,6 @@ package pl.su.su_backend.controller.auth;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -62,7 +61,7 @@ public class AuthControllerTest {
         roleRepository.deleteAll();
 
         testUserEmail = "test@example.com";
-        testUserPassword = Fixtures.CLIENT_PASSWORD_SHA;
+        testUserPassword = Fixtures.RAW_TEST_PASSWORD;
 
         uczenRole = Role.builder()
             .roleCode(RoleCode.UCZEN)
@@ -75,7 +74,7 @@ public class AuthControllerTest {
             testUserEmail,
             StatusEnum.CONFIRMED
         );
-        testUser.setPassword(passwordEncoder.encode(Fixtures.CLIENT_PASSWORD_SHA));
+        testUser.setPassword(passwordEncoder.encode(Fixtures.RAW_TEST_PASSWORD));
         testUser.setAuthProvider(AuthProvider.LOCAL);
         testUser = usersRepository.save(testUser);
 
@@ -96,7 +95,7 @@ public class AuthControllerTest {
         UserRequestDto userRequest = UserRequestDto.builder()
             .fullName("New User")
             .email("newuser@example.com")
-            .password(Fixtures.CLIENT_PASSWORD_SHA)
+            .password(Fixtures.RAW_TEST_PASSWORD)
             .authProvider(AuthProvider.LOCAL)
             .build();
 
@@ -123,7 +122,7 @@ public class AuthControllerTest {
         UserRequestDto userRequest = UserRequestDto.builder()
             .fullName("Duplicate User")
             .email(testUserEmail) // existing email
-            .password(Fixtures.CLIENT_PASSWORD_SHA)
+            .password(Fixtures.RAW_TEST_PASSWORD)
             .authProvider(AuthProvider.LOCAL)
             .build();
 
@@ -197,7 +196,7 @@ public class AuthControllerTest {
         // Given
         LoginRequestDto loginRequest = LoginRequestDto.builder()
             .email(testUserEmail)
-            .password(DigestUtils.sha256Hex("wrongpassword"))
+            .password("wrongpassword")
             .build();
 
         HttpEntity<LoginRequestDto> request = new HttpEntity<>(loginRequest);
@@ -218,7 +217,7 @@ public class AuthControllerTest {
         // Given
         LoginRequestDto loginRequest = LoginRequestDto.builder()
             .email("nonexistent@example.com")
-            .password(Fixtures.CLIENT_PASSWORD_SHA)
+            .password(Fixtures.RAW_TEST_PASSWORD)
             .build();
 
         HttpEntity<LoginRequestDto> request = new HttpEntity<>(loginRequest);

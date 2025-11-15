@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
-import { logout } from "@/lib/api";
+import { logout } from "@/lib/api/auth";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 import { Sun, Moon } from "lucide-react";
 
