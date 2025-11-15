@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
+import { ThemeProvider } from "@/lib/contexts/ThemeContext";
 
 type Props = {
   children: ReactNode;
@@ -23,7 +24,7 @@ export default function Providers({ children }: Props) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <ThemeProvider>{children}</ThemeProvider>
     </QueryClientProvider>
   );
 }

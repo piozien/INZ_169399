@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #1A1208;
+    --foreground: #FFFFFF;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --title-color: #FFFFFF;
+  }
+  
+  .light {
+    --background: #FBF9F5;
+    --foreground: #1A1A1A;
+    --card-bg: rgba(26, 26, 26, 0.05);
+    --title-color: #1A1A1A;
+  }
+  
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-weight: 600;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  p {
+    font-weight: inherit;
+  }
+  
+  button {
+    border-radius: 53px;
+    background-color: #EDB78D;
+    color: #1A1A1A;
+  }
+  
+  label {
+    color: #BABABA;
+  }
+}

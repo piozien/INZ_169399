@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { hashPassword } from "@/lib/security";
+import { GraduationCap } from "lucide-react";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -70,56 +71,59 @@ function LoginForm() {
 
   return (
     <main>
-      <h1>Logowanie</h1>
-      <p>Wybierz metodę logowania.</p>
-
-      <form onSubmit={handleEmailLogin}>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Hasło:</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {success && <p style={{ color: "green" }}>{success}</p>}
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? "Logowanie..." : "Zaloguj się"}
-        </button>
-      </form>
-
       <div>
-        <p>lub</p>
-        <button
-          type="button"
-          onClick={handleMicrosoftLogin}
-          disabled={isLoading}
-        >
-          Zaloguj się przez Microsoft
-        </button>
-      </div>
+        <GraduationCap size={60} />
+        <h1>Zaloguj się</h1>
+        <p>Użyj swojego adresu email i hasła, aby zalogować się do portalu samorządu szkolnego.</p>
 
-      <p>
-        Nie masz konta? <Link href="/register">Zarejestruj się</Link>
-      </p>
-      <p>
-        <Link href="/">Wróć do strony głównej</Link>
-      </p>
+        <form onSubmit={handleEmailLogin}>
+          <div>
+            <label htmlFor="email">ADRES E-MAIL:</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <label htmlFor="password">Hasło:</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+          {error && <p>{error}</p>}
+          {success && <p>{success}</p>}
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? "Logowanie..." : "Zaloguj się"}
+          </button>
+        </form>
+
+        <div>
+          <p>lub</p>
+          <button
+            type="button"
+            onClick={handleMicrosoftLogin}
+            disabled={isLoading}
+          >
+            Zaloguj się przez Microsoft
+          </button>
+        </div>
+
+        <p>
+          Nie masz konta? <Link href="/register">Zarejestruj się</Link>
+        </p>
+        <p>
+          <Link href="/">Wróć do strony głównej</Link>
+        </p>
+      </div>
     </main>
   );
 }
