@@ -1,136 +1,180 @@
-"use client";
+'use client';
 
-import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState, FormEvent, Suspense, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export default function RegisterPage() {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+import SchoolRounded from '@/components/icons/SchoolRounded';
+import FormField from '@/components/FormField';
+import { UserRequestDTO } from '@/types/auth.types';
+
+async function registerUser(payload: UserRequestDTO): Promise<void> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const response = await fetch(`${apiUrl}/api/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      ...payload,
+      authProvider: 'LOCAL',
+    }),
+  });
+
+  if (!response.ok) {
+    let errorMessage =
+      'Rejestracja nie powiodła się. Sprawdź dane i spróbuj ponownie.';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // ignore
+    }
+    throw new Error(errorMessage);
+  }
+}
+
+function RegistrationForm() {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleRegister = async (e: FormEvent) => {
+  useEffect(() => {
+    if (confirmPassword && password !== confirmPassword) {
+      setError('Hasła nie są identyczne');
+    } else if (error === 'Hasła nie są identyczne') {
+      setError(null);
+    }
+  }, [password, confirmPassword]);
+
+  const registrationMutation = useMutation<void, Error, UserRequestDTO>({
+    mutationFn: registerUser,
+    onSuccess: () => {
+      router.push('/login?registered=true');
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const handleRegister = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Hasła nie są identyczne");
+      setError('Hasła nie są identyczne');
       return;
     }
 
     if (password.length < 8) {
-      setError("Hasło musi mieć co najmniej 8 znaków");
+      setError('Hasło musi mieć co najmniej 8 znaków');
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const response = await fetch(`${apiUrl}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          fullName,
-          email,
-          password,
-          authProvider: "LOCAL",
-        }),
-      });
-
-      if (!response.ok) {
-        let errorMessage = "Rejestracja nie powiodła się. Sprawdź dane i spróbuj ponownie.";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-        }
-        throw new Error(errorMessage);
-      }
-
-      router.push("/login?registered=true");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Wystąpił błąd podczas rejestracji");
-    } finally {
-      setIsLoading(false);
-    }
+    registrationMutation.mutate({ fullName, email, password });
   };
 
   return (
-    <main>
-      <h1>Rejestracja</h1>
-      <p>Utwórz nowe konto w portalu samorządu szkolnego.</p>
+    <main className="min-h-screen flex items-center justify-center p-3">
+      <div className="w-full text-center max-w-[404px] rounded-[11.83px] px-3 py-7 flex flex-col justify-center items-center bg-secondarybg">
+        <div className="flex items-center flex-col">
+          <SchoolRounded />
+          <h1 className="text-[23.42px] font-semibold mt-4">Zarejestruj się</h1>
+          <p className="mt-3 text-sm max-w-[350px] text-txtcolor-300">
+            Utwórz nowe konto w portalu samorządu szkolnego.
+          </p>
+        </div>
 
-      <form onSubmit={handleRegister}>
-        <div>
-          <label htmlFor="fullName">Imię i nazwisko:</label>
-          <input
+        <form
+          onSubmit={handleRegister}
+          className="w-10/12 mt-8 flex flex-col gap-4"
+        >
+          <FormField
             id="fullName"
+            label="IMIĘ I NAZWISKO:"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            required
-            minLength={2}
-            maxLength={100}
-            disabled={isLoading}
+            placeholder="Jan Kowalski"
+            disabled={registrationMutation.isPending}
           />
-        </div>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
+
+          <FormField
             id="email"
+            label="ADRES E-MAIL:"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading}
+            placeholder="jan@kowalski.pl"
+            disabled={registrationMutation.isPending}
           />
-        </div>
-        <div>
-          <label htmlFor="password">Hasło:</label>
-          <input
+
+          <FormField
             id="password"
+            label="HASŁO:"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            disabled={isLoading}
+            placeholder="Minimum 8 znaków"
+            disabled={registrationMutation.isPending}
           />
-          <small>Minimum 8 znaków</small>
-        </div>
-        <div>
-          <label htmlFor="confirmPassword">Potwierdź hasło:</label>
-          <input
+
+          <FormField
             id="confirmPassword"
+            label="POTWIERDŹ HASŁO:"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            disabled={isLoading}
+            placeholder="Powtórz hasło"
+            disabled={registrationMutation.isPending}
           />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? "Rejestrowanie..." : "Zarejestruj się"}
-        </button>
-      </form>
 
-      <p>
-        Masz już konto? <Link href="/login">Zaloguj się</Link>
-      </p>
-      <p>
-        <Link href="/">Wróć do strony głównej</Link>
-      </p>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={registrationMutation.isPending}
+            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center"
+          >
+            {registrationMutation.isPending
+              ? 'Rejestrowanie...'
+              : 'Zarejestruj się'}
+          </button>
+        </form>
+
+        <div className="mt-auto pt-4 text-sm">
+          <p>
+            Masz już konto?{' '}
+            <Link href="/login" className="text-secondary font-medium">
+              Zaloguj się
+            </Link>
+          </p>
+          <p className="mt-2">
+            <Link href="/" className="text-secondary font-medium">
+              Wróć do strony głównej
+            </Link>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
 
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <main>
+          <h1>Ładowanie...</h1>
+        </main>
+      }
+    >
+      <RegistrationForm />
+    </Suspense>
+  );
+}

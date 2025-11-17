@@ -28,4 +28,3 @@ export default function Providers({ children }: Props) {
     </QueryClientProvider>
   );
 }
-

@@ -4,20 +4,20 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function OAuth2RedirectHandlerPage() {
+export default function OAuth2SuccessPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-
-    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-    router.replace("/dashboard");
+    // Invalidate the currentUser query to force a refetch
+    queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    // Redirect to the dashboard immediately
+    router.push('/dashboard');
   }, [router, queryClient]);
 
   return (
-    <section>
-      <h1>Finalizowanie logowania…</h1>
-      <p>Proszę czekać, trwa finalizowanie procesu uwierzytelniania.</p>
-    </section>
+    <div className="min-h-screen flex items-center justify-center">
+      <p>Przekierowywanie...</p>
+    </div>
   );
 }

@@ -7,7 +7,9 @@ import Link from "next/link";
 function ActivateComponent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading",
+  );
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
@@ -20,25 +22,37 @@ function ActivateComponent() {
 
     const activateAccount = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-        const response = await fetch(`${apiUrl}/api/auth/activate?token=${encodeURIComponent(token)}`, {
-          method: "POST",
-          credentials: "include",
-        });
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const response = await fetch(
+          `${apiUrl}/api/auth/activate?token=${encodeURIComponent(token)}`,
+          {
+            method: "POST",
+            credentials: "include",
+          },
+        );
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || "Aktywacja konta nie powiodła się.");
+          throw new Error(
+            errorData.message || "Aktywacja konta nie powiodła się.",
+          );
         }
 
         setStatus("success");
-        setMessage("Konto zostało pomyślnie aktywowane! Możesz się teraz zalogować.");
+        setMessage(
+          "Konto zostało pomyślnie aktywowane! Możesz się teraz zalogować.",
+        );
         setTimeout(() => {
           router.push("/login");
         }, 3000);
       } catch (err) {
         setStatus("error");
-        setMessage(err instanceof Error ? err.message : "Wystąpił błąd podczas aktywacji konta.");
+        setMessage(
+          err instanceof Error
+            ? err.message
+            : "Wystąpił błąd podczas aktywacji konta.",
+        );
       }
     };
 
@@ -83,9 +97,14 @@ function ActivateComponent() {
 
 export default function ActivatePage() {
   return (
-    <Suspense fallback={<main><h1>Ładowanie...</h1></main>}>
+    <Suspense
+      fallback={
+        <main>
+          <h1>Ładowanie...</h1>
+        </main>
+      }
+    >
       <ActivateComponent />
     </Suspense>
   );
 }
-

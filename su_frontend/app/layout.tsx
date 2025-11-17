@@ -25,13 +25,11 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className={inter.className}>
-        <div className="bg-background text-foreground">
-          <Providers>
-            <ConditionalNavbar />
-            <main>{children}</main>
-          </Providers>
-        </div>
+      <body className={`${inter.className} bg-background text-foreground`}>
+        <Providers>
+          <ConditionalNavbar />
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );

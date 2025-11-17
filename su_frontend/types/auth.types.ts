@@ -1,4 +1,10 @@
-export interface LoginRequestDTO{
-    email: string;
-    password: string;
+export interface LoginRequestDTO {
+  email: string;
+  password: string;
+}
+
+export interface UserRequestDTO {
+  fullName: string;
+  email: string;
+  password: string;
 }
