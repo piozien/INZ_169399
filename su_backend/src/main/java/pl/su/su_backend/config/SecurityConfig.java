@@ -79,7 +79,7 @@ public class SecurityConfig {
                         .failureHandler(failureHandler)
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
                 );
 
         // Add JWT filter

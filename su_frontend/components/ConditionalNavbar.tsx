@@ -3,14 +3,14 @@
 import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
 
-const HIDDEN_PATHS = ["/login", "/register", "/"];
+const SHOWN_PATHS = ["/dashboard"];
 
 export default function ConditionalNavbar() {
   const pathname = usePathname();
 
-  if (HIDDEN_PATHS.includes(pathname)) {
-    return null;
+  if (SHOWN_PATHS.includes(pathname)) {
+    return <Navbar />;
   }
 
-  return <Navbar />;
+  return null;
 }

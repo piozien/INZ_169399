@@ -21,7 +21,7 @@ function LoginForm() {
 
   const registered = searchParams.get('registered') === 'true';
   const successMessage = registered
-    ? 'Rejestracja zakończona pomyślnie! Możesz się teraz zalogować.'
+    ? 'Rejestracja zakończona pomyślnie! Na podany adres email wysłano link aktywacyjny'
     : null;
 
   const loginMutation = useMutation({
@@ -103,6 +103,14 @@ function LoginForm() {
           >
             {loginMutation.isPending ? 'Logowanie...' : 'Zaloguj się'}
           </button>
+          <div className="text-center text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-secondary font-medium hover:underline"
+            >
+              Zapomniałeś hasła?
+            </Link>
+          </div>
         </form>
 
         <div className="w-10/12 mt-8 flex flex-col gap-5 items-center">
@@ -126,12 +134,18 @@ function LoginForm() {
         <div className="mt-auto pt-4 text-sm">
           <p>
             Nie masz konta?{' '}
-            <Link href="/register" className="text-secondary font-medium">
+            <Link
+              href="/register"
+              className="text-secondary font-medium hover:underline"
+            >
               Zarejestruj się
             </Link>
           </p>
           <p className="mt-2">
-            <Link href="/" className="text-secondary font-medium">
+            <Link
+              href="/"
+              className="text-secondary font-medium hover:underline"
+            >
               Wróć do strony głównej
             </Link>
           </p>

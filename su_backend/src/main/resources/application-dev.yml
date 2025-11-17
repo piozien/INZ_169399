@@ -70,7 +70,7 @@ app:
       expiration: ${JWT_REFRESH_EXPIRATION:2592000000}
   cookie:
     secure: false  # false for localhost development
-    same-site: None  # None required for cross-origin OAuth2 redirects (localhost exception)
+    same-site: Lax  # None required for cross-origin OAuth2 redirects (localhost exception)
 
   # Password Reset Configuration
   password-reset:

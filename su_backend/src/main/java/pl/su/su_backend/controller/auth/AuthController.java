@@ -8,11 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.user.*;
 import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.user.UserService;
 import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.service.auth.CookieService;
@@ -35,7 +35,8 @@ public class AuthController {
     private final JwtConfig jwtConfig;
     private final UsersRepository usersRepository;
     private final CookieService cookieService;
-    
+    private final AuthenticationService authenticationService;
+
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
@@ -85,10 +86,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal User principal,
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal Object principal,
                                        HttpServletResponse response) {
         if (principal != null) {
-            UUID userId = userService.getCurrentUserId(principal.getUsername());
+            String email = authenticationService.getEmailFromPrincipal(principal);
+            UUID userId = userService.getCurrentUserId(email);
             log.info("Logout request for user ID: {}", userId);
             userService.logoutUser(userId);
         }
