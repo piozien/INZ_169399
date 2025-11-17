@@ -7,10 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.budget.ClassBudgetRequestDto;
 import pl.su.su_backend.dto.budget.ClassBudgetResponseDto;
+import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.budget.ClassBudgetService;
 import pl.su.su_backend.service.user.UserService;
 
@@ -24,14 +24,16 @@ public class ClassBudgetController {
 
     private final ClassBudgetService budgetService;
     private final UserService userService;
+    private final AuthenticationService authenticationService;
 
     @PostMapping("/{classId}/budget")
     @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_CREATE')")
     public ResponseEntity<ClassBudgetResponseDto> createBudget(@PathVariable UUID classId,
                                                               @Valid @RequestBody ClassBudgetRequestDto dto,
-                                                              @AuthenticationPrincipal User principal) {
-        log.info("Creating budget for class {} by user {}", classId, principal.getUsername());
-        UUID userId = userService.getCurrentUserId(principal.getUsername());
+                                                              @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Creating budget for class {} by user {}", classId, email);
+        UUID userId = userService.getCurrentUserId(email);
         ClassBudgetResponseDto budget = budgetService.createBudget(classId, dto, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(budget);
     }
@@ -39,9 +41,10 @@ public class ClassBudgetController {
     @GetMapping("/{classId}/budget")
     @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_VIEW')")
     public ResponseEntity<ClassBudgetResponseDto> getBudget(@PathVariable UUID classId,
-                                                           @AuthenticationPrincipal User principal) {
-        log.info("Fetching budget for class: {} by user: {}", classId, principal.getUsername());
-        ClassBudgetResponseDto budget = budgetService.getBudget(classId, principal.getUsername());
+                                                           @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Fetching budget for class: {} by user: {}", classId, email);
+        ClassBudgetResponseDto budget = budgetService.getBudget(classId, email);
         return ResponseEntity.ok(budget);
     }
 
@@ -49,9 +52,10 @@ public class ClassBudgetController {
     @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_EDIT')")
     public ResponseEntity<ClassBudgetResponseDto> updateBudget(@PathVariable UUID budgetId,
                                                               @Valid @RequestBody ClassBudgetRequestDto dto,
-                                                              @AuthenticationPrincipal User principal) {
-        log.info("Updating budget {} by user {}", budgetId, principal.getUsername());
-        UUID userId = userService.getCurrentUserId(principal.getUsername());
+                                                              @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Updating budget {} by user {}", budgetId, email);
+        UUID userId = userService.getCurrentUserId(email);
         ClassBudgetResponseDto budget = budgetService.updateBudget(budgetId, dto, userId);
         return ResponseEntity.ok(budget);
     }
@@ -59,9 +63,10 @@ public class ClassBudgetController {
     @DeleteMapping("/{budgetId}")
     @PreAuthorize("hasPermission(null, 'CLASS_BUDGET_DELETE')")
     public ResponseEntity<Void> deleteBudget(@PathVariable UUID budgetId,
-                                           @AuthenticationPrincipal User principal) {
-        log.info("Deleting budget {} by user {}", budgetId, principal.getUsername());
-        UUID userId = userService.getCurrentUserId(principal.getUsername());
+                                           @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Deleting budget {} by user {}", budgetId, email);
+        UUID userId = userService.getCurrentUserId(email);
         budgetService.deleteBudget(budgetId, userId);
         return ResponseEntity.noContent().build();
     }

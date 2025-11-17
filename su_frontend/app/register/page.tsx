@@ -150,12 +150,12 @@ function RegistrationForm() {
         <div className="mt-auto pt-4 text-sm">
           <p>
             Masz już konto?{' '}
-            <Link href="/login" className="text-secondary font-medium">
+            <Link href="/login" className="text-secondary font-medium hover:underline">
               Zaloguj się
             </Link>
           </p>
           <p className="mt-2">
-            <Link href="/" className="text-secondary font-medium">
+            <Link href="/" className="text-secondary font-medium hover:underline">
               Wróć do strony głównej
             </Link>
           </p>

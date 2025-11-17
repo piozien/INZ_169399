@@ -8,13 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.dto.event.EventResponseDto;
 import pl.su.su_backend.dto.event.ParticipantResponseDto;
 import pl.su.su_backend.model.enums.EventParticipantRole;
+import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.event.EventService;
 import pl.su.su_backend.service.user.UserService;
 
@@ -30,26 +30,29 @@ public class EventController {
 
     private final EventService eventService;
     private final UserService userService;
+    private final AuthenticationService authenticationService;
 
     @PostMapping
     @PreAuthorize("hasPermission(null, 'EVENT_CREATE')")
     public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto dto,
-                                                        @AuthenticationPrincipal User principal,
+                                                        @AuthenticationPrincipal Object principal,
                                                         @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
-        log.info("Creating event: {} by user: {}", dto.getTitle(), principal.getUsername());
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Creating event: {} by user: {}", dto.getTitle(), email);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
                 ? authorizationHeader.substring(7)
                 : null;
-        UUID userId = userService.getCurrentUserId(principal.getUsername());
+        UUID userId = userService.getCurrentUserId(email);
         EventResponseDto event = eventService.createEvent(dto, userId, accessToken);
         return ResponseEntity.status(HttpStatus.CREATED).body(event);
     }
 
     @GetMapping
     @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
-    public ResponseEntity<List<EventResponseDto>> getAllEvents(@AuthenticationPrincipal User principal) {
-        log.info("Fetching all approved events for user: {}", principal.getUsername());
-        List<EventResponseDto> events = eventService.getAllEvents(principal.getUsername());
+    public ResponseEntity<List<EventResponseDto>> getAllEvents(@AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Fetching all approved events for user: {}", email);
+        List<EventResponseDto> events = eventService.getAllEvents(email);
         return ResponseEntity.ok(events);
     }
 
@@ -74,9 +77,10 @@ public class EventController {
 
     @GetMapping("/{eventId}")
     @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
-    public ResponseEntity<EventResponseDto> getEventById(@PathVariable UUID eventId, @AuthenticationPrincipal User principal) {
-        log.info("Fetching event with ID: {} by user: {}", eventId, principal.getUsername());
-        EventResponseDto event = eventService.getEventById(eventId, principal.getUsername());
+    public ResponseEntity<EventResponseDto> getEventById(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Fetching event with ID: {} by user: {}", eventId, email);
+        EventResponseDto event = eventService.getEventById(eventId, email);
         return ResponseEntity.ok(event);
     }
 
@@ -84,10 +88,11 @@ public class EventController {
     @PreAuthorize("hasPermission(null, 'EVENT_EDIT')")
     public ResponseEntity<EventResponseDto> updateEvent(@PathVariable UUID eventId,
                                                         @Valid @RequestBody EventRequestDto dto,
-                                                        @AuthenticationPrincipal User principal,
+                                                        @AuthenticationPrincipal Object principal,
                                                         @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
-        log.info("Updating event: {} by user: {}", eventId, principal.getUsername());
-        UUID updatedById = userService.getCurrentUserId(principal.getUsername());
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Updating event: {} by user: {}", eventId, email);
+        UUID updatedById = userService.getCurrentUserId(email);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
                 ? authorizationHeader.substring(7)
                 : null;
@@ -98,10 +103,11 @@ public class EventController {
     @DeleteMapping("/{eventId}")
     @PreAuthorize("hasPermission(null, 'EVENT_DELETE')")
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId,
-                                            @AuthenticationPrincipal User principal,
+                                            @AuthenticationPrincipal Object principal,
                                             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
-        log.info("Deleting event: {} by user: {}", eventId, principal.getUsername());
-        UUID deletedById = userService.getCurrentUserId(principal.getUsername());
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Deleting event: {} by user: {}", eventId, email);
+        UUID deletedById = userService.getCurrentUserId(email);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
                 ? authorizationHeader.substring(7)
                 : null;
@@ -109,10 +115,14 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{eventId}/participants/{userId}")
-    public ResponseEntity<ParticipantResponseDto> addParticipant(@PathVariable UUID eventId, @PathVariable UUID userId,
+    @PostMapping("/{eventId}/participants/join")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ParticipantResponseDto> addParticipant(@PathVariable UUID eventId,
                                                                  @RequestParam EventParticipantRole role,
-                                                                 @RequestParam(defaultValue = "false") boolean confirmed) {
+                                                                 @RequestParam(defaultValue = "false") boolean confirmed,
+                                                                 @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        UUID userId = userService.getCurrentUserId(email);
         log.info("Adding participant {} to event {} with role {}", userId, eventId, role);
         ParticipantResponseDto participant = eventService.addParticipant(eventId, userId, role, confirmed);
         return ResponseEntity.ok(participant);
@@ -121,9 +131,10 @@ public class EventController {
     @DeleteMapping("/{eventId}/participants/{userId}")
     @PreAuthorize("hasPermission(null, 'EVENT_EDIT')")
     public ResponseEntity<Void> removeParticipant(@PathVariable UUID eventId, @PathVariable UUID userId,
-                                                  @AuthenticationPrincipal User principal) {
-        log.info("Removing participant {} from event {} by user {}", userId, eventId, principal.getUsername());
-        UUID removedById = userService.getCurrentUserId(principal.getUsername());
+                                                  @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Removing participant {} from event {} by user {}", userId, eventId, email);
+        UUID removedById = userService.getCurrentUserId(email);
         eventService.removeParticipant(eventId, userId, removedById);
         return ResponseEntity.noContent().build();
     }
@@ -155,18 +166,20 @@ public class EventController {
 
     @PutMapping("/{eventId}/approve")
     @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
-    public ResponseEntity<EventResponseDto> approveEvent(@PathVariable UUID eventId, @AuthenticationPrincipal User principal) {
-        log.info("Approving event {} by user {}", eventId, principal.getUsername());
-        UUID approvedById = userService.getCurrentUserId(principal.getUsername());
+    public ResponseEntity<EventResponseDto> approveEvent(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Approving event {} by user {}", eventId, email);
+        UUID approvedById = userService.getCurrentUserId(email);
         EventResponseDto event = eventService.approveEvent(eventId, approvedById);
         return ResponseEntity.ok(event);
     }
 
     @PutMapping("/{eventId}/reject")
     @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
-    public ResponseEntity<EventResponseDto> rejectEvent(@PathVariable UUID eventId, @AuthenticationPrincipal User principal) {
-        log.info("Rejecting event {} by user {}", eventId, principal.getUsername());
-        UUID rejectedById = userService.getCurrentUserId(principal.getUsername());
+    public ResponseEntity<EventResponseDto> rejectEvent(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Rejecting event {} by user {}", eventId, email);
+        UUID rejectedById = userService.getCurrentUserId(email);
         EventResponseDto event = eventService.rejectEvent(eventId, rejectedById);
         return ResponseEntity.ok(event);
     }

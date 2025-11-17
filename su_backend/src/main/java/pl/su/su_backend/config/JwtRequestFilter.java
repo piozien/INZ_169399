@@ -30,6 +30,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, 
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
+
+        // If the user is already authenticated, don't process the JWT token
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            log.debug("User is already authenticated, skipping JWT filter.");
+            filterChain.doFilter(request, response);
+            return;
+        }
         
         try {
             String jwt = parseJwt(request);
