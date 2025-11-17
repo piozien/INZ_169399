@@ -1,10 +1,14 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@theme {
-  --color-background: #1A1208;
-  --color-foreground: #FFFFFF;
---color-secondarybg: rgb(255 255 255 / 0.05);
-  --color-primary: #EDB78D;
+@theme dark {
+  --color-background: #1a1208;
+  --color-foreground: #ffffff;
+  --color-secondarybg: rgb(255 255 255 / 0.05);
+  --color-primary: #edb78d;
   --color-darkgray: #1a1a1a;
-  --color-secondary: #FF9D00;
+  --color-secondary: #ff9d00;
+  --color-txtcolor-300: #bababa;
+  --color-inputbg: #372C1E;
+  --color-focusering: #FF9D00;
 }
+

@@ -1,45 +1,41 @@
-"use client";
+'use client';
 
-import { useState, FormEvent, Suspense, useEffect } from "react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useState, FormEvent, Suspense, useEffect } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
-import SchoolRounded from "@/components/icons/SchoolRounded";
-import MicrosoftIcon from "@/components/icons/MicrosoftIcon";
-import FormField from "@/components/FormField";
-import { LoginRequestDTO } from "@/types/auth.types";
-import { login } from "@/lib/api/auth";
+import SchoolRounded from '@/components/icons/SchoolRounded';
+import MicrosoftIcon from '@/components/icons/MicrosoftIcon';
+import FormField from '@/components/FormField';
+import { LoginRequestDTO } from '@/types/auth.types';
+import { login } from '@/lib/api/auth';
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
+  const registered = searchParams.get('registered') === 'true';
+  const successMessage = registered
+    ? 'Rejestracja zakończona pomyślnie! Możesz się teraz zalogować.'
+    : null;
+
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-      router.push("/dashboard");
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      router.push('/dashboard');
     },
     onError: (err) => {
       setError(
-        err instanceof Error ? err.message : "Wystąpił błąd podczas logowania"
+        err instanceof Error ? err.message : 'Wystąpił błąd podczas logowania',
       );
     },
   });
-
-  useEffect(() => {
-    if (searchParams.get("registered") === "true") {
-      setSuccess(
-        "Rejestracja zakończona pomyślnie! Możesz się teraz zalogować."
-      );
-    }
-  }, [searchParams]);
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -54,7 +50,7 @@ function LoginForm() {
   };
 
   const handleMicrosoftLogin = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const oauth2Url = `${apiUrl}/oauth2/authorization/microsoft`;
     window.location.href = oauth2Url;
   };
@@ -65,7 +61,7 @@ function LoginForm() {
         <div className="flex items-center flex-col">
           <SchoolRounded />
           <h1 className="text-[23.42px] font-semibold mt-4">Zaloguj się</h1>
-          <p className="mt-3 text-sm max-w-[350px] text-neutral-300">
+          <p className="mt-3 text-sm max-w-[350px] text-txtcolor-300">
             Użyj swojego adresu email i hasła, aby zalogować się do portalu
             samorządu szkolnego.
           </p>
@@ -96,14 +92,16 @@ function LoginForm() {
           />
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
-          {success && <p className="text-green-500 text-sm">{success}</p>}
+          {successMessage && (
+            <p className="text-green-500 text-sm">{successMessage}</p>
+          )}
 
           <button
             type="submit"
             disabled={loginMutation.isPending}
-            className="w-full py-4 px-3 rounded-[22px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors"
+            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center"
           >
-            {loginMutation.isPending ? "Logowanie..." : "Zaloguj się"}
+            {loginMutation.isPending ? 'Logowanie...' : 'Zaloguj się'}
           </button>
         </form>
 
@@ -118,7 +116,7 @@ function LoginForm() {
             type="button"
             onClick={handleMicrosoftLogin}
             disabled={loginMutation.isPending}
-            className="w-full py-4 px-3 rounded-[22px] bg-white cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3"
+            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-white cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3"
           >
             <MicrosoftIcon />
             <span>Zaloguj się przez Microsoft</span>
@@ -127,7 +125,7 @@ function LoginForm() {
 
         <div className="mt-auto pt-4 text-sm">
           <p>
-            Nie masz konta?
+            Nie masz konta?{' '}
             <Link href="/register" className="text-secondary font-medium">
               Zarejestruj się
             </Link>

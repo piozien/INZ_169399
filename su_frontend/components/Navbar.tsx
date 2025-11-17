@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,15 +25,10 @@ const protectedNavigation = [
 ];
 
 export default function Navbar() {
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useCurrentUser();
   const { theme, toggleTheme, mounted: themeMounted } = useTheme();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -42,7 +36,7 @@ export default function Navbar() {
     router.push("/login");
   };
 
-  const isAuthenticated = mounted && !isLoading && user != null;
+  const isAuthenticated = themeMounted && !isLoading && user != null;
   const navigation = isAuthenticated ? protectedNavigation : publicNavigation;
 
   return (
@@ -70,7 +64,7 @@ export default function Navbar() {
               </button>
             </li>
           )}
-          {mounted && isAuthenticated && (
+          {themeMounted && isAuthenticated && (
             <li>
               <button type="button" onClick={handleLogout}>
                 Wyloguj
@@ -82,4 +76,3 @@ export default function Navbar() {
     </header>
   );
 }
-

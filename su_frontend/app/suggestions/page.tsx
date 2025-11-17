@@ -4,7 +4,8 @@ const exampleSuggestions = [
   {
     id: "cafe-upgrade",
     title: "Modernizacja stołówki studenckiej",
-    summary: "Wprowadzenie zdrowszych opcji i większej liczby miejsc siedzących.",
+    summary:
+      "Wprowadzenie zdrowszych opcji i większej liczby miejsc siedzących.",
   },
   {
     id: "study-rooms",
@@ -27,7 +28,8 @@ export default function SuggestionsPage() {
         ))}
       </ul>
       <p>
-        Chcesz podzielić się pomysłem? <Link href="/login">Zaloguj się, aby złożyć propozycję.</Link>
+        Chcesz podzielić się pomysłem?{" "}
+        <Link href="/login">Zaloguj się, aby złożyć propozycję.</Link>
       </p>
     </section>
   );

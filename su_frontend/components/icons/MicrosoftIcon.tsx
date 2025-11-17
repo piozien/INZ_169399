@@ -22,4 +22,3 @@ export default function MicrosoftIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
