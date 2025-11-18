@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   if (isLoading || !user) {
     return (
-      <main>
+      <main className="p-8 bg-background">
         <h1>Ładowanie panelu…</h1>
       </main>
     );
@@ -36,7 +36,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <main>
+    <main className="p-8 bg-background">
       <h1>Witaj, {user.fullName}</h1>
       <p>Jesteś zalogowany jako {user.email}.</p>
       <button type="button" onClick={handleLogout}>

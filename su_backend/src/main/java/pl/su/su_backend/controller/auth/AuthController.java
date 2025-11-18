@@ -1,5 +1,6 @@
 package pl.su.su_backend.controller.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.user.*;
@@ -86,14 +89,22 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal Object principal,
-                                       HttpServletResponse response) {
+    public ResponseEntity<Void> logout(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Authentication authentication,
+        @AuthenticationPrincipal Object principal
+    ) {
         if (principal != null) {
             String email = authenticationService.getEmailFromPrincipal(principal);
             UUID userId = userService.getCurrentUserId(email);
             log.info("Logout request for user ID: {}", userId);
             userService.logoutUser(userId);
         }
+
+        SecurityContextLogoutHandler securityContextLogoutHandler = new SecurityContextLogoutHandler();
+        securityContextLogoutHandler.logout(request, response, authentication);
+
         cookieService.clearAuthCookies(response);
         return ResponseEntity.ok().build();
     }

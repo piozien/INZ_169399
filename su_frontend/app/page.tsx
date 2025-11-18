@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import PencilIcon from '@/components/icons/PencilIcon';
 import UserPlusIcon from '@/components/icons/UserPlusIcon';
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
+import Link from 'next/link';
 
-export default function HomePage() {
+export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center p-4">
       <div className="flex flex-col items-center">

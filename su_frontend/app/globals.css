@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@theme light {
+  --color-background: #fbf9f5;
+  --color-foreground: #1a1a1a;
+  --color-secondarybg: rgb(26 26 26 / 0.05);
+  --color-primary: #edb78d;
+  --color-darkgray: #1a1a1a;
+  --color-secondary: #ff9d00;
+  --color-txtcolor-300: #525252;
+  --color-inputbg: #f0f0f0;
+  --color-border: #e5e5e5;
+}
+
 @theme dark {
   --color-background: #1a1208;
   --color-foreground: #ffffff;
@@ -8,7 +20,8 @@
   --color-darkgray: #1a1a1a;
   --color-secondary: #ff9d00;
   --color-txtcolor-300: #bababa;
-  --color-inputbg: #372C1E;
-  --color-focusering: #FF9D00;
+  --color-inputbg: #372c1e;
+  --color-focusering: #ff9d00;
+  --color-border: #262626;
 }
 
