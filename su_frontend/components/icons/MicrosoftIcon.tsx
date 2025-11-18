@@ -1,24 +1,19 @@
+import React from 'react';
+
 export default function MicrosoftIcon({ className }: { className?: string }) {
   return (
     <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
+      width="21"
+      height="21"
+      viewBox="0 0 21 21"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <g clipPath="url(#clip0_49_322)">
-        <path d="M7.60413 7.60413H0V0H7.60413V7.60413Z" fill="#F1511B" />
-        <path d="M16 7.60413H8.39594V0H16V7.60413Z" fill="#80CC28" />
-        <path d="M7.60394 16.0001H0V8.396H7.60394V16.0001Z" fill="#00ADEF" />
-        <path d="M16 16.0001H8.39594V8.396H16V16.0001Z" fill="#FBBC09" />
-      </g>
-      <defs>
-        <clipPath id="clip0_49_322">
-          <rect width="16" height="16" fill="white" />
-        </clipPath>
-      </defs>
+      <path d="M1 1H9.5V9.5H1V1Z" fill="#F25022" />
+      <path d="M11.5 1H20V9.5H11.5V1Z" fill="#7FBA00" />
+      <path d="M1 11.5H9.5V20H1V11.5Z" fill="#00A4EF" />
+      <path d="M11.5 11.5H20V20H11.5V11.5Z" fill="#FFB900" />
     </svg>
   );
 }

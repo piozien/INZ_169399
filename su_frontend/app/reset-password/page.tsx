@@ -18,9 +18,11 @@ function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     if (!token) {
@@ -45,6 +47,29 @@ function ResetPasswordForm() {
     validateToken();
   }, [token]);
 
+  useEffect(() => {
+    if (password && confirmPassword && password !== confirmPassword) {
+      setPasswordError('Hasła nie są identyczne!');
+    } else {
+      setPasswordError(null);
+    }
+  }, [password, confirmPassword]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setInterval(() => {
+        setCountdown((prevCountdown) => prevCountdown - 1);
+      }, 1000);
+
+      if (countdown === 0) {
+        clearInterval(timer);
+        router.push('/login');
+      }
+
+      return () => clearInterval(timer);
+    }
+  }, [success, countdown, router]);
+
   const mutation = useMutation({
     mutationFn: confirmPasswordReset,
     onSuccess: () => {
@@ -58,10 +83,6 @@ function ResetPasswordForm() {
 
   const handleResetPassword = (e: FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Hasła nie są takie same.');
-      return;
-    }
     if (!token) {
       setError('Brak tokenu, nie można zresetować hasła.');
       return;
@@ -75,7 +96,7 @@ function ResetPasswordForm() {
       return <p>Weryfikowanie tokenu...</p>;
     }
 
-    if (!isTokenValid || error && !mutation.isPending) {
+    if (!isTokenValid || (error && !mutation.isPending)) {
       return (
         <div className="w-10/12 mt-8 text-center">
           <p className="text-red-500">{error}</p>
@@ -88,19 +109,16 @@ function ResetPasswordForm() {
         </div>
       );
     }
-    
+
     if (success) {
       return (
         <div className="w-10/12 mt-8 text-center">
           <p className="text-green-500">
             Hasło zostało pomyślnie zresetowane!
           </p>
-          <Link
-            href="/login"
-            className="mt-4 inline-block text-secondary font-medium"
-          >
-            Przejdź do logowania
-          </Link>
+          <p className="mt-2 text-sm text-txtcolor-300">
+            Zostaniesz przekierowany na stronę logowania za {countdown}s...
+          </p>
         </div>
       );
     }
@@ -128,11 +146,19 @@ function ResetPasswordForm() {
           placeholder="Powtórz nowe hasło"
           disabled={mutation.isPending}
         />
+        {passwordError && (
+          <p className="text-red-500 text-sm -mt-2">{passwordError}</p>
+        )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          disabled={mutation.isPending}
-          className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center"
+          disabled={
+            mutation.isPending ||
+            !!passwordError ||
+            !password ||
+            !confirmPassword
+          }
+          className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center disabled:bg-neutral-500 disabled:cursor-not-allowed"
         >
           {mutation.isPending ? 'Zapisywanie...' : 'Zresetuj hasło'}
         </button>

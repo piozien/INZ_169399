@@ -21,7 +21,7 @@ function LoginForm() {
 
   const registered = searchParams.get('registered') === 'true';
   const successMessage = registered
-    ? 'Rejestracja zakończona pomyślnie! Na podany adres email wysłano link aktywacyjny'
+    ? 'Rejestracja zakończona pomyślnie! Na podany adres email wysłano link aktywacyjny.'
     : null;
 
   const loginMutation = useMutation({
