@@ -1,17 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function OAuth2SuccessPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Invalidate the currentUser query to force a refetch
     queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-    // Redirect to the dashboard immediately
     router.push('/dashboard');
   }, [router, queryClient]);
 

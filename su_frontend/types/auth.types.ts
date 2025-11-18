@@ -1,3 +1,5 @@
+import { User } from './user.types';
+
 export interface LoginRequestDTO {
   email: string;
   password: string;

@@ -115,16 +115,16 @@ function LoginForm() {
 
         <div className="w-10/12 mt-8 flex flex-col gap-5 items-center">
           <div className="w-full flex items-center gap-4">
-            <div className="flex-1 border-b border-neutral-400" />
-            <p className="text-sm text-neutral-400">lub</p>
-            <div className="flex-1 border-b border-neutral-400" />
+            <div className="flex-1 border-b border-txtcolor-300" />
+            <p className="text-sm text-text-muted">lub</p>
+            <div className="flex-1 border-b border-txtcolor-300" />
           </div>
 
           <button
             type="button"
             onClick={handleMicrosoftLogin}
             disabled={loginMutation.isPending}
-            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-white cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3"
+            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-microsoftbg cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3"
           >
             <MicrosoftIcon />
             <span>Zaloguj się przez Microsoft</span>
