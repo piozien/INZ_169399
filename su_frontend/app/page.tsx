@@ -40,7 +40,7 @@ export default function Home() {
         </div>
         <div className="mt-4">
           <Link
-            href="/events"
+            href="/upcoming"
             className="bg-secondarybg p-6 rounded-lg flex flex-col items-center justify-center gap-2 transition-all duration-300 ease-in-out hover:ring-2 hover:ring-secondary focus:outline-none focus:ring-2 focus:ring-secondary"
           >
             <CalendarDaysIcon />
