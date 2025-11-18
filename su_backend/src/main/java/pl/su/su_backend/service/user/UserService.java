@@ -26,9 +26,12 @@ import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.auth.TokenService;
+import pl.su.su_backend.model.council.Council;
+import pl.su.su_backend.model.council.CouncilMember;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,6 +47,7 @@ public class UserService {
 
     private final UsersRepository usersRepository;
     private final ClassesRepository classesRepository;
+    private final CouncilMemberRepository councilMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtConfig jwtConfig;
     private final TokenService tokenService;
@@ -219,7 +223,13 @@ public class UserService {
         Users user = usersRepository.findByEmail(email)
                 .orElseThrow(() -> ApiException.badRequest(
                         ErrorCode.USER_NOT_FOUND, "User not found"));
-        return UserMapper.toResponseDto(user);
+
+        Classes studentClass = user.getClasses();
+        Council council = councilMemberRepository.findByUser(user)
+                .map(CouncilMember::getCouncil)
+                .orElse(null);
+
+        return UserMapper.toResponseDto(user, studentClass, council);
     }
 
     public UUID getCurrentUserId(String email) {
@@ -557,13 +567,18 @@ public class UserService {
         List<String> roles = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getRoleCode().name())
                 .collect(Collectors.toList());
+        
+        Classes studentClass = user.getClasses();
+        Council council = councilMemberRepository.findByUser(user)
+                .map(CouncilMember::getCouncil)
+                .orElse(null);
 
         return LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user))
+                .user(UserMapper.toResponseDto(user, studentClass, council))
                 .roles(roles)
                 .build();
     }
