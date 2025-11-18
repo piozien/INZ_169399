@@ -2,14 +2,20 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
+import PublicSidebar from './PublicSidebar';
 
-const HIDDEN_PATHS = ['/login', '/register', '/forgot-password', '/reset-password', '/'];
+const NO_SIDEBAR_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password',];
+const PUBLIC_SIDEBAR_PATHS = ['/upcoming'];
 
 const ConditionalSidebar = () => {
   const pathname = usePathname();
 
-  if (HIDDEN_PATHS.includes(pathname)) {
+  if (NO_SIDEBAR_PATHS.includes(pathname)) {
     return null;
+  }
+
+  if (PUBLIC_SIDEBAR_PATHS.includes(pathname)) {
+    return <PublicSidebar />;
   }
 
   return <Sidebar />;

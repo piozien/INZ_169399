@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchUpcomingEvents } from '@/lib/api/events';
 import EventCard from '@/components/events/EventCard';
-import Link from 'next/link';
 
 export default function UpcomingEventsPage() {
   const {

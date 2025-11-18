@@ -46,7 +46,7 @@ function FormField({
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-gray-400"
+          className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-form-icon)]"
           aria-label={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
         >
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

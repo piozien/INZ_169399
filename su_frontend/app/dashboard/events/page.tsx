@@ -5,10 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAllEvents, fetchEventsByDateRange } from '@/lib/api/events';
 import { EventResponseDto } from '@/types/event.types';
 import EventCard from '@/components/events/EventCard';
-import { DayPicker } from 'react-day-picker';
+import { DateRange, DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-import { format } from 'date-fns';
-import { DateRange } from 'react-day-picker';
+import { pl } from 'date-fns/locale';
 
 export default function EventsPage() {
   const [isFiltering, setIsFiltering] = useState(false);
@@ -72,14 +71,14 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">Wydarzenia</h1>
         <button
           onClick={() => setShowDatePicker(!showDatePicker)}
           className="px-4 py-2 bg-primary text-background rounded-lg hover:bg-secondary transition-colors"
         >
-          Filtruj po dacie
+          Filtruj wg daty
         </button>
       </div>
 
@@ -90,6 +89,15 @@ export default function EventsPage() {
             selected={dateRange}
             onSelect={setDateRange}
             numberOfMonths={2}
+            locale={pl}
+            classNames={{
+              today: 'text-primary font-bold',
+              selected: 'bg-primary text-background',
+              range_start: 'bg-secondary font-bold rounded-l-[20px]',
+              range_end: 'bg-secondary  font-bold rounded-r-[20px]',
+              range_middle: 'bg-primary',
+              chevron: 'fill-secondary',
+            }}
           />
           <div className="flex gap-4 mt-4">
             <button
