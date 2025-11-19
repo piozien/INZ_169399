@@ -83,7 +83,7 @@ export default function EventsPage() {
       </div>
 
       {showDatePicker && (
-        <div className="mb-8 p-4 bg-secondarybg rounded-lg border border-neutral-700 flex flex-col items-center">
+        <div className="mb-8 p-4 bg-secondarybg rounded-lg border border-neutralbg flex flex-col items-center">
           <DayPicker
             mode="range"
             selected={dateRange}
@@ -108,7 +108,7 @@ export default function EventsPage() {
             </button>
             <button
               onClick={clearFilter}
-              className="px-4 py-2 bg-neutral-600 text-foreground rounded-lg hover:bg-neutral-500 transition-colors"
+              className="px-4 py-2 bg-secondarybg text-foreground rounded-lg hover:bg-border transition-colors"
             >
               Wyczyść
             </button>

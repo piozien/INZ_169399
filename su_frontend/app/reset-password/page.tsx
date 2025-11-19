@@ -158,7 +158,7 @@ function ResetPasswordForm() {
             !password ||
             !confirmPassword
           }
-          className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center disabled:bg-neutral-500 disabled:cursor-not-allowed"
+          className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center disabled:bg-disabled-bg disabled:cursor-not-allowed"
         >
           {mutation.isPending ? 'Zapisywanie...' : 'Zresetuj hasło'}
         </button>

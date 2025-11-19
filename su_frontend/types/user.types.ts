@@ -12,11 +12,18 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  status: "PENDING" | "CONFIRMED" | "BLOCKED";
+  status: string;
   createdAt: string;
-  authProvider: "LOCAL" | "MICROSOFT";
+  authProvider: string;
   externalId?: string;
-  roles?: string[];
-  studentClass?: StudentClass;
-  council?: Council;
+  studentClass?: {
+    id: string;
+    name: string;
+  };
+  council?: {
+    id:string;
+    name: string;
+  };
+  roles: string[];
+  permissions: string[];
 }
