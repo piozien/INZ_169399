@@ -40,7 +40,7 @@ function FormField({
         placeholder={placeholder}
         disabled={disabled}
         required
-        className="w-full max-h-[41px] text-center py-4 px-3 rounded-[22px] bg-inputbg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-secondary"
+        className="w-full max-h-[41px] text-center py-4 px-3 rounded-[22px] bg-inputbg placeholder-txtcolor-300 focus:outline-none focus:ring-2 focus:ring-secondary"
       />
       {isPasswordField && (
         <button

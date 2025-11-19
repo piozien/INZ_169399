@@ -3,23 +3,21 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import SchoolRounded from '@/components/icons/SchoolRounded';
-
 import FinanceIcon from '@/components/icons/sidebar/FinanceIcon';
 import HomeIcon from '@/components/icons/sidebar/HomeIcon';
 import ListIcon from '@/components/icons/sidebar/ListIcon';
 import ProfileIcon from '@/components/icons/sidebar/ProfileIcon';
 import SettingsIcon from '@/components/icons/sidebar/SettingsIcon';
-
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { LogOut, Sun } from 'lucide-react';
+import { LogOut, Sun, UsersRound, Landmark } from 'lucide-react';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { logout } from '@/lib/api/auth';
 
 const Sidebar = () => {
   const pathname = usePathname();
-  const { user, isLoading } = useCurrentUser();
+  const { data: user, isLoading } = useCurrentUser();
   const { toggleTheme } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -32,50 +30,22 @@ const Sidebar = () => {
     },
   });
 
-  const navLinks = [
+  const mainLinks = [
     { href: '/dashboard', label: 'Strona Główna', icon: HomeIcon },
     { href: '/dashboard/events', label: 'Wydarzenia', icon: CalendarDaysIcon },
+    { href: '/dashboard/class', label: 'Klasa', icon: UsersRound },
+    { href: '/dashboard/council', label: 'Samorząd', icon: Landmark },
   ];
 
-  const classLinks = user?.studentClass
-    ? [
-        {
-          href: `/dashboard/class/${user.studentClass.id}/members`,
-          label: 'Członkowie',
-          icon: ListIcon,
-        },
-        {
-          href: `/dashboard/class/${user.studentClass.id}/finance`,
-          label: 'Finanse',
-          icon: FinanceIcon,
-        },
-      ]
-    : [];
-
-  const councilLinks = user?.council
-    ? [
-        {
-          href: `/dashboard/council/${user.council.id}/members`,
-          label: 'Członkowie',
-          icon: ListIcon,
-        },
-        {
-          href: `/dashboard/council/${user.council.id}/events`,
-          label: 'Wydarzenia',
-          icon: CalendarDaysIcon,
-        },
-        {
-          href: `/dashboard/council/${user.council.id}/finance`,
-          label: 'Finanse',
-          icon: FinanceIcon,
-        },
-      ]
-    : [];
+  const userLinks = [
+    { href: '/dashboard/settings', label: 'Ustawienia', icon: SettingsIcon },
+    { href: '/dashboard/profile', label: 'Twoje Konto', icon: ProfileIcon },
+  ];
 
   if (isLoading) {
     return (
       <aside className="w-64 flex-shrink-0 bg-secondarybg p-4">
-        <div className="h-full animate-pulse rounded-md bg-neutral-700"></div>
+        <div className="h-full animate-pulse rounded-md bg-secondarybg"></div>
       </aside>
     );
   }
@@ -103,7 +73,7 @@ const Sidebar = () => {
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-primary text-background'
-                  : 'text-foreground hover:bg-neutral-500/20'
+                  : 'text-foreground hover:bg-secondarybg'
               }`}
             >
               <Icon className="h-5 w-5" />
@@ -123,35 +93,13 @@ const Sidebar = () => {
       </div>
       <div className="mt-6 flex flex-1 flex-col justify-between">
         <div className="space-y-6">
-          <NavGroup links={navLinks} />
-          {user?.studentClass && (
-            <NavGroup
-              title={`KLASA ${user.studentClass.name}`}
-              links={classLinks}
-            />
-          )}
-          {user?.council && (
-            <NavGroup title={`SAMORZĄD ${user.council.name}`} links={councilLinks} />
-          )}
+          <NavGroup links={mainLinks} />
         </div>
         <div>
-          <NavGroup
-            links={[
-              {
-                href: '/dashboard/settings',
-                label: 'Ustawienia',
-                icon: SettingsIcon,
-              },
-              {
-                href: '/dashboard/profile',
-                label: 'Twoje Konto',
-                icon: ProfileIcon,
-              },
-            ]}
-          />
+          <NavGroup links={userLinks} />
           <button
             onClick={toggleTheme}
-            className="mt-4 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-neutral-500/20"
+            className="mt-4 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondarybg"
           >
             <span>Zmień motyw</span>
             <Sun className="h-5 w-5" />
@@ -159,10 +107,12 @@ const Sidebar = () => {
           <button
             onClick={() => logoutMutation.mutate()}
             disabled={logoutMutation.isPending}
-            className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/20"
+            className=" flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondarybg"
           >
             <LogOut className="h-5 w-5" />
-            <span>{logoutMutation.isPending ? 'Wylogowywanie...' : 'Wyloguj'}</span>
+            <span>
+              {logoutMutation.isPending ? 'Wylogowywanie...' : 'Wyloguj'}
+            </span>
           </button>
         </div>
       </div>

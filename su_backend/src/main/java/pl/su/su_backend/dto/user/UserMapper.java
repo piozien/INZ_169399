@@ -2,10 +2,15 @@ package pl.su.su_backend.dto.user;
 
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.classes.Classes;
+import pl.su.su_backend.model.permissions.Permission;
+import pl.su.su_backend.model.roles.Role;
+import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UserMapper {
@@ -33,9 +38,18 @@ public class UserMapper {
 
         List<String> roles = user.getUserRoles() != null ?
                 user.getUserRoles().stream()
-                        .map(userRole -> userRole.getRole().getRoleCode().name())
+                        .map(UserRole::getRole)
+                        .sorted(Comparator.comparingInt((Role role) -> role.getRoleCode().getRank()).reversed())
+                        .map(role -> role.getRoleCode().name())
                         .collect(Collectors.toList()) :
                 Collections.emptyList();
+
+        Set<String> permissions = user.getUserRoles() != null ?
+                user.getUserRoles().stream()
+                        .flatMap(userRole -> userRole.getRole().getPermissions().stream())
+                        .map(Permission::getName)
+                        .collect(Collectors.toSet()) :
+                Collections.emptySet();
 
         return UserResponseDto.builder()
                 .id(user.getId())
@@ -48,6 +62,7 @@ public class UserMapper {
                 .studentClass(classDto)
                 .council(councilDto)
                 .roles(roles)
+                .permissions(permissions)
                 .build();
     }
 

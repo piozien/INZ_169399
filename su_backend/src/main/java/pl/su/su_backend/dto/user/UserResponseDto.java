@@ -9,6 +9,7 @@ import pl.su.su_backend.model.enums.StatusEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -28,5 +29,6 @@ public class UserResponseDto {
     private ClassDto studentClass;
     private CouncilDto council;
     private List<String> roles;
+    private Set<String> permissions;
 }
 

@@ -1,13 +1,14 @@
 import { EventResponseDto } from '@/types/event.types';
 import CalendarDaysIcon from '../icons/CalendarDaysIcon';
 
-const EventCard = ({ event }: { event: EventResponseDto }) => {
+export default function EventCard({ event }: { event: EventResponseDto }) {
   return (
-    <div className="rounded-lg border border-neutral-700 bg-secondarybg p-6 transition-transform hover:scale-[1.02]">
-      <h3 className="text-2xl font-bold text-primary">{event.title}</h3>
-      <div className="mt-2 flex items-center gap-2 text-sm text-txtcolor-300">
-        <CalendarDaysIcon className="h-4 w-4" />
-        <span>
+    <div className="rounded-lg border bg-secondarybg p-6 transition-transform hover:scale-[1.02]">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">{event.title}</h2>
+        <span
+          className="text-sm text-txtcolor-300"
+        >
           {new Date(event.startDate).toLocaleString('pl-PL', {
             dateStyle: 'short',
             timeStyle: 'short',
@@ -28,5 +29,3 @@ const EventCard = ({ event }: { event: EventResponseDto }) => {
     </div>
   );
 };
-
-export default EventCard;
