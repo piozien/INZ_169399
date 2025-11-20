@@ -1,6 +1,8 @@
 package pl.su.su_backend.dto.user;
 
+import pl.su.su_backend.dto.council.CouncilMemberDto;
 import pl.su.su_backend.model.council.Council;
+import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.permissions.Permission;
 import pl.su.su_backend.model.roles.Role;
@@ -15,7 +17,8 @@ import java.util.stream.Collectors;
 
 public class UserMapper {
 
-    public static UserResponseDto toResponseDto(Users user, Classes studentClass, Council council) {
+    public static UserResponseDto toResponseDto(Users user, Classes studentClass, Council council,
+            List<CouncilMember> councilMembers) {
         if (user == null) {
             return null;
         }
@@ -30,9 +33,16 @@ public class UserMapper {
 
         CouncilDto councilDto = null;
         if (council != null) {
+            List<CouncilMemberDto> memberDtos = councilMembers != null ? councilMembers.stream()
+                    .map(member -> new CouncilMemberDto(member.getUser().getId(), member.getUser().getFullName()))
+                    .collect(Collectors.toList()) : Collections.emptyList();
+
             councilDto = CouncilDto.builder()
                     .id(council.getId())
                     .name(council.getName())
+                    .invitationCode(council.getJoinCode())
+                    .createdAt(council.getCreatedAt().toLocalDate())
+                    .members(memberDtos)
                     .build();
         }
 
@@ -67,7 +77,8 @@ public class UserMapper {
     }
 
     public static UserResponseDto toResponseDto(Users user) {
-        return toResponseDto(user, user.getClasses(), null);
+        // This method might need adjustment depending on how council members are fetched
+        return toResponseDto(user, user.getClasses(), null, null);
     }
 }
 
