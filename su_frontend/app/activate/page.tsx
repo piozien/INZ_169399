@@ -72,7 +72,7 @@ function ActivateComponent() {
     return (
       <main>
         <h1>Konto aktywowane</h1>
-        <p className={'text-green-500 text-sm'}>{message}</p>
+        <p className={'text-red-500 text-sm'}>{message}</p>
         <p>Zostaniesz przekierowany na stronę logowania za chwilę.</p>
         <p>
           <Link href="/login">Przejdź do logowania teraz</Link>

@@ -228,8 +228,12 @@ public class UserService {
         Council council = councilMemberRepository.findByUser(user)
                 .map(CouncilMember::getCouncil)
                 .orElse(null);
+        
+        List<CouncilMember> councilMembers = council != null ?
+                councilMemberRepository.findByCouncilId(council.getId()) :
+                List.of();
 
-        return UserMapper.toResponseDto(user, studentClass, council);
+        return UserMapper.toResponseDto(user, studentClass, council, councilMembers);
     }
 
     public UUID getCurrentUserId(String email) {
@@ -572,13 +576,17 @@ public class UserService {
         Council council = councilMemberRepository.findByUser(user)
                 .map(CouncilMember::getCouncil)
                 .orElse(null);
+        
+        List<CouncilMember> councilMembers = council != null ?
+                councilMemberRepository.findByCouncilId(council.getId()) :
+                List.of();
 
         return LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user, studentClass, council))
+                .user(UserMapper.toResponseDto(user, studentClass, council, councilMembers))
                 .roles(roles)
                 .build();
     }

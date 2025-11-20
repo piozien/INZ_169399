@@ -6,12 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.core.Authentication;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.auth.PermissionService;
 
 import java.io.Serializable;
 
 @Slf4j
-public record CustomPermissionEvaluator(PermissionService permissionService) implements PermissionEvaluator {
+public record CustomPermissionEvaluator(
+        PermissionService permissionService,
+        AuthenticationService authenticationService
+) implements PermissionEvaluator {
 
     @Override
     public boolean hasPermission(Authentication authentication, Object targetDomainObject, Object permission) {
@@ -23,7 +27,7 @@ public record CustomPermissionEvaluator(PermissionService permissionService) imp
             return false;
         }
 
-        String userEmail = authentication.getName();
+        String userEmail = authenticationService.getEmailFromPrincipal(authentication.getPrincipal());
         String permissionString = permission.toString();
 
         log.info("Checking permission for user: {} permission: {}", userEmail, permissionString);
@@ -49,7 +53,7 @@ public record CustomPermissionEvaluator(PermissionService permissionService) imp
             return false;
         }
 
-        String userEmail = authentication.getName();
+        String userEmail = authenticationService.getEmailFromPrincipal(authentication.getPrincipal());
         String permissionString = permission.toString();
 
         log.info("Checking permission for user: {} permission: {}", userEmail, permissionString);
