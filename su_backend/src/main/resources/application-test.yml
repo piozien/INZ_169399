@@ -13,7 +13,6 @@ spring:
     properties:
       hibernate:
         format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
     enabled: true
@@ -47,6 +46,8 @@ app:
     expiration: 3600000  # 1 hour
     refresh-token:
       expiration: 86400000  # 24 hours
+  cookie:
+    secure: false
   
   # Password Reset Configuration
   password-reset:

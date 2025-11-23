@@ -8,6 +8,8 @@ import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.StatusEnum;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -20,7 +22,6 @@ public class UserResponseDto {
     private String fullName;
     private String email;
     private StatusEnum status;
-    private UUID classId;
     private LocalDateTime createdAt;
     private AuthProvider authProvider;
     private String externalId;

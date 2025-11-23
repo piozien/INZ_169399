@@ -6,10 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import pl.su.su_backend.config.JwtConfig;
@@ -21,7 +17,8 @@ import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.model.classes.Classes;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
+import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
@@ -47,11 +44,11 @@ class UserServiceTest {
     @Mock
     private ClassesRepository classesRepository;
     @Mock
+    private CouncilMemberRepository councilMemberRepository;
+    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtConfig jwtConfig;
-    @Mock
-    private AuthenticationManager authenticationManager;
     @Mock
     private TokenService tokenService;
     @Mock
@@ -138,17 +135,15 @@ class UserServiceTest {
     @Test
     void loginUser_ShouldLoginSuccessfully_WhenValidCredentials() {
         // Given
-        LoginRequestDto loginDto = Fixtures.loginRequestDto();
-        Authentication auth = mock(Authentication.class);
-
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(auth);
-        when(auth.getPrincipal()).thenReturn(User
-                .withUsername(testUser.getEmail())
-                .password("password")
-                .authorities("ROLE_USER")
-                .build());
+        LoginRequestDto loginDto = LoginRequestDto.builder()
+                .email(testUser.getEmail())
+                .password(Fixtures.RAW_TEST_PASSWORD)
+                .build();
+        testUser.setPassword("stored-password");
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(jwtConfig.generateToken(anyString())).thenReturn("access-token");
+        when(councilMemberRepository.findByIdUserId(any())).thenReturn(List.of());
+        when(passwordEncoder.matches(eq(Fixtures.RAW_TEST_PASSWORD), eq("stored-password"))).thenReturn(true);
+        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
         when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
@@ -173,7 +168,7 @@ class UserServiceTest {
         when(jwtConfig.extractEmail(anyString())).thenReturn(testUser.getEmail());
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(tokenService.isRefreshTokenValid(any(UUID.class), anyString())).thenReturn(true);
-        when(jwtConfig.generateToken(anyString())).thenReturn("new-access-token");
+        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("new-access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("new-refresh-token");
         when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
@@ -257,6 +252,7 @@ class UserServiceTest {
     void getUserByEmail_ShouldReturnUser_WhenExists() {
         // Given
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(councilMemberRepository.findByIdUserId(any())).thenReturn(List.of());
 
         // When
         UserResponseDto response = userService.getUserByEmail(testUser.getEmail());
@@ -366,7 +362,7 @@ class UserServiceTest {
     @Test
     void loginOAuth2User_ShouldLoginSuccessfully_WhenUserExists() {
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(jwtConfig.generateToken(anyString())).thenReturn("access-token");
+        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
         when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
@@ -393,6 +389,7 @@ class UserServiceTest {
         String email = "new@test.com";
         String fullName = "New User";
         Users newUser = Fixtures.user(fullName, email);
+        newUser.setStatus(StatusEnum.CONFIRMED);
         newUser.setId(UUID.randomUUID());
         UserRole userRole = Fixtures.userRole(newUser, defaultRole);
         newUser.setUserRoles(Set.of(userRole));
@@ -401,7 +398,7 @@ class UserServiceTest {
         when(usersRepository.save(any(Users.class))).thenReturn(newUser);
         when(roleRepository.findByRoleCode(RoleCode.UCZEN)).thenReturn(Optional.of(defaultRole));
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(userRole);
-        when(jwtConfig.generateToken(anyString())).thenReturn("access-token");
+        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
         when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(mailService).sendWelcomeEmail(anyString(), anyString());
@@ -429,7 +426,7 @@ class UserServiceTest {
     void loginOrRegisterOAuth2_ShouldLogin_WhenUserExists() {
         testUser.setAuthProvider(AuthProvider.MICROSOFT);
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(jwtConfig.generateToken(anyString())).thenReturn("access-token");
+        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
         when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());

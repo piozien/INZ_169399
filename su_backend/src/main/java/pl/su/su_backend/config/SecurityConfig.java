@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -20,19 +21,21 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.auth.PermissionService;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity()
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtRequestFilter jwtRequestFilter;
     private final PermissionService permissionService;
+    private final AuthenticationService authenticationService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -47,12 +50,10 @@ public class SecurityConfig {
     @Bean
     public MethodSecurityExpressionHandler methodSecurityExpressionHandler() {
         DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
-        handler.setPermissionEvaluator(new CustomPermissionEvaluator(permissionService));
+        handler.setPermissionEvaluator(new CustomPermissionEvaluator(permissionService, authenticationService));
         return handler;
     }
-
-
-
+    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            OAuth2AuthenticationSuccessHandler successHandler,
@@ -60,7 +61,7 @@ public class SecurityConfig {
                                            @Value("${app.frontend.url}") String frontendUrl) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource(frontendUrl)))
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
@@ -69,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/events/upcoming").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
@@ -78,7 +80,7 @@ public class SecurityConfig {
                         .failureHandler(failureHandler)
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
         // Add JWT filter
@@ -87,7 +89,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
+    @Bean("graphWebClient")
     public WebClient graphWebClient(@Value("${app.microsoft.graph.base-url}") String baseUrl) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
@@ -99,16 +101,16 @@ public class SecurityConfig {
             @Value("${app.frontend.url}") String frontendUrl) {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of(frontendUrl));
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Cookie"));
         cfg.setAllowCredentials(true);
-        cfg.setExposedHeaders(List.of("Set-Cookie"));
+        cfg.setExposedHeaders(List.of("Set-Cookie", "Cookie"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
     }
-    
-    @Bean
+
+    @Bean("webClient")
     public WebClient webClient() {
         return WebClient.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024))

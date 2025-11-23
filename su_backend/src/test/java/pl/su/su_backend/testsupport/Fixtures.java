@@ -37,36 +37,39 @@ import org.springframework.http.MediaType;
 
 public final class Fixtures {
 
+    public static final String RAW_TEST_PASSWORD = "password123";
+    public static final String RAW_NEW_PASSWORD = "newPassword123";
+
     private Fixtures() {
     }
 
 
     // ===== USER METHODS =====
-
+    
     public static Users user() {
         return user("Jan Kowalski", "jan.kowalski@test.com");
     }
-
+    
     public static Users user(String fullName, String email) {
         Users u = Users.builder().fullName(fullName).email(email).password("encodedPassword").status(StatusEnum.PENDING).authProvider(AuthProvider.LOCAL).createdAt(LocalDateTime.now()).build();
         u.setId(UUID.randomUUID());
         return u;
     }
-
+    
     public static Users simpleUser(String fullName, String email) {
         Users u = Users.builder().fullName(fullName).email(email).password("pass").build();
         u.setId(UUID.randomUUID());
         return u;
     }
-
+    
     public static Users userWithStatus(String fullName, String email, StatusEnum status) {
-        Users user = Users.builder().fullName(fullName).email(email).password("password123").status(status).build();
+        Users user = Users.builder().fullName(fullName).email(email).password(RAW_TEST_PASSWORD).status(status).build();
         user.setId(UUID.randomUUID());
         return user;
     }
-
+    
     public static Users userWithStatusNoId(String fullName, String email, StatusEnum status) {
-        return Users.builder().fullName(fullName).email(email).password("password123").status(status).build();
+        return Users.builder().fullName(fullName).email(email).password(RAW_TEST_PASSWORD).status(status).build();
     }
 
     public static Council councilNoId(String name, String academicYear, LocalDate start, LocalDate end) {
@@ -181,31 +184,31 @@ public final class Fixtures {
     }
 
     // ===== DTO METHODS =====
-
+    
     public static UserRequestDto userRequestDto() {
-        return UserRequestDto.builder().fullName("Jan Kowalski").email("jan.kowalski@test.com").password("password123").authProvider(AuthProvider.LOCAL).build();
+        return UserRequestDto.builder().fullName("Jan Kowalski").email("jan.kowalski@test.com").password(RAW_TEST_PASSWORD).authProvider(AuthProvider.LOCAL).build();
     }
-
+    
     public static UserRequestDto userRequestDto(String fullName, String email, String password) {
         return UserRequestDto.builder().fullName(fullName).email(email).password(password).authProvider(AuthProvider.LOCAL).build();
     }
-
+    
     public static LoginRequestDto loginRequestDto() {
-        return LoginRequestDto.builder().email("jan.kowalski@test.com").password("password123").build();
+        return LoginRequestDto.builder().email("jan.kowalski@test.com").password(RAW_TEST_PASSWORD).build();
     }
-
+    
     public static RefreshTokenRequestDto refreshTokenRequestDto(String refreshToken) {
         return RefreshTokenRequestDto.builder().refreshToken(refreshToken).build();
     }
-
+    
     public static UserResponseDto userResponseDto() {
         return UserResponseDto.builder().id(UUID.randomUUID()).fullName("Jan Kowalski").email("jan.kowalski@test.com").status(StatusEnum.PENDING).authProvider(AuthProvider.LOCAL).createdAt(LocalDateTime.now()).build();
     }
-
+    
     public static SuggestionRequestDto suggestionRequestDto(UUID userId, String title, String description, Boolean isAnonymous) {
         return SuggestionRequestDto.builder().userId(userId).title(title).description(description).isAnonymous(isAnonymous).status(SuggestionStatus.PENDING).tags(Set.of("test")).build();
     }
-
+    
     public static EventRequestDto eventRequestDto(String title, String description, LocalDateTime startDate, LocalDateTime endDate) {
         return EventRequestDto.builder().title(title).description(description).startDate(startDate).endDate(endDate).location("Test Location").calendarEventId("test-calendar-id").build();
     }

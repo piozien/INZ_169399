@@ -3,6 +3,7 @@ package pl.su.su_backend.service.event;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Slf4j
 public class CalendarService {
 
+    @Qualifier("graphWebClient")
     private final WebClient graphWebClient;
 
     @Value("${app.microsoft.calendar.enabled:false}")
