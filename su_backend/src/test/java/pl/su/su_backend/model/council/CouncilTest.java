@@ -115,8 +115,6 @@ public class CouncilTest {
         Assertions.assertNull(council.getStartDate());
         Assertions.assertNull(council.getEndDate());
         Assertions.assertTrue(council.getIsActive());
-        Assertions.assertNotNull(council.getMembers());
-        Assertions.assertTrue(council.getMembers().isEmpty());
     }
 
     @Test
@@ -130,48 +128,6 @@ public class CouncilTest {
                 .build();
 
         Assertions.assertFalse(council.getIsActive());
-    }
-
-    @Test
-    void canAddMembers() {
-        Council council = Council.builder()
-                .name("Test Council")
-                .academicYear("2025/26")
-                .startDate(LocalDate.now())
-                .endDate(LocalDate.now().plusMonths(6))
-                .build();
-
-        Users member1 = Fixtures.simpleUser("Member 1", "member1@example.com");
-        Users member2 = Fixtures.simpleUser("Member 2", "member2@example.com");
-
-        council.getMembers().add(member1);
-        council.getMembers().add(member2);
-
-        Assertions.assertEquals(2, council.getMembers().size());
-        Assertions.assertTrue(council.getMembers().contains(member1));
-        Assertions.assertTrue(council.getMembers().contains(member2));
-    }
-
-    @Test
-    void canRemoveMembers() {
-        Council council = Council.builder()
-                .name("Test Council")
-                .academicYear("2025/26")
-                .startDate(LocalDate.now())
-                .endDate(LocalDate.now().plusMonths(6))
-                .build();
-
-        Users member1 = Fixtures.simpleUser("Member 1", "member1@example.com");
-        Users member2 = Fixtures.simpleUser("Member 2", "member2@example.com");
-
-        council.getMembers().add(member1);
-        council.getMembers().add(member2);
-        Assertions.assertEquals(2, council.getMembers().size());
-
-        council.getMembers().remove(member1);
-        Assertions.assertEquals(1, council.getMembers().size());
-        Assertions.assertFalse(council.getMembers().contains(member1));
-        Assertions.assertTrue(council.getMembers().contains(member2));
     }
 
     @Test

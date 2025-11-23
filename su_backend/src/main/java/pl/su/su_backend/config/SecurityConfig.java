@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -27,7 +28,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity()
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -52,9 +53,7 @@ public class SecurityConfig {
         handler.setPermissionEvaluator(new CustomPermissionEvaluator(permissionService, authenticationService));
         return handler;
     }
-
-
-
+    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            OAuth2AuthenticationSuccessHandler successHandler,
@@ -62,7 +61,7 @@ public class SecurityConfig {
                                            @Value("${app.frontend.url}") String frontendUrl) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource(frontendUrl)))
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
@@ -90,7 +89,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
+    @Bean("graphWebClient")
     public WebClient graphWebClient(@Value("${app.microsoft.graph.base-url}") String baseUrl) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
@@ -102,16 +101,16 @@ public class SecurityConfig {
             @Value("${app.frontend.url}") String frontendUrl) {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of(frontendUrl));
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Cookie"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Cookie"));
         cfg.setAllowCredentials(true);
-        cfg.setExposedHeaders(List.of("Set-Cookie","Cookie"));
+        cfg.setExposedHeaders(List.of("Set-Cookie", "Cookie"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
     }
-    
-    @Bean
+
+    @Bean("webClient")
     public WebClient webClient() {
         return WebClient.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024))

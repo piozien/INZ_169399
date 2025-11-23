@@ -19,10 +19,12 @@ import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilRepository;
+import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.repositories.permission.PermissionRepository;
+import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.testsupport.Fixtures;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
@@ -53,6 +55,9 @@ class CouncilControllerTest {
     @Autowired
     private CouncilRepository councilRepository;
 
+	@Autowired
+	private CouncilMemberRepository councilMemberRepository;
+
     @Autowired
     private JwtConfig jwtConfig;
 
@@ -70,14 +75,14 @@ class CouncilControllerTest {
 	@Autowired
 	private Flyway flyway;
 
-    @BeforeEach
+	@BeforeEach
     void setUp() {
 		flyway.migrate();
 
 		userRoleRepository.deleteAll();
         councilRepository.deleteAll();
         usersRepository.deleteAll();
-        
+
 		Role opiekunRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.OPIEKUN_SU,
 				PermissionCode.COUNCIL_VIEW,
 				PermissionCode.COUNCIL_VIEW_ALL,
@@ -85,18 +90,19 @@ class CouncilControllerTest {
 				PermissionCode.COUNCIL_EDIT,
 				PermissionCode.COUNCIL_MEMBER_MANAGE,
 				PermissionCode.COUNCIL_JOIN);
-		Role przewodniczacyRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.PRZEWODNICZACY_SU,
-				PermissionCode.COUNCIL_VIEW,
-				PermissionCode.COUNCIL_MEMBER_MANAGE,
-				PermissionCode.COUNCIL_JOIN);
 		Role uczenRole = RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.UCZEN,
 				PermissionCode.COUNCIL_VIEW,
+				PermissionCode.COUNCIL_JOIN);
+
+		RolePermissionTestHelper.ensureRole(roleRepository, permissionRepository, RoleCode.PRZEWODNICZACY_SU,
+				PermissionCode.COUNCIL_VIEW,
+				PermissionCode.COUNCIL_MEMBER_MANAGE,
 				PermissionCode.COUNCIL_JOIN);
 
         opiekunUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
                 "Opiekun", "opiekun@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, opiekunRole);
         przewodniczacyUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
-                "Przewodniczacy", "przewodniczacy@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, przewodniczacyRole);
+                "Przewodniczacy", "przewodniczacy@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, uczenRole);
         uczenUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
                 "Uczen", "uczen@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, uczenRole);
 
@@ -108,8 +114,16 @@ class CouncilControllerTest {
                 LocalDate.now(), LocalDate.now().plusMonths(6));
         testCouncil.setJoinCode("SU20250001");
         testCouncil.setIsActive(true);
-		testCouncil.getMembers().add(opiekunUser);
         testCouncil = councilRepository.save(testCouncil);
+
+		CouncilMember przewodniczacyMember = new CouncilMember();
+		CouncilMember.CouncilMemberId idComposite = new CouncilMember.CouncilMemberId(testCouncil.getId(), przewodniczacyUser.getId());
+		przewodniczacyMember.setId(idComposite);
+		przewodniczacyMember.setCouncil(testCouncil);
+		przewodniczacyMember.setUser(przewodniczacyUser);
+		przewodniczacyMember.setRole(RoleCode.PRZEWODNICZACY_SU);
+		councilMemberRepository.save(przewodniczacyMember);
+		
 		councilRepository.flush();
     }
 
@@ -171,9 +185,14 @@ class CouncilControllerTest {
 
     @Test
 	void getCouncil_ShouldReturnOk_WhenUczenHasPermission() {
-		testCouncil.getMembers().add(uczenUser);
-		councilRepository.save(testCouncil);
-		councilRepository.flush();
+		// Add uczen as council member
+		CouncilMember uczenMember = new CouncilMember();
+		CouncilMember.CouncilMemberId uczenMemberId = new CouncilMember.CouncilMemberId(testCouncil.getId(), uczenUser.getId());
+		uczenMember.setId(uczenMemberId);
+		uczenMember.setCouncil(testCouncil);
+		uczenMember.setUser(uczenUser);
+		uczenMember.setRole(RoleCode.CZLONEK_SU);
+		councilMemberRepository.save(uczenMember);
 
 		ResponseEntity<String> response = restTemplate.exchange(
 				"/api/council",
@@ -224,9 +243,14 @@ class CouncilControllerTest {
 
     @Test
 	void joinCouncilByCode_ShouldReturnBadRequest_WhenUserAlreadyMember() {
-		testCouncil.getMembers().add(uczenUser);
-		councilRepository.save(testCouncil);
-		councilRepository.flush();
+		// Add uczen as council member
+		CouncilMember uczenMember = new CouncilMember();
+		CouncilMember.CouncilMemberId uczenMemberId = new CouncilMember.CouncilMemberId(testCouncil.getId(), uczenUser.getId());
+		uczenMember.setId(uczenMemberId);
+		uczenMember.setCouncil(testCouncil);
+		uczenMember.setUser(uczenUser);
+		uczenMember.setRole(RoleCode.CZLONEK_SU);
+		councilMemberRepository.save(uczenMember);
 
 		ResponseEntity<String> response = restTemplate.postForEntity(
 				"/api/council/join/" + testCouncil.getJoinCode(),

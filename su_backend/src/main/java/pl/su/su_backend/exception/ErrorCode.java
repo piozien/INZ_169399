@@ -14,6 +14,7 @@ public enum ErrorCode {
     DEFAULT_ROLE_MISSING,
     CANNOT_MODIFY_HIGHER_RANK,
     CANNOT_REVOKE_LAST_ADMIN,
+    INVALID_ROLE_ASSIGNMENT,
     
     // Class and budget related errors
     CLASS_NOT_FOUND,

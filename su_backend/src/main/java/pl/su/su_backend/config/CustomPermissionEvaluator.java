@@ -47,25 +47,7 @@ public record CustomPermissionEvaluator(
     public boolean hasPermission(Authentication authentication, Serializable targetId, String targetType, Object permission) {
         log.info("CustomPermissionEvaluator.hasPermission called with authentication: {}, targetId: {}, targetType: {}, permission: {}",
                 authentication != null ? authentication.getName() : "null", targetId, targetType, permission);
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            log.warn("Authentication is null or not authenticated");
-            return false;
-        }
-
-        String userEmail = authenticationService.getEmailFromPrincipal(authentication.getPrincipal());
-        String permissionString = permission.toString();
-
-        log.info("Checking permission for user: {} permission: {}", userEmail, permissionString);
-
-        try {
-            PermissionCode permissionCode = PermissionCode.valueOf(permissionString);
-            boolean result = permissionService.hasPermission(userEmail, permissionCode);
-            log.info("Permission check result: {}", result);
-            return result;
-        } catch (Exception e) {
-            log.error("Error checking permission: {}", e.getMessage(), e);
-            return false;
-        }
+        
+        return hasPermission(authentication,null, permission);
     }
 }

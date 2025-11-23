@@ -1,4 +1,4 @@
-package pl.su.su_backend.controller.classCon;
+package pl.su.su_backend.controller.classes;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

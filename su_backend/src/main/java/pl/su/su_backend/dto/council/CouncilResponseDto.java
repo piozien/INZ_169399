@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import pl.su.su_backend.dto.user.UserResponseDto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,5 +24,5 @@ public class CouncilResponseDto {
     private Boolean isActive;
     private String joinCode;
     private LocalDateTime createdAt;
-    private List<UserResponseDto> members;
+    private List<CouncilMemberDto> members;
 }

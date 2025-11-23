@@ -1,18 +1,16 @@
-package pl.su.su_backend.controller.classCon;
+package pl.su.su_backend.controller.classes;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.classes.ClassesRequestDto;
 import pl.su.su_backend.dto.classes.ClassesResponseDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
 import pl.su.su_backend.service.auth.AuthenticationService;
-import pl.su.su_backend.service.classServ.ClassesService;
+import pl.su.su_backend.service.classes.ClassesService;
 
 import java.util.List;
 import java.util.UUID;

@@ -10,7 +10,8 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Entity
-@Table(name = "classes")
+@Table(name = "classes",
+	uniqueConstraints = @UniqueConstraint(columnNames = {"name", "year"}))
 @Getter
 @Setter
 @Builder

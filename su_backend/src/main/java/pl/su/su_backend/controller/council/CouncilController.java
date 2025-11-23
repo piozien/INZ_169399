@@ -11,17 +11,21 @@ import pl.su.su_backend.dto.budget.CouncilBudgetRequestDto;
 import pl.su.su_backend.dto.budget.CouncilBudgetResponseDto;
 import pl.su.su_backend.dto.budget.CouncilTransactionRequestDto;
 import pl.su.su_backend.dto.budget.CouncilTransactionResponseDto;
+import pl.su.su_backend.dto.council.CouncilMemberDto;
+import pl.su.su_backend.dto.council.CouncilMemberMapper;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
 import pl.su.su_backend.dto.event.EventResponseDto;
-import pl.su.su_backend.dto.user.UserResponseDto;
+import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.service.auth.AuthenticationService;
+import pl.su.su_backend.service.council.CouncilMemberService;
 import pl.su.su_backend.service.council.CouncilService;
 
 import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/council")
@@ -30,6 +34,7 @@ import java.util.UUID;
 public class CouncilController {
 
     private final CouncilService councilService;
+    private final CouncilMemberService councilMemberService;
     private final AuthenticationService authenticationService;
 
     @PostMapping
@@ -197,12 +202,15 @@ public class CouncilController {
 
     @GetMapping("/{councilId}/members")
     @PreAuthorize("hasPermission(null, 'COUNCIL_VIEW')")
-    public ResponseEntity<List<UserResponseDto>> getCouncilMembers(@PathVariable UUID councilId,
-                                                                   @AuthenticationPrincipal Object principal) {
+    public ResponseEntity<List<CouncilMemberDto>> getCouncilMembers(@PathVariable UUID councilId,
+                                                                     @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Fetching members of council {} by user: {}", councilId, email);
-        List<UserResponseDto> members = councilService.getCouncilMembers(councilId, email);
-        return ResponseEntity.ok(members);
+        List<CouncilMember> members = councilMemberService.getCouncilMembers(councilId, email);
+        List<CouncilMemberDto> memberDtos = members.stream()
+                .map(CouncilMemberMapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(memberDtos);
     }
 
     @PostMapping("/join/{joinCode}")
