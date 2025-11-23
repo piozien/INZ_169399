@@ -1,29 +1,19 @@
-export interface StudentClass {
-  id: string;
-  name: string;
-}
+import { StatusEnum, AuthProvider } from './enums.types';
+import { ClassDto } from './class.types';
+import { CouncilDto } from './council.types';
 
-export interface Council {
-  id: string;
-  name: string;
-}
-
+// UserResponseDto
 export interface User {
   id: string;
   fullName: string;
   email: string;
-  status: string;
-  createdAt: string;
-  authProvider: string;
+  status: StatusEnum;
+  createdAt: string; // ISO datetime string
+  authProvider: AuthProvider;
   externalId?: string;
-  studentClass?: {
-    id: string;
-    name: string;
-  };
-  council?: {
-    id:string;
-    name: string;
-  };
+
   roles: string[];
   permissions: string[];
 }
+
+export type StudentClass = ClassDto;

@@ -20,7 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @PreAuthorize("hasPermission(null, 'ADMIN')")
-public class PermissionController {
+public class AdminController {
 
     private final PermissionManagementService permissionManagementService;
 

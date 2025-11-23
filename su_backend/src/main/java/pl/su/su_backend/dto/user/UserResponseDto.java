@@ -25,10 +25,5 @@ public class UserResponseDto {
     private LocalDateTime createdAt;
     private AuthProvider authProvider;
     private String externalId;
-
-    private ClassDto studentClass;
-    private List<CouncilDto> councils;
-    private List<String> roles;
-    private Set<String> permissions;
 }
 

@@ -125,16 +125,24 @@ public class AuthController {
     }
 
     @PostMapping("/activate/resend")
-    public ResponseEntity<Void> resendActivation(@RequestParam String email) {
+    public ResponseEntity<Void> resendActivation(@Valid @RequestBody ResendActivationRequestDto requestDto) {
+        String email = requestDto.getEmail();
+        log.info("Resend activation request for email: {}", email);
+        
         Users user = usersRepository.findByEmail(email)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        
         if (user.getStatus() == StatusEnum.CONFIRMED) {
+            log.info("User {} is already confirmed, skipping activation email", email);
             return ResponseEntity.ok().build();
         }
+        
         String activationToken = jwtConfig.generateActivationToken(user.getEmail());
         String activationUrl = frontendUrl + "/activate?token=" + activationToken;
         
         mailService.sendActivationEmail(user.getEmail(), user.getFullName(), activationUrl);
+        log.info("Activation email sent to: {}", email);
         return ResponseEntity.ok().build();
     }
+
 }
