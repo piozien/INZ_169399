@@ -30,7 +30,6 @@ import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.auth.TokenService;
-import pl.su.su_backend.model.council.CouncilMember;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +45,6 @@ public class UserService {
 
     private final UsersRepository usersRepository;
     private final ClassesRepository classesRepository;
-    private final CouncilMemberRepository councilMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtConfig jwtConfig;
     private final TokenService tokenService;
@@ -223,13 +221,7 @@ public class UserService {
                 .orElseThrow(() -> ApiException.badRequest(
                         ErrorCode.USER_NOT_FOUND, "User not found"));
 
-        Classes studentClass = user.getClasses();
-
-        List<CouncilMember> userCouncilMemberships = councilMemberRepository.findByIdUserId(user.getId());
-        
-        log.info("User {} has {} council memberships", email, userCouncilMemberships.size());
-
-        return UserMapper.toResponseDto(user, studentClass, userCouncilMemberships);
+        return UserMapper.toResponseDto(user);
     }
 
     public UUID getCurrentUserId(String email) {
@@ -566,19 +558,13 @@ public class UserService {
         List<String> roles = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getRoleCode().name())
                 .collect(Collectors.toList());
-        
-        Classes studentClass = user.getClasses();
-
-        List<CouncilMember> userCouncilMemberships = councilMemberRepository.findByIdUserId(user.getId());
-        
-        log.info("User {} logging in with {} council memberships", user.getEmail(), userCouncilMemberships.size());
 
         return LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user, studentClass, userCouncilMemberships))
+                .user(UserMapper.toResponseDto(user))
                 .roles(roles)
                 .build();
     }
