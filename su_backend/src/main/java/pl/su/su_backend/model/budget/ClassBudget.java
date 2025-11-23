@@ -16,7 +16,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "class_budgets")
+@Table(name = "class_budgets", 
+	uniqueConstraints = @UniqueConstraint(columnNames = {"class_id", "year"}))
 @Getter
 @Setter
 @Builder
@@ -28,8 +29,8 @@ public class ClassBudget {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "class_id", nullable = false, unique = true)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "class_id", nullable = false)
 	private Classes classes;
 
 	@Column

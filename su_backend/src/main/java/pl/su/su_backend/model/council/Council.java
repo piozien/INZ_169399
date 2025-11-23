@@ -15,7 +15,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "councils")
+@Table(name = "councils",
+	uniqueConstraints = @UniqueConstraint(columnNames = {"name", "academic_year"}))
 @Getter
 @Setter
 @Builder
@@ -48,15 +49,6 @@ public class Council {
 
 	@Column(name = "join_code", nullable = false, unique = true)
 	private String joinCode;
-
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(
-		name = "council_members",
-		joinColumns = @JoinColumn(name = "council_id"),
-		inverseJoinColumns = @JoinColumn(name = "user_id")
-	)
-	@Builder.Default
-	private List<Users> members = new ArrayList<>();
 
 	@PrePersist
 	public void onCreate() {

@@ -11,13 +11,14 @@ import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
 import pl.su.su_backend.dto.council.CouncilMapper;
 import pl.su.su_backend.dto.event.EventResponseDto;
-import pl.su.su_backend.dto.user.UserResponseDto;
-import pl.su.su_backend.dto.user.UserMapper;
 import pl.su.su_backend.model.budget.CouncilBudget;
 import pl.su.su_backend.model.budget.CouncilTransaction;
 import pl.su.su_backend.model.council.Council;
+import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.RoleCode;
+import pl.su.su_backend.model.enums.TransactionType;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.budget.CouncilBudgetRepository;
 import pl.su.su_backend.repositories.council.CouncilRepository;
@@ -45,6 +46,7 @@ public class CouncilService {
     private final ActivityLogService activityLogService;
     private final EventService eventService;
     private final PermissionService permissionService;
+    private final CouncilMemberService councilMemberService;
 
     @Transactional(readOnly = true)
     public List<CouncilResponseDto> getCouncil(String currentUserEmail) {
@@ -58,16 +60,19 @@ public class CouncilService {
         if (permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL)) {
             List<Council> allCouncils = councilRepository.findAll();
             return allCouncils.stream()
-                    .map(CouncilMapper::toResponseDto)
+                    .map(council -> CouncilMapper.toResponseDto(council, councilMemberService))
                     .toList();
         }
 
-        List<Council> userCouncils = councilRepository.findAll().stream()
-                .filter(council -> council.getMembers().contains(currentUser))
+        List<CouncilMember> userMemberships = councilMemberService.getUserCouncilMemberships(currentUser.getId());
+        List<UUID> userCouncilIds = userMemberships.stream()
+                .map(membership -> membership.getId().getCouncilId())
                 .toList();
         
+        List<Council> userCouncils = councilRepository.findAllById(userCouncilIds);
+        
         return userCouncils.stream()
-                .map(CouncilMapper::toResponseDto)
+                .map(council -> CouncilMapper.toResponseDto(council, councilMemberService))
                 .toList();
     }
 
@@ -83,8 +88,8 @@ public class CouncilService {
         
         Council council = councilRepository.findById(councilId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-        
-        if (!council.getMembers().contains(user)) {
+
+        if (!councilMemberService.isMemberOfCouncil(user.getId(), councilId)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You must be a member of the council to create budgets");
         }
         
@@ -120,8 +125,8 @@ public class CouncilService {
         
         Council council = councilRepository.findById(councilId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-        
-        if (!council.getMembers().contains(user)) {
+
+        if (!councilMemberService.isMemberOfCouncil(user.getId(), councilId)) {
             throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You must be a member of the council to view budgets");
         }
         
@@ -292,74 +297,26 @@ public class CouncilService {
 
     public CouncilResponseDto addMemberToCouncil(UUID councilId, UUID userId, String currentUserEmail) {
         log.info("Adding member {} to council {} by user: {}", userId, councilId, currentUserEmail);
-        
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
+
+        councilMemberService.addMemberWithRole(councilId, userId, 
+                RoleCode.CZLONEK_SU, currentUserEmail);
+
         Council council = councilRepository.findById(councilId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
-        Users member = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!council.getMembers().contains(member)) {
-            council.getMembers().add(member);
-            council = councilRepository.save(council);
-            activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED,
-                    "Added member to council: " + member.getFullName());
-        }
-        
-        return CouncilMapper.toResponseDto(council);
+        return CouncilMapper.toResponseDto(council, councilMemberService);
     }
 
     public CouncilResponseDto removeMemberFromCouncil(UUID councilId, UUID userId, String currentUserEmail) {
         log.info("Removing member {} from council {} by user: {}", userId, councilId, currentUserEmail);
-        
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
+
+        councilMemberService.removeMember(councilId, userId, currentUserEmail);
+
         Council council = councilRepository.findById(councilId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
-        Users member = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (council.getMembers().contains(member)) {
-            council.getMembers().remove(member);
-            council = councilRepository.save(council);
-            activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED,
-                    "Removed member from council: " + member.getFullName());
-        }
-        
-        return CouncilMapper.toResponseDto(council);
+        return CouncilMapper.toResponseDto(council, councilMemberService);
     }
-
-    public List<UserResponseDto> getCouncilMembers(UUID councilId, String currentUserEmail) {
-        log.info("Fetching members of council {} by user: {}", councilId, currentUserEmail);
-        
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-        
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        return council.getMembers().stream()
-                .map(UserMapper::toResponseDto)
-                .collect(java.util.stream.Collectors.toList());
-    }
-
 
     public CouncilResponseDto createCouncil(CouncilRequestDto dto, String currentUserEmail) {
         log.info("Creating council: {} for academic year: {} by user: {}", dto.getName(), dto.getAcademicYear(), currentUserEmail);
@@ -381,7 +338,7 @@ public class CouncilService {
         activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE,
                 "Created council: " + dto.getName() + " for academic year: " + dto.getAcademicYear() + " with join code: " + joinCode);
         
-        return CouncilMapper.toResponseDto(council);
+        return CouncilMapper.toResponseDto(council, councilMemberService);
     }
 
     private String generateJoinCodeForCouncil(String academicYear) {
@@ -418,9 +375,9 @@ public class CouncilService {
         BigDecimal totalExpenses = BigDecimal.ZERO;
 
         for (CouncilTransaction transaction : budget.getTransactions()) {
-            if (transaction.getType() == pl.su.su_backend.model.enums.TransactionType.INCOME) {
+            if (transaction.getType() == TransactionType.INCOME) {
                 totalIncome = totalIncome.add(transaction.getAmount());
-            } else if (transaction.getType() == pl.su.su_backend.model.enums.TransactionType.EXPENSE) {
+            } else if (transaction.getType() == TransactionType.EXPENSE) {
                 totalExpenses = totalExpenses.add(transaction.getAmount());
             }
         }
@@ -448,20 +405,18 @@ public class CouncilService {
         if (!council.getIsActive()) {
             throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council is not active");
         }
-        
-        if (council.getMembers().contains(currentUser)) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "User is already a member of this council");
-        }
 
-        council.getMembers().add(currentUser);
-        council = councilRepository.save(council);
+        councilMemberService.joinCouncilAsBasicMember(council.getId(), currentUser.getId());
         
         activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED,
-                "Joined council using code: " + joinCode + " (pending admin approval)");
+                "Joined council using code: " + joinCode);
         
-        log.info("User {} successfully joined council {} - pending admin approval", currentUserEmail, council.getName());
+        log.info("User {} successfully joined council {}", currentUserEmail, council.getName());
+
+        council = councilRepository.findById(council.getId())
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
         
-        return CouncilMapper.toResponseDto(council);
+        return CouncilMapper.toResponseDto(council, councilMemberService);
     }
     
     public CouncilResponseDto getCouncilById(UUID id, String currentUserEmail) {
@@ -477,7 +432,7 @@ public class CouncilService {
         Council council = councilRepository.findById(id)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Council not found"));
         
-        return CouncilMapper.toResponseDto(council);
+        return CouncilMapper.toResponseDto(council, councilMemberService);
     }
 
 }

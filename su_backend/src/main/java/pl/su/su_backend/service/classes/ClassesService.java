@@ -1,4 +1,4 @@
-package pl.su.su_backend.service.classServ;
+package pl.su.su_backend.service.classes;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import pl.su.su_backend.dto.classes.ClassesRequestDto;
 import pl.su.su_backend.dto.classes.ClassesResponseDto;
 import pl.su.su_backend.dto.classes.ClassesMapper;
 import pl.su.su_backend.dto.user.UserMapper;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;

@@ -6,11 +6,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
+import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.RoleCategory;
+import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
+import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.repositories.council.CouncilMemberRepository;
+import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -20,6 +29,8 @@ import java.util.UUID;
 public class PermissionService {
 
     private final UsersRepository usersRepository;
+    private final CouncilMemberRepository councilMemberRepository;
+    private final RoleRepository roleRepository;
 
     public boolean hasPermission(UUID userId, PermissionCode permission) {
         Users user = usersRepository.findById(userId)
@@ -31,15 +42,17 @@ public class PermissionService {
             return false;
         }
 
-        log.info("User {} has {} roles", user.getEmail(), user.getUserRoles().size());
+        Set<Role> allRoles = collectAllUserRoles(user);
         
-        boolean result = user.getUserRoles().stream()
-                .anyMatch(userRole -> {
+        log.info("User {} has {} total roles (global + council)", user.getEmail(), allRoles.size());
+        
+        boolean result = allRoles.stream()
+                .anyMatch(role -> {
                     log.info("Checking role: {} with {} permissions", 
-                            userRole.getRole().getRoleCode(), 
-                            userRole.getRole().getPermissions().size());
+                            role.getRoleCode(), 
+                            role.getPermissions().size());
                     
-                    return userRole.getRole().getPermissions().stream()
+                    return role.getPermissions().stream()
                             .anyMatch(permissionEntity -> {
                                 log.info("Permission entity: {} vs required: {}", 
                                         permissionEntity.getName(), permission.getCode());
@@ -49,6 +62,30 @@ public class PermissionService {
         
         log.info("Final permission result: {}", result);
         return result;
+    }
+    
+    private Set<Role> collectAllUserRoles(Users user) {
+        Set<Role> allRoles = new HashSet<>();
+        
+        user.getUserRoles().stream()
+                .map(userRole -> userRole.getRole())
+                .forEach(allRoles::add);
+        
+        log.info("User {} has {} global roles", user.getEmail(), allRoles.size());
+
+        List<CouncilMember> councilMemberships = councilMemberRepository.findByIdUserId(user.getId());
+        log.info("User {} has {} council memberships", user.getEmail(), councilMemberships.size());
+        
+        for (CouncilMember membership : councilMemberships) {
+            RoleCode councilRoleCode = membership.getRole();
+            roleRepository.findByRoleCode(councilRoleCode)
+                    .ifPresent(role -> {
+                        allRoles.add(role);
+                        log.info("Added council role: {} for user {}", councilRoleCode, user.getEmail());
+                    });
+        }
+        
+        return allRoles;
     }
 
     public boolean hasPermission(String userEmail, PermissionCode permission) {
@@ -68,23 +105,18 @@ public class PermissionService {
         if (!hasPermission(userId, permission)) {
             return false;
         }
+        
+        Set<Role> allRoles = collectAllUserRoles(user);
 
-        return user.getUserRoles().stream()
-                .anyMatch(userRole -> {
-                    // Admin roles can access any class
-                    if (userRole.getRole().getRoleCode().name().contains("ADMINISTRATOR") ||
-                        userRole.getRole().getRoleCode().name().contains("DYREKTOR") ||
-                        userRole.getRole().getRoleCode().name().contains("OPIEKUN_SU")) {
-                        return true;
+        return allRoles.stream()
+                .anyMatch(role -> {
+                    RoleCode roleCode = role.getRoleCode();
+
+                    if (roleCode.getCategory() == RoleCategory.CLASS) {
+                        return user.getClasses() != null && 
+                               user.getClasses().getId().equals(classId);
                     }
-                    
-                    if (userRole.getRole().getRoleCode().name().contains("KLASY") &&
-                        user.getClasses() != null &&
-                        user.getClasses().getId().equals(classId)) {
-                        return true;
-                    }
-                    
-                    return userRole.getRole().getRoleCode().name().equals("NAUCZYCIEL");
+                    return true;
                 });
     }
 }

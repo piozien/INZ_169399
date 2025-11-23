@@ -77,10 +77,6 @@ public class Users {
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();
 
-    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
-    @Builder.Default
-    private Set<Council> councils = new HashSet<>();
-
     @PrePersist
     public void onCreate() {
         if(createdAt == null){

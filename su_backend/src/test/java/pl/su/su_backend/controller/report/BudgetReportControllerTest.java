@@ -22,7 +22,7 @@ import pl.su.su_backend.model.budget.ClassBudget;
 import pl.su.su_backend.model.budget.CouncilBudget;
 import pl.su.su_backend.repositories.budget.ClassBudgetRepository;
 import pl.su.su_backend.repositories.budget.CouncilBudgetRepository;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.permission.PermissionRepository;

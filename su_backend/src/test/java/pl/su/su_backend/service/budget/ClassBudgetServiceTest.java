@@ -15,7 +15,7 @@ import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.budget.ClassBudgetRepository;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;

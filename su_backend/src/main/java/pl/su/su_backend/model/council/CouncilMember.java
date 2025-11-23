@@ -2,6 +2,7 @@ package pl.su.su_backend.model.council;
 
 import jakarta.persistence.*;
 import lombok.*;
+import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.users.Users;
 
 import java.io.Serializable;
@@ -20,7 +21,7 @@ public class CouncilMember {
     @NoArgsConstructor
     @AllArgsConstructor
     @EqualsAndHashCode
-    public static class Id implements Serializable {
+    public static class CouncilMemberId implements Serializable {
         @Column(name = "council_id")
         private UUID councilId;
 
@@ -29,14 +30,18 @@ public class CouncilMember {
     }
 
     @EmbeddedId
-    private Id id;
+    private CouncilMemberId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RoleCode role;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("userId")
     @JoinColumn(name = "user_id")
     private Users user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("councilId")
     @JoinColumn(name = "council_id")
     private Council council;

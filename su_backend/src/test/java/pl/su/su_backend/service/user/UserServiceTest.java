@@ -17,7 +17,8 @@ import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.model.classes.Classes;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
+import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
@@ -42,6 +43,8 @@ class UserServiceTest {
     private UsersRepository usersRepository;
     @Mock
     private ClassesRepository classesRepository;
+    @Mock
+    private CouncilMemberRepository councilMemberRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
@@ -138,6 +141,7 @@ class UserServiceTest {
                 .build();
         testUser.setPassword("stored-password");
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(councilMemberRepository.findByIdUserId(any())).thenReturn(List.of());
         when(passwordEncoder.matches(eq(Fixtures.RAW_TEST_PASSWORD), eq("stored-password"))).thenReturn(true);
         when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
@@ -248,6 +252,7 @@ class UserServiceTest {
     void getUserByEmail_ShouldReturnUser_WhenExists() {
         // Given
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(councilMemberRepository.findByIdUserId(any())).thenReturn(List.of());
 
         // When
         UserResponseDto response = userService.getUserByEmail(testUser.getEmail());

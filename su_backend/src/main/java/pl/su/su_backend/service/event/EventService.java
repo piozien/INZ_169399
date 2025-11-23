@@ -5,6 +5,7 @@ package pl.su.su_backend.service.event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ public class EventService {
     private Environment environment;
     
     @Autowired
+    @Qualifier("webClient")
     private WebClient webClient;
 
     public EventResponseDto createEvent(EventRequestDto dto, UUID createdById, String accessToken) {

@@ -1,4 +1,4 @@
-package pl.su.su_backend.service.classServ;
+package pl.su.su_backend.service.classes;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.testsupport.Fixtures;

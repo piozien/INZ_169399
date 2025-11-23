@@ -27,7 +27,7 @@ public class UserResponseDto {
     private String externalId;
 
     private ClassDto studentClass;
-    private CouncilDto council;
+    private List<CouncilDto> councils;
     private List<String> roles;
     private Set<String> permissions;
 }

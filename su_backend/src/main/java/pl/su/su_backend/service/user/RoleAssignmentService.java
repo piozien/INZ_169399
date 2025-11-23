@@ -8,6 +8,7 @@ import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.RoleCategory;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
@@ -51,6 +52,11 @@ public class RoleAssignmentService {
         Users target = getUserOrThrow(targetUserId);
         Role role = roleRepository.findByRoleCode(roleCode)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.ROLE_NOT_FOUND, "Role not found: " + roleCode));
+
+        if (role.getCategory() == RoleCategory.SU) {
+            throw ApiException.badRequest(ErrorCode.INVALID_ROLE_ASSIGNMENT, 
+                "Cannot assign SU roles globally. SU roles must be assigned through council membership.");
+        }
 
         if (target.isBlocked()) {
             throw ApiException.badRequest(ErrorCode.USER_BLOCKED, "Cannot modify roles of blocked user");

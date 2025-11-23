@@ -25,12 +25,11 @@ import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.repositories.user.UsersRepository;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.auth.TokenService;
-import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.council.CouncilMember;
 
 import java.time.LocalDateTime;
@@ -225,15 +224,12 @@ public class UserService {
                         ErrorCode.USER_NOT_FOUND, "User not found"));
 
         Classes studentClass = user.getClasses();
-        Council council = councilMemberRepository.findByUser(user)
-                .map(CouncilMember::getCouncil)
-                .orElse(null);
-        
-        List<CouncilMember> councilMembers = council != null ?
-                councilMemberRepository.findByCouncilId(council.getId()) :
-                List.of();
 
-        return UserMapper.toResponseDto(user, studentClass, council, councilMembers);
+        List<CouncilMember> userCouncilMemberships = councilMemberRepository.findByIdUserId(user.getId());
+        
+        log.info("User {} has {} council memberships", email, userCouncilMemberships.size());
+
+        return UserMapper.toResponseDto(user, studentClass, userCouncilMemberships);
     }
 
     public UUID getCurrentUserId(String email) {
@@ -311,7 +307,6 @@ public class UserService {
         log.info("User soft deleted (blocked) successfully with ID: {}", userId);
     }
 
-    // function to check if an email address is available during registration
     @Transactional(readOnly = true)
     public boolean userExists(String email) {
         return usersRepository.findByEmail(email).isPresent();
@@ -573,20 +568,17 @@ public class UserService {
                 .collect(Collectors.toList());
         
         Classes studentClass = user.getClasses();
-        Council council = councilMemberRepository.findByUser(user)
-                .map(CouncilMember::getCouncil)
-                .orElse(null);
+
+        List<CouncilMember> userCouncilMemberships = councilMemberRepository.findByIdUserId(user.getId());
         
-        List<CouncilMember> councilMembers = council != null ?
-                councilMemberRepository.findByCouncilId(council.getId()) :
-                List.of();
+        log.info("User {} logging in with {} council memberships", user.getEmail(), userCouncilMemberships.size());
 
         return LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user, studentClass, council, councilMembers))
+                .user(UserMapper.toResponseDto(user, studentClass, userCouncilMemberships))
                 .roles(roles)
                 .build();
     }

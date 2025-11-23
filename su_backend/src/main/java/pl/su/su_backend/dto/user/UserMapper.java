@@ -17,8 +17,7 @@ import java.util.stream.Collectors;
 
 public class UserMapper {
 
-    public static UserResponseDto toResponseDto(Users user, Classes studentClass, Council council,
-            List<CouncilMember> councilMembers) {
+    public static UserResponseDto toResponseDto(Users user, Classes studentClass, List<CouncilMember> userCouncilMemberships) {
         if (user == null) {
             return null;
         }
@@ -31,20 +30,38 @@ public class UserMapper {
                     .build();
         }
 
-        CouncilDto councilDto = null;
-        if (council != null) {
-            List<CouncilMemberDto> memberDtos = councilMembers != null ? councilMembers.stream()
-                    .map(member -> new CouncilMemberDto(member.getUser().getId(), member.getUser().getFullName()))
-                    .collect(Collectors.toList()) : Collections.emptyList();
-
-            councilDto = CouncilDto.builder()
-                    .id(council.getId())
-                    .name(council.getName())
-                    .invitationCode(council.getJoinCode())
-                    .createdAt(council.getCreatedAt().toLocalDate())
-                    .members(memberDtos)
-                    .build();
-        }
+        List<CouncilDto> councilDto = userCouncilMemberships != null ?
+            userCouncilMemberships.stream()
+                .sorted((m1, m2) -> {
+                    // Sort by isActive
+                    boolean active1 = m1.getCouncil().getIsActive();
+                    boolean active2 = m2.getCouncil().getIsActive();
+                    if (active1 != active2) {
+                        return active1 ? -1 : 1;
+                    }
+                    return m2.getCouncil().getCreatedAt().compareTo(m1.getCouncil().getCreatedAt());
+                })
+                .map(membership -> {
+                    Council council = membership.getCouncil();
+                    CouncilMemberDto userMemberDto = CouncilMemberDto.builder()
+                            .councilId(council.getId())
+                            .userId(user.getId())
+                            .userFullName(user.getFullName())
+                            .userEmail(user.getEmail())
+                            .role(membership.getRole())
+                            .roleName(membership.getRole().getDisplayName())
+                            .build();
+                    
+                    return CouncilDto.builder()
+                            .id(council.getId())
+                            .name(council.getName())
+                            .invitationCode(council.getJoinCode())
+                            .createdAt(council.getCreatedAt().toLocalDate())
+                            .members(List.of(userMemberDto))
+                            .build();
+                })
+                .collect(Collectors.toList()) 
+            : Collections.emptyList();
 
         List<String> roles = user.getUserRoles() != null ?
                 user.getUserRoles().stream()
@@ -70,15 +87,14 @@ public class UserMapper {
                 .authProvider(user.getAuthProvider())
                 .externalId(user.getExternalId())
                 .studentClass(classDto)
-                .council(councilDto)
+                .councils(councilDto)
                 .roles(roles)
                 .permissions(permissions)
                 .build();
     }
 
     public static UserResponseDto toResponseDto(Users user) {
-        // This method might need adjustment depending on how council members are fetched
-        return toResponseDto(user, user.getClasses(), null, null);
+        return toResponseDto(user, user.getClasses(), Collections.emptyList());
     }
 }
 

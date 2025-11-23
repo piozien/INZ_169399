@@ -1,6 +1,7 @@
 package pl.su.su_backend.repositories.budget;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import pl.su.su_backend.model.budget.ClassTransaction;
 import pl.su.su_backend.model.enums.TransactionType;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Repository
 public interface ClassTransactionRepository extends JpaRepository<ClassTransaction, UUID> {
     
     List<ClassTransaction> findByBudget_IdOrderByDateDesc(UUID budgetId);
