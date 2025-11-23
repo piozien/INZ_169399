@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.security.access.AccessDeniedException;
 import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.exception.ErrorCode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,9 +24,7 @@ public class GlobalExceptionHandler {
         response.put("error", ex.getCode().name());
         response.put("message", ex.getMessage());
         
-        HttpStatus status = getHttpStatus(ex.getCode());
-        
-        return ResponseEntity.status(status).body(response);
+        return ResponseEntity.status(ex.getStatus()).body(response);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -61,14 +58,6 @@ public class GlobalExceptionHandler {
         response.put("message", "Something went wrong");
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-
-    private HttpStatus getHttpStatus(ErrorCode errorCode) {
-        return switch (errorCode) {
-            case USER_NOT_FOUND, CLASS_NOT_FOUND, BUDGET_NOT_FOUND, TRANSACTION_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case ACCESS_DENIED, INSUFFICIENT_PERMISSIONS -> HttpStatus.FORBIDDEN;
-            default -> HttpStatus.BAD_REQUEST;
-        };
     }
 }
 

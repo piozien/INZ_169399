@@ -117,6 +117,23 @@ class RoleAssignmentServiceTest {
     }
 
     @Test
+    void assignRole_ShouldThrowException_WhenTryingToAssignSURoleGlobally() {
+        // Given
+        Role suRole = Fixtures.role(RoleCode.PRZEWODNICZACY_SU);
+        when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));
+        when(usersRepository.findById(targetUser.getId())).thenReturn(Optional.of(targetUser));
+        when(roleRepository.findByRoleCode(RoleCode.PRZEWODNICZACY_SU)).thenReturn(Optional.of(suRole));
+
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            roleAssignmentService.assignRole(actingUser.getId(), targetUser.getId(), RoleCode.PRZEWODNICZACY_SU, "reason");
+        });
+
+        assertEquals("Cannot assign SU roles globally. SU roles must be assigned through council membership.", exception.getMessage());
+        verify(userRoleRepository, never()).save(any());
+    }
+
+    @Test
     void assignRole_ShouldThrowException_WhenNoPermission() {
         // Given
         when(usersRepository.findById(actingUser.getId())).thenReturn(Optional.of(actingUser));

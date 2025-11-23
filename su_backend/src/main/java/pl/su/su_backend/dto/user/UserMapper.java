@@ -2,6 +2,7 @@ package pl.su.su_backend.dto.user;
 
 import pl.su.su_backend.model.users.Users;
 
+
 public class UserMapper {
 
     public static UserResponseDto toResponseDto(Users user) {
@@ -14,7 +15,6 @@ public class UserMapper {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .status(user.getStatus())
-                .classId(user.getClasses() != null ? user.getClasses().getId() : null)
                 .createdAt(user.getCreatedAt())
                 .authProvider(user.getAuthProvider())
                 .externalId(user.getExternalId())

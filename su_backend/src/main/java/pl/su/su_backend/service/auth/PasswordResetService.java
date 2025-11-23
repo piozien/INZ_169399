@@ -14,8 +14,6 @@ import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.StatusEnum;
-
-
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -82,7 +80,7 @@ public class PasswordResetService {
             throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPassword(passwordEncoder.encode(normalizeClientSecret(newPassword)));
         usersRepository.save(user);
 
         resetToken.markAsUsed();
@@ -110,4 +108,10 @@ public class PasswordResetService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    private String normalizeClientSecret(String candidate) {
+        if (candidate == null) {
+            return null;
+        }
+        return candidate.trim();
+    }
 }

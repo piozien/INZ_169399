@@ -20,7 +20,7 @@ import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.permission.PermissionRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;

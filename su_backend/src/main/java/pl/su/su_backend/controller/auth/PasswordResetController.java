@@ -10,7 +10,7 @@ import pl.su.su_backend.dto.user.PasswordResetRequestDto;
 import pl.su.su_backend.service.auth.PasswordResetService;
 
 @RestController
-@RequestMapping("/api/password-reset")
+@RequestMapping("/api/auth/password-reset")
 @RequiredArgsConstructor
 @Slf4j
 public class PasswordResetController {

@@ -17,7 +17,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "council_budgets")
+@Table(name = "council_budgets",
+	uniqueConstraints = @UniqueConstraint(columnNames = {"council_id", "year"}))
 @Getter
 @Setter
 @Builder

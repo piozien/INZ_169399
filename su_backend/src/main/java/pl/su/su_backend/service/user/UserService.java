@@ -2,13 +2,11 @@ package pl.su.su_backend.service.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import io.jsonwebtoken.JwtException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import pl.su.su_backend.config.JwtConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -27,7 +25,8 @@ import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.repositories.user.UsersRepository;
-import pl.su.su_backend.repositories.classRep.ClassesRepository;
+import pl.su.su_backend.repositories.classes.ClassesRepository;
+import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.auth.TokenService;
@@ -48,7 +47,6 @@ public class UserService {
     private final ClassesRepository classesRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtConfig jwtConfig;
-    private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
     private final MailService mailService;
     private final RoleRepository roleRepository;
@@ -82,7 +80,7 @@ public class UserService {
         Users user = Users.builder()
                 .fullName(userRequestDto.getFullName())
                 .email(userRequestDto.getEmail())
-                .password(passwordEncoder.encode(userRequestDto.getPassword()))
+                .password(passwordEncoder.encode(normalizeClientSecret(userRequestDto.getPassword())))
                 .status(userRequestDto.getStatus() != null ? userRequestDto.getStatus() : StatusEnum.PENDING)
                 .classes(null)
                 .authProvider(provider)
@@ -103,21 +101,26 @@ public class UserService {
     public LoginResponseDto loginUser(LoginRequestDto loginRequestDto) {
         log.info("Attempting login for user: {}", loginRequestDto.getEmail());
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequestDto.getEmail(),
-                        loginRequestDto.getPassword()
-                )
-        );
-
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Users user = usersRepository.findByEmail(userDetails.getUsername())
+        Users user = usersRepository.findByEmail(loginRequestDto.getEmail())
                 .orElseThrow(() -> ApiException.unauthorized(
                         ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
+
+        String normalizedPassword = normalizeClientSecret(loginRequestDto.getPassword());
+        if (!passwordEncoder.matches(normalizedPassword, user.getPassword())) {
+            log.warn("Invalid credentials for user: {}", loginRequestDto.getEmail());
+            throw ApiException.unauthorized(ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
+        }
 
         if (StatusEnum.BLOCKED.equals(user.getStatus())) {
             log.warn("Blocked user attempted login: {}", user.getEmail());
             throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
+        }
+
+        if (user.getStatus() != StatusEnum.CONFIRMED) {
+            log.warn("User with unconfirmed account attempted login: {} (status: {})", 
+                    user.getEmail(), user.getStatus());
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, 
+                    "Your account has not been activated. Check your email and click on the activation link.");
         }
 
         log.info("User logged in successfully: {}", user.getEmail());
@@ -130,17 +133,30 @@ public class UserService {
     public LoginResponseDto refreshToken(RefreshTokenRequestDto refreshTokenRequestDto) {
         log.info("Refreshing token");
 
-        String email = jwtConfig.extractEmail(refreshTokenRequestDto.getRefreshToken());
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.unauthorized(
-                        ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
-
-        if (!tokenService.isRefreshTokenValid(user.getId(), refreshTokenRequestDto.getRefreshToken())) {
+        String rawRefreshToken = refreshTokenRequestDto.getRefreshToken();
+        if (!StringUtils.hasText(rawRefreshToken)) {
             throw ApiException.unauthorized(
                     ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
         }
 
-        String newAccessToken = jwtConfig.generateToken(user.getEmail());
+        String email;
+        try {
+            email = jwtConfig.extractEmail(rawRefreshToken);
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.warn("Failed to extract email from refresh token: {}", ex.getMessage());
+            throw ApiException.unauthorized(ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
+        }
+
+        Users user = usersRepository.findByEmail(email)
+                .orElseThrow(() -> ApiException.unauthorized(
+                        ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
+
+        if (!tokenService.isRefreshTokenValid(user.getId(), rawRefreshToken)) {
+            throw ApiException.unauthorized(
+                    ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
+        }
+
+        String newAccessToken = jwtConfig.generateToken(user.getEmail(), user.getFullName());
         String newRefreshToken = jwtConfig.generateRefreshToken(user.getEmail());
 
         tokenService.saveRefreshToken(user.getId(), newRefreshToken);
@@ -204,6 +220,7 @@ public class UserService {
         Users user = usersRepository.findByEmail(email)
                 .orElseThrow(() -> ApiException.badRequest(
                         ErrorCode.USER_NOT_FOUND, "User not found"));
+
         return UserMapper.toResponseDto(user);
     }
 
@@ -248,7 +265,7 @@ public class UserService {
         user.setFullName(userRequestDto.getFullName());
         user.setEmail(userRequestDto.getEmail());
         if (userRequestDto.getPassword() != null && !userRequestDto.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(userRequestDto.getPassword()));
+            user.setPassword(passwordEncoder.encode(normalizeClientSecret(userRequestDto.getPassword())));
         }
         if (userRequestDto.getStatus() != null) {
             user.setStatus(userRequestDto.getStatus());
@@ -282,7 +299,6 @@ public class UserService {
         log.info("User soft deleted (blocked) successfully with ID: {}", userId);
     }
 
-    // function to check if an email address is available during registration
     @Transactional(readOnly = true)
     public boolean userExists(String email) {
         return usersRepository.findByEmail(email).isPresent();
@@ -310,7 +326,14 @@ public class UserService {
                     ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
-        String accessToken = jwtConfig.generateToken(user.getEmail());
+        if (user.getStatus() != StatusEnum.CONFIRMED) {
+            log.warn("OAuth2 user with unconfirmed account attempted login: {} (status: {})", 
+                    user.getEmail(), user.getStatus());
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, 
+                    "Your account has not been activated. Check your email and click on the activation link.");
+        }
+
+        String accessToken = jwtConfig.generateToken(user.getEmail(), user.getFullName());
         String refreshToken = jwtConfig.generateRefreshToken(user.getEmail());
 
         tokenService.saveRefreshToken(user.getId(), refreshToken);
@@ -528,7 +551,7 @@ public class UserService {
     }
 
     private LoginResponseDto buildLoginResponse(Users user) {
-        String accessToken = jwtConfig.generateToken(user.getEmail());
+        String accessToken = jwtConfig.generateToken(user.getEmail(), user.getFullName());
         String refreshToken = jwtConfig.generateRefreshToken(user.getEmail());
         tokenService.saveRefreshToken(user.getId(), refreshToken);
 
@@ -546,4 +569,10 @@ public class UserService {
                 .build();
     }
 
+    private String normalizeClientSecret(String candidate) {
+        if (candidate == null) {
+            return null;
+        }
+        return candidate.trim();
+    }
 }

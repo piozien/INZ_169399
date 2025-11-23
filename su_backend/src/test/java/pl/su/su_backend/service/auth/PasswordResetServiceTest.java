@@ -74,17 +74,17 @@ class PasswordResetServiceTest {
     void resetPassword_ShouldWork_WhenValidToken() {
         // Given
         String token = "valid-token";
-        String newPassword = "newPassword123";
+        String newPassword = Fixtures.RAW_NEW_PASSWORD;
         PasswordResetToken resetToken = Fixtures.passwordResetToken(testUser, token, LocalDateTime.now().plusHours(1));
         
         when(tokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
-        when(passwordEncoder.encode(newPassword)).thenReturn("encodedPassword");
+        when(passwordEncoder.encode(Fixtures.RAW_NEW_PASSWORD)).thenReturn("encodedPassword");
 
         // When
         passwordResetService.resetPassword(token, newPassword);
 
         // Then
-        verify(passwordEncoder).encode(newPassword);
+        verify(passwordEncoder).encode(Fixtures.RAW_NEW_PASSWORD);
         verify(usersRepository).save(testUser);
     }
 

@@ -1,51 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { logout } from "@/lib/api/auth";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<{ name: string; email: string } | null>(
-    null
-  );
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: user, isLoading, error } = useCurrentUser();
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      router.push("/login");
-      return;
+    if (error) {
+      router.replace("/login");
     }
+  }, [error, router]);
 
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setUser({ name: payload.name, email: payload.email });
-    } catch (error) {
-      console.error("Błąd dekodowania tokenu:", error);
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      router.push("/login");
-    }
-  }, [router]);
+  if (error) {
+    return null;
+  }
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    router.push("/login");
-  };
-
-  if (!user) {
+  if (isLoading || !user) {
     return (
-      <main>
-        <h1>Ładowanie...</h1>
+      <main className="p-8 bg-background">
+        <h1>Ładowanie panelu…</h1>
       </main>
     );
   }
 
+  const handleLogout = async () => {
+    await logout();
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    router.replace("/login");
+  };
+
   return (
-    <main>
-      <h1>Witaj na Dashboardzie, {user.name}!</h1>
-      <p>Jesteś zalogowany jako: {user.email}</p>
-      <button onClick={handleLogout}>Wyloguj</button>
+    <main className="p-8 bg-background">
+      <h1>Witaj, {user.fullName}</h1>
+      <p>Jesteś zalogowany jako {user.email}.</p>
+      <button type="button" onClick={handleLogout}>
+        Wyloguj
+      </button>
     </main>
   );
 }
