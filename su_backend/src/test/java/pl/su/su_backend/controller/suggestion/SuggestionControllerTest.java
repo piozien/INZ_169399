@@ -11,7 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import pl.su.su_backend.config.JwtConfig;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.dto.suggestion.SuggestionRequestDto;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.PermissionCode;
@@ -59,7 +59,7 @@ class SuggestionControllerTest {
     private SuggestionRepository suggestionRepository;
 
     @Autowired
-    private JwtConfig jwtConfig;
+    private JwtService jwtService;
 
     private Users authorUser;
     private Users reviewerUser;
@@ -93,8 +93,8 @@ class SuggestionControllerTest {
         reviewerUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
                 "Reviewer", "reviewer@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, reviewerRole);
 
-        authorToken = jwtConfig.generateToken(authorUser.getEmail());
-        reviewerToken = jwtConfig.generateToken(reviewerUser.getEmail());
+        authorToken = jwtService.generateToken(authorUser.getEmail());
+        reviewerToken = jwtService.generateToken(reviewerUser.getEmail());
     }
 
     @Test

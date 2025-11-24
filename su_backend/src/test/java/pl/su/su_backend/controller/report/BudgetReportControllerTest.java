@@ -11,7 +11,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.PermissionCode;
@@ -20,13 +19,12 @@ import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.model.budget.CouncilBudget;
 import pl.su.su_backend.repositories.budget.CouncilBudgetRepository;
-import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.permission.PermissionRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
-import pl.su.su_backend.config.JwtConfig;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.testsupport.Fixtures;
 import pl.su.su_backend.testsupport.OAuth2TestConfig;
 import pl.su.su_backend.testsupport.RolePermissionTestHelper;
@@ -61,25 +59,18 @@ class BudgetReportControllerTest {
     private UserRoleRepository userRoleRepository;
 
     @Autowired
-    private ClassesRepository classesRepository;
-
-    @Autowired
-    private ClassBudgetRepository classBudgetRepository;
-
-    @Autowired
     private CouncilRepository councilRepository;
 
     @Autowired
     private CouncilBudgetRepository councilBudgetRepository;
 
     @Autowired
-    private JwtConfig jwtConfig;
+    private JwtService jwtService;
 
     private Users teacherUser;
     private Users opiekunUser;
     private String teacherToken;
     private String opiekunToken;
-    private ClassBudget classBudget;
     private CouncilBudget councilBudget;
 
     @BeforeEach
@@ -88,14 +79,11 @@ class BudgetReportControllerTest {
 
         userRoleRepository.deleteAll();
         councilBudgetRepository.deleteAll();
-        classBudgetRepository.deleteAll();
         councilRepository.deleteAll();
-        classesRepository.deleteAll();
         usersRepository.deleteAll();
 
         var teacherRole = RolePermissionTestHelper.ensureRole(
                 roleRepository, permissionRepository, RoleCode.NAUCZYCIEL,
-                PermissionCode.CLASS_BUDGET_VIEW,
                 PermissionCode.REPORT_GENERATE
         );
 
@@ -119,27 +107,8 @@ class BudgetReportControllerTest {
         userRoleRepository.save(Fixtures.userRole(opiekunUser, opiekunRole));
         userRoleRepository.flush();
 
-        teacherToken = jwtConfig.generateToken(teacherUser.getEmail());
-        opiekunToken = jwtConfig.generateToken(opiekunUser.getEmail());
-
-        Classes klasa = Classes.builder()
-                .name("1A")
-                .year("2025")
-                .build();
-        klasa = classesRepository.save(klasa);
-
-        // give teacher class membership to pass access check
-        teacherUser.setClasses(klasa);
-        teacherUser = usersRepository.save(teacherUser);
-
-        classBudget = ClassBudget.builder()
-                .classes(klasa)
-                .year("2025")
-                .initialAmount(new BigDecimal("100.00"))
-                .createdBy(teacherUser)
-                .build();
-        classBudget = classBudgetRepository.save(classBudget);
-        classBudgetRepository.flush();
+        teacherToken = jwtService.generateToken(teacherUser.getEmail());
+        opiekunToken = jwtService.generateToken(opiekunUser.getEmail());
 
         Council council = Council.builder()
                 .name("SU 2025")
@@ -158,38 +127,6 @@ class BudgetReportControllerTest {
                 .build();
         councilBudget = councilBudgetRepository.save(councilBudget);
         councilBudgetRepository.flush();
-    }
-
-    @Test
-    void generateClassBudgetReport_ShouldReturnOk_WhenTeacherHasPermission() {
-        ReportRequestDto body = ReportRequestDto.builder()
-                .fromDate(LocalDate.parse("2025-01-01"))
-                .toDate(LocalDate.parse("2025-12-31"))
-                .includeTransactions(true)
-                .reportType("SUMMARY")
-                .showPayerInfo(false)
-                .build();
-
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                "/api/reports/class-budgets/" + classBudget.getId(),
-                Fixtures.httpEntityWithToken(teacherToken, body),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).contains("CLASS");
-    }
-
-    @Test
-    void generateQuickClassBudgetReport_ShouldReturnOk() {
-        ResponseEntity<String> response = restTemplate.exchange(
-                "/api/reports/class-budgets/" + classBudget.getId() + "/quick",
-                HttpMethod.GET,
-                Fixtures.httpEntityWithToken(teacherToken),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test

@@ -11,16 +11,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import pl.su.su_backend.config.JwtConfig;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.dto.user.UserRequestDto;
-import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.permission.PermissionRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
@@ -56,11 +54,9 @@ class UserControllerTest {
     @Autowired
     private PermissionRepository permissionRepository;
 
-    @Autowired
-    private ClassesRepository classesRepository;
 
     @Autowired
-    private JwtConfig jwtConfig;
+    private JwtService jwtService;
 
     private Role adminRole;
     private Role teacherRole;
@@ -68,7 +64,6 @@ class UserControllerTest {
     private Users adminUser;
     private Users teacherUser;
     private Users studentUser;
-    private Classes classOne;
     private String adminToken;
     private String teacherToken;
     private String studentToken;
@@ -79,7 +74,6 @@ class UserControllerTest {
 
         userRoleRepository.deleteAll();
         usersRepository.deleteAll();
-        classesRepository.deleteAll();
 
         adminRole = RolePermissionTestHelper.ensureRole(
                 roleRepository, permissionRepository, RoleCode.DYREKTOR,
@@ -130,16 +124,9 @@ class UserControllerTest {
                 studentRole
         );
 
-        classOne = Classes.builder()
-                .name("1A")
-                .year("2025")
-                .build();
-        classOne = classesRepository.save(classOne);
-        classesRepository.flush();
-
-        adminToken = jwtConfig.generateToken(adminUser.getEmail());
-        teacherToken = jwtConfig.generateToken(teacherUser.getEmail());
-        studentToken = jwtConfig.generateToken(studentUser.getEmail());
+        adminToken = jwtService.generateToken(adminUser.getEmail());
+        teacherToken = jwtService.generateToken(teacherUser.getEmail());
+        studentToken = jwtService.generateToken(studentUser.getEmail());
     }
 
     @Test
@@ -153,25 +140,6 @@ class UserControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("admin@test.local");
-    }
-
-    @Test
-    void getAllUsers_ShouldReturnClassMembers_WhenTeacherHasViewPermission() {
-        teacherUser.setClasses(classOne);
-        studentUser.setClasses(classOne);
-        usersRepository.save(teacherUser);
-        usersRepository.save(studentUser);
-        usersRepository.flush();
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                "/api/users",
-                HttpMethod.GET,
-                Fixtures.httpEntityWithToken(teacherToken),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).contains("student@test.local");
     }
 
     @Test
@@ -227,22 +195,6 @@ class UserControllerTest {
         assertThat(response.getBody()).contains("UCZEN");
     }
 
-    @Test
-    void getUsersByClass_ShouldReturnOk_WhenAdminHasPermission() {
-        studentUser.setClasses(classOne);
-        usersRepository.save(studentUser);
-        usersRepository.flush();
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                "/api/users/class/" + classOne.getId(),
-                HttpMethod.GET,
-                Fixtures.httpEntityWithToken(adminToken),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).contains("student@test.local");
-    }
 
     @Test
     void getMe_ShouldReturnOk_ForAuthenticatedUser() {
@@ -331,38 +283,6 @@ class UserControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         Users unblocked = usersRepository.findById(studentUser.getId()).orElseThrow();
         assertThat(unblocked.getStatus()).isEqualTo(StatusEnum.CONFIRMED);
-    }
-
-    @Test
-    void assignUserToClass_ShouldReturnOk_WhenAdminHasPermission() {
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                "/api/users/" + studentUser.getId() + "/class/" + classOne.getId(),
-                Fixtures.httpEntityWithToken(adminToken),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        Users updated = usersRepository.findById(studentUser.getId()).orElseThrow();
-        assertThat(updated.getClasses()).isNotNull();
-        assertThat(updated.getClasses().getId()).isEqualTo(classOne.getId());
-    }
-
-    @Test
-    void removeUserFromClass_ShouldReturnOk_WhenAdminHasPermission() {
-        studentUser.setClasses(classOne);
-        usersRepository.save(studentUser);
-        usersRepository.flush();
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                "/api/users/" + studentUser.getId() + "/class",
-                HttpMethod.DELETE,
-                Fixtures.httpEntityWithToken(adminToken),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        Users updated = usersRepository.findById(studentUser.getId()).orElseThrow();
-        assertThat(updated.getClasses()).isNull();
     }
 
     @Test

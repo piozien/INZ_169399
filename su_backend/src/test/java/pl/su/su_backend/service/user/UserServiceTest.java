@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
-import pl.su.su_backend.config.JwtConfig;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.dto.auth.LoginRequestDto;
 import pl.su.su_backend.dto.auth.LoginResponseDto;
 import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
@@ -19,14 +19,11 @@ import pl.su.su_backend.model.enums.*;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.model.classes.Classes;
-import pl.su.su_backend.repositories.classes.ClassesRepository;
 import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
-import pl.su.su_backend.service.auth.TokenService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.testsupport.Fixtures;
 
@@ -45,13 +42,11 @@ class UserServiceTest {
     @Mock
     private UsersRepository usersRepository;
     @Mock
-    private ClassesRepository classesRepository;
-    @Mock
     private CouncilMemberRepository councilMemberRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private JwtConfig jwtConfig;
+    private JwtService jwtService;
     @Mock
     private TokenService tokenService;
     @Mock
@@ -96,7 +91,7 @@ class UserServiceTest {
         when(usersRepository.save(any(Users.class))).thenReturn(savedUser);
         when(roleRepository.findByRoleCode(RoleCode.UCZEN)).thenReturn(Optional.of(defaultRole));
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole());
-        when(jwtConfig.generateActivationToken(anyString())).thenReturn("activation-token");
+        when(jwtService.generateActivationToken(anyString())).thenReturn("activation-token");
         doNothing().when(mailService).sendActivationEmail(anyString(), anyString(), anyString());
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
@@ -146,9 +141,9 @@ class UserServiceTest {
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(councilMemberRepository.findByIdUserId(any())).thenReturn(List.of());
         when(passwordEncoder.matches(eq(Fixtures.RAW_TEST_PASSWORD), eq("stored-password"))).thenReturn(true);
-        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
-        when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
-        when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(anyString())).thenReturn("refresh-token");
+        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
@@ -168,12 +163,12 @@ class UserServiceTest {
         // Given
         RefreshTokenRequestDto refreshDto = Fixtures.refreshTokenRequestDto("old-refresh-token");
 
-        when(jwtConfig.extractEmail(anyString())).thenReturn(testUser.getEmail());
+        when(jwtService.extractEmail(anyString())).thenReturn(testUser.getEmail());
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(tokenService.isRefreshTokenValid(any(UUID.class), anyString())).thenReturn(true);
-        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("new-access-token");
-        when(jwtConfig.generateRefreshToken(anyString())).thenReturn("new-refresh-token");
-        when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("new-access-token");
+        when(jwtService.generateRefreshToken(anyString())).thenReturn("new-refresh-token");
+        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
@@ -191,7 +186,7 @@ class UserServiceTest {
         // Given
         RefreshTokenRequestDto refreshDto = Fixtures.refreshTokenRequestDto("invalid-token");
 
-        when(jwtConfig.extractEmail(anyString())).thenReturn(testUser.getEmail());
+        when(jwtService.extractEmail(anyString())).thenReturn(testUser.getEmail());
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(tokenService.isRefreshTokenValid(any(UUID.class), anyString())).thenReturn(false);
 
@@ -365,9 +360,9 @@ class UserServiceTest {
     @Test
     void loginOAuth2User_ShouldLoginSuccessfully_WhenUserExists() {
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
-        when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
-        when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(anyString())).thenReturn("refresh-token");
+        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
@@ -401,9 +396,9 @@ class UserServiceTest {
         when(usersRepository.save(any(Users.class))).thenReturn(newUser);
         when(roleRepository.findByRoleCode(RoleCode.UCZEN)).thenReturn(Optional.of(defaultRole));
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(userRole);
-        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
-        when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
-        when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(anyString())).thenReturn("refresh-token");
+        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(mailService).sendWelcomeEmail(anyString(), anyString());
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
@@ -429,9 +424,9 @@ class UserServiceTest {
     void loginOrRegisterOAuth2_ShouldLogin_WhenUserExists() {
         testUser.setAuthProvider(AuthProvider.MICROSOFT);
         when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(jwtConfig.generateToken(anyString(), anyString())).thenReturn("access-token");
-        when(jwtConfig.generateRefreshToken(anyString())).thenReturn("refresh-token");
-        when(jwtConfig.getJwtExpiration()).thenReturn(3600000L);
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(anyString())).thenReturn("refresh-token");
+        when(jwtService.getJwtExpiration()).thenReturn(3600000L);
         doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString());
         doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
 
@@ -483,40 +478,6 @@ class UserServiceTest {
         assertEquals(1, response.size());
         assertEquals(user1.getEmail(), response.getFirst().getEmail());
     }
-
-    @Test
-    void getAllUsers_ShouldReturnClassUsers_WhenNoEditPermission() {
-        Classes testClass = Fixtures.schoolClass("1A", "2025");
-        testClass.setId(UUID.randomUUID());
-        testUser.setClasses(testClass);
-        Users classUser = Fixtures.user("Class User", "class@test.com");
-        classUser.setId(UUID.randomUUID());
-        classUser.setClasses(testClass);
-        classUser.setStatus(StatusEnum.CONFIRMED);
-
-        when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.USER_VIEW)).thenReturn(true);
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.USER_EDIT)).thenReturn(false);
-        when(usersRepository.findByClasses_Id(testClass.getId())).thenReturn(List.of(testUser, classUser));
-
-        List<UserResponseDto> response = userService.getAllUsers(testUser.getEmail());
-
-        assertEquals(2, response.size());
-    }
-
-    @Test
-    void getAllUsers_ShouldReturnOnlyCurrentUser_WhenNoClass() {
-        testUser.setClasses(null);
-        when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.USER_VIEW)).thenReturn(true);
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.USER_EDIT)).thenReturn(false);
-
-        List<UserResponseDto> response = userService.getAllUsers(testUser.getEmail());
-
-        assertEquals(1, response.size());
-        assertEquals(testUser.getEmail(), response.getFirst().getEmail());
-    }
-
 
     @Test
     void blockUser_ShouldBlockUser_WhenHasPermission() {
@@ -578,50 +539,6 @@ class UserServiceTest {
         verify(activityLogService).log(eq(testUser.getId()), any(), anyString());
     }
 
-
-    @Test
-    void assignUserToClass_ShouldAssignSuccessfully_WhenHasPermission() {
-        UUID userId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        Users user = Fixtures.user("User", "user@test.com");
-        user.setId(userId);
-        Classes classes = Fixtures.schoolClass("1A", "2025");
-        classes.setId(classId);
-
-        when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.USER_EDIT)).thenReturn(true);
-        when(usersRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(classesRepository.findById(classId)).thenReturn(Optional.of(classes));
-        when(usersRepository.save(any(Users.class))).thenReturn(user);
-        doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
-
-        userService.assignUserToClass(userId, classId, testUser.getEmail());
-
-        assertEquals(classes, user.getClasses());
-        verify(usersRepository).save(user);
-    }
-
-    @Test
-    void removeUserFromClass_ShouldRemoveSuccessfully_WhenHasPermission() {
-        UUID userId = UUID.randomUUID();
-        Users user = Fixtures.user("User", "user@test.com");
-        user.setId(userId);
-        Classes classes = Fixtures.schoolClass("1A", "2025");
-        user.setClasses(classes);
-
-        when(usersRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(permissionService.hasPermission(testUser.getId(), PermissionCode.USER_EDIT)).thenReturn(true);
-        when(usersRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(usersRepository.save(any(Users.class))).thenReturn(user);
-        doNothing().when(activityLogService).log(any(UUID.class), any(), anyString());
-
-        userService.removeUserFromClass(userId, testUser.getEmail());
-
-        assertNull(user.getClasses());
-        verify(usersRepository).save(user);
-    }
-
-
     @Test
     void getUserRoles_ShouldReturnRoles_WhenUserExists() {
         UUID userId = UUID.randomUUID();
@@ -642,29 +559,6 @@ class UserServiceTest {
                 userService.getUserRoles(userId));
 
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getCode());
-    }
-
-
-    @Test
-    void getUsersByClass_ShouldReturnActiveUsers_WhenClassExists() {
-        UUID classId = UUID.randomUUID();
-        Classes classes = Fixtures.schoolClass("1A", "2025");
-        classes.setId(classId);
-        Users user1 = Fixtures.user("User1", "user1@test.com");
-        user1.setId(UUID.randomUUID());
-        user1.setClasses(classes);
-        user1.setStatus(StatusEnum.CONFIRMED);
-        Users user2 = Fixtures.user("User2", "user2@test.com");
-        user2.setId(UUID.randomUUID());
-        user2.setClasses(classes);
-        user2.setStatus(StatusEnum.BLOCKED);
-
-        when(usersRepository.findAll()).thenReturn(List.of(user1, user2));
-
-        List<UserResponseDto> response = userService.getUsersByClass(classId);
-
-        assertEquals(1, response.size());
-        assertEquals(user1.getEmail(), response.getFirst().getEmail());
     }
 
     @Test

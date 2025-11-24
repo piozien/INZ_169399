@@ -1,29 +1,15 @@
 package pl.su.su_backend.model.users;
 
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import pl.su.su_backend.model.enums.AuthProvider;
+import pl.su.su_backend.model.enums.StatusEnum;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import pl.su.su_backend.model.enums.AuthProvider;
-import pl.su.su_backend.model.enums.StatusEnum;
 
 @Entity
 @Table(name = "users")
@@ -43,7 +29,6 @@ public class Users {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -51,6 +36,8 @@ public class Users {
     @Builder.Default
     private StatusEnum status = StatusEnum.PENDING;
 
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
@@ -63,16 +50,12 @@ public class Users {
     @Column(name = "refresh_token")
     private String refreshToken;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true,
-     fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();
 
     @PrePersist
     public void onCreate() {
-        if(createdAt == null){
-        createdAt = LocalDateTime.now();
-    }
         if (status == null) {
             status = StatusEnum.PENDING;
         }
@@ -82,4 +65,7 @@ public class Users {
         return StatusEnum.BLOCKED.equals(this.status);
     }
 
+    public boolean isActive() {
+        return StatusEnum.CONFIRMED.equals(this.status);
+    }
 }

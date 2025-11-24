@@ -33,7 +33,6 @@ const Sidebar = () => {
   const mainLinks = [
     { href: '/dashboard', label: 'Strona Główna', icon: HomeIcon },
     { href: '/dashboard/events', label: 'Wydarzenia', icon: CalendarDaysIcon },
-    { href: '/dashboard/class', label: 'Klasa', icon: UsersRound },
     { href: '/dashboard/council', label: 'Samorząd', icon: Landmark },
   ];
 

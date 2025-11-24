@@ -3,28 +3,29 @@ package pl.su.su_backend.scheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import pl.su.su_backend.service.auth.PasswordResetService;
 
-@Configuration
-@EnableScheduling
+import java.util.concurrent.TimeUnit;
+
+@Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true")
-public class ScheduledTasksConfig {
+@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true", matchIfMissing = true)
+public class AuthCleanupScheduler {
 
     private final PasswordResetService passwordResetService;
 
-    @Scheduled(fixedRate = 3600000) // 1 hour
+
+    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
     public void cleanupExpiredPasswordResetTokens() {
-        log.debug("Running scheduled cleanup of expired password reset tokens");
+        log.debug("Task started: Cleanup expired password reset tokens");
         try {
             passwordResetService.cleanupExpiredTokens();
-            log.debug("Successfully cleaned up expired password reset tokens");
+            log.debug("Task finished: Cleanup completed");
         } catch (Exception e) {
-            log.error("Error during scheduled cleanup of password reset tokens: {}", e.getMessage());
+            log.error("Task failed: Error cleaning up tokens", e);
         }
     }
 }
