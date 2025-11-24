@@ -29,6 +29,7 @@ import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.event.EventService;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Random;
@@ -435,4 +436,8 @@ public class CouncilService {
         return CouncilMapper.toResponseDto(council, councilMemberService);
     }
 
+    public List<CouncilResponseDto> getCouncils(String email) {
+        //todo
+        return new ArrayList<>();
+    }
 }

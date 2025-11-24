@@ -335,7 +335,7 @@ public class EventService {
             requestBody.add("scope", scope);
             requestBody.add("grant_type", "client_credentials");
             
-            Map<String, Object> response = webClient.post()
+            Map response = webClient.post()
                 .uri(tokenUrl)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(requestBody))

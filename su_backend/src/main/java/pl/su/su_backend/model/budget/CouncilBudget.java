@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.su.su_backend.model.council.Council;
-import pl.su.su_backend.model.enums.TransactionType;
 import pl.su.su_backend.model.users.Users;
 
 import java.math.BigDecimal;

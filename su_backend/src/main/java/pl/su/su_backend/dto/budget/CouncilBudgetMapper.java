@@ -24,20 +24,4 @@ public class CouncilBudgetMapper {
                 .build();
     }
 
-    public static List<CouncilBudgetResponseDto> toResponseList(List<CouncilBudget> budgets) {
-        List<CouncilBudgetResponseDto> result = new ArrayList<>();
-        for (CouncilBudget budget : budgets) {
-            result.add(toResponse(budget));
-        }
-        return result;
-    }
-
-    public static CouncilBudget toEntity(CouncilBudgetRequestDto dto, Council council, Users createdBy) {
-        return CouncilBudget.builder()
-                .council(council)
-                .year(dto.getYear())
-                .initialAmount(dto.getInitialAmount())
-                .createdBy(createdBy)
-                .build();
-    }
 }

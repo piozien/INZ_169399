@@ -19,10 +19,6 @@ public enum RoleCode {
     CZLONEK_SU("Członek SU", RoleCategory.SU),
     BYLY_CZLONEK_SU("Były członek SU", RoleCategory.SU),
 
-    // Class
-    PRZEWODNICZACY_KLASY("Przewodniczący klasy", RoleCategory.CLASS),
-    ZASTEPCA_KLASY("Zastępca przewodniczącego klasy", RoleCategory.CLASS),
-    SKARBNIK_KLASY("Skarbnik klasy", RoleCategory.CLASS),
 
     // Other
     UCZEN("Uczeń", RoleCategory.OTHER),
@@ -54,9 +50,6 @@ public enum RoleCode {
             case ZASTEPCA_SU -> 50;
             case SKARBNIK_SU -> 40;
             case CZLONEK_SU -> 30;
-            case PRZEWODNICZACY_KLASY -> 20;
-            case ZASTEPCA_KLASY -> 15;
-            case SKARBNIK_KLASY -> 10;
             case NAUCZYCIEL -> 5;
             case UCZEN -> 1;
             case BYLY_UCZEN, BYLY_CZLONEK_SU -> 0;

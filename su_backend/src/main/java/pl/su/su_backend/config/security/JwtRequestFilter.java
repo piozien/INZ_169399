@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import pl.su.su_backend.service.auth.CustomUserDetailsService;
+import pl.su.su_backend.service.auth.JwtService;
 
 import java.io.IOException;
 
@@ -25,7 +26,7 @@ import java.io.IOException;
 public class JwtRequestFilter extends OncePerRequestFilter {
 
     private final CustomUserDetailsService userDetailsService;
-    private final JwtConfig jwtConfig;
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, 
@@ -41,8 +42,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         try {
             String jwt = parseJwt(request);
             if (jwt != null) {
-                String email = jwtConfig.extractEmail(jwt);
-                if (jwtConfig.isTokenValid(jwt, email)) {
+                String email = jwtService.extractEmail(jwt);
+                if (jwtService.isTokenValid(jwt, email)) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                     UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

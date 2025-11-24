@@ -10,10 +10,12 @@ import org.springframework.util.StringUtils;
 import pl.su.su_backend.config.JwtConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
+import pl.su.su_backend.dto.auth.LoginRequestDto;
+import pl.su.su_backend.dto.auth.LoginResponseDto;
+import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
 import pl.su.su_backend.dto.user.*;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
-import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.PermissionCode;
@@ -25,8 +27,6 @@ import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.repositories.user.UsersRepository;
-import pl.su.su_backend.repositories.classes.ClassesRepository;
-import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.auth.TokenService;
@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UsersRepository usersRepository;
-    private final ClassesRepository classesRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtConfig jwtConfig;
     private final TokenService tokenService;
@@ -82,7 +81,6 @@ public class UserService {
                 .email(userRequestDto.getEmail())
                 .password(passwordEncoder.encode(normalizeClientSecret(userRequestDto.getPassword())))
                 .status(userRequestDto.getStatus() != null ? userRequestDto.getStatus() : StatusEnum.PENDING)
-                .classes(null)
                 .authProvider(provider)
                 .externalId(userRequestDto.getExternalId())
                 .createdAt(LocalDateTime.now())
@@ -238,21 +236,15 @@ public class UserService {
                     ErrorCode.ACCESS_DENIED, "Access denied");
         }
 
-        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            return usersRepository.findAll().stream()
-                    .filter(user -> !user.isBlocked())
-                    .map(UserMapper::toResponseDto)
-                    .collect(Collectors.toList());
-        } else {
-            if (currentUser.getClasses() == null) {
-                return List.of(UserMapper.toResponseDto(currentUser));
-            }
-
-            return usersRepository.findByClasses_Id(currentUser.getClasses().getId()).stream()
-                    .filter(user -> user.getStatus() != StatusEnum.BLOCKED)
-                    .map(UserMapper::toResponseDto)
-                    .collect(Collectors.toList());
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
+            throw ApiException.forbidden(
+                    ErrorCode.ACCESS_DENIED, "Access denied");
         }
+
+        return usersRepository.findAll().stream()
+                .filter(user -> !user.isBlocked())
+                .map(UserMapper::toResponseDto)
+                .collect(Collectors.toList());
     }
 
     public UserResponseDto updateUser(UUID userId, UserRequestDto userRequestDto) {
@@ -304,15 +296,6 @@ public class UserService {
         return usersRepository.findByEmail(email).isPresent();
     }
 
-    @Transactional(readOnly = true)
-    public List<UserResponseDto> getUsersByClass(UUID classId) {
-        log.info("Fetching active users for class ID: {}", classId);
-        return usersRepository.findAll().stream()
-                .filter(user -> !user.isBlocked())
-                .filter(user -> user.getClasses() != null && classId.equals(user.getClasses().getId()))
-                .map(UserMapper::toResponseDto)
-                .collect(Collectors.toList());
-    }
 
     public LoginResponseDto loginOAuth2User(String email) {
         log.info("OAuth2 login for existing user: {}", email);
@@ -472,54 +455,6 @@ public class UserService {
         return UserMapper.toResponseDto(user);
     }
 
-    public UserResponseDto assignUserToClass(UUID userId, UUID classId, String currentUserEmail) {
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        Classes classes = classesRepository.findById(classId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.VALIDATION_ERROR, "Class not found"));
-
-        user.setClasses(classes);
-        usersRepository.save(user);
-        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Assigned user " + user.getEmail() +
-                " to class " + classes.getName());
-
-        return UserMapper.toResponseDto(user);
-    }
-
-    public UserResponseDto removeUserFromClass(UUID userId, String currentUserEmail) {
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        String className = user.getClasses() != null ? user.getClasses().getName() : "unknown";
-        user.setClasses(null);
-        usersRepository.save(user);
-        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Removed user " + user.getEmail() +
-                " from class " + className);
-
-        return UserMapper.toResponseDto(user);
-    }
 
     private Users getCurrentUser(String currentUserEmail) {
         return usersRepository.findByEmail(currentUserEmail)

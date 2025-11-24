@@ -4,7 +4,6 @@ public enum RoleCategory {
     SCHOOL_MANAGEMENT,
     TEACHERS,
     SU,
-    CLASS,
     OTHER,
     SYSTEM
 }

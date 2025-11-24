@@ -13,6 +13,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.*;
+import pl.su.su_backend.dto.auth.LoginRequestDto;
+import pl.su.su_backend.dto.auth.LoginResponseDto;
+import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
+import pl.su.su_backend.dto.auth.ResendActivationRequestDto;
 import pl.su.su_backend.dto.user.*;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.service.auth.AuthenticationService;
@@ -52,7 +56,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequestDto,
-                                                   HttpServletResponse response) {
+                                                  HttpServletResponse response) {
         log.info("Login request for email: {}", loginRequestDto.getEmail());
         LoginResponseDto loginResponse = userService.loginUser(loginRequestDto);
         cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());

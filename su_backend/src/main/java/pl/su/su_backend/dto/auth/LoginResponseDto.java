@@ -1,9 +1,10 @@
-package pl.su.su_backend.dto.user;
+package pl.su.su_backend.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import pl.su.su_backend.dto.user.UserResponseDto;
 
 import java.util.ArrayList;
 import java.util.List;

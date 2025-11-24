@@ -70,14 +70,6 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    @GetMapping("/class/{classId}")
-    @PreAuthorize("hasPermission(null, 'USER_VIEW')")
-    public ResponseEntity<List<UserResponseDto>> getUsersByClass(@PathVariable UUID classId, @AuthenticationPrincipal Object principal) {
-        String email = authenticationService.getEmailFromPrincipal(principal);
-        log.info("Fetching users for class ID: {} for user: {}", classId, email);
-        List<UserResponseDto> users = userService.getUsersByClass(classId);
-        return ResponseEntity.ok(users);
-    }
 
     @PutMapping("/{userId}")
     @PreAuthorize("hasPermission(null, 'USER_EDIT')")
@@ -117,25 +109,6 @@ public class UserController {
         return ResponseEntity.ok(unblockedUser);
     }
 
-    @PostMapping("/{userId}/class/{classId}")
-    @PreAuthorize("hasPermission(null, 'USER_EDIT')")
-    public ResponseEntity<UserResponseDto> assignUserToClass(@PathVariable UUID userId,
-                                                             @PathVariable UUID classId,
-                                                             @AuthenticationPrincipal Object principal) {
-        String email = authenticationService.getEmailFromPrincipal(principal);
-        log.info("Assigning user {} to class {} by {}", userId, classId, email);
-        UserResponseDto updatedUser = userService.assignUserToClass(userId, classId, email);
-        return ResponseEntity.ok(updatedUser);
-    }
-
-    @DeleteMapping("/{userId}/class")
-    @PreAuthorize("hasPermission(null, 'USER_EDIT')")
-    public ResponseEntity<UserResponseDto> removeUserFromClass(@PathVariable UUID userId, @AuthenticationPrincipal Object principal) {
-        String email = authenticationService.getEmailFromPrincipal(principal);
-        log.info("Removing user {} from class by {}", userId, email);
-        UserResponseDto updatedUser = userService.removeUserFromClass(userId, email);
-        return ResponseEntity.ok(updatedUser);
-    }
 
     @PostMapping("/{userId}/roles/{roleCode}")
     @PreAuthorize("hasPermission(null, 'ROLE_MANAGE')")
