@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.flywaydb.core.Flyway;
-import pl.su.su_backend.config.JwtConfig;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.RoleCode;
@@ -59,7 +59,7 @@ class CouncilControllerTest {
 	private CouncilMemberRepository councilMemberRepository;
 
     @Autowired
-    private JwtConfig jwtConfig;
+    private JwtService jwtService;
 
 	@Autowired
 	private PermissionRepository permissionRepository;
@@ -106,9 +106,9 @@ class CouncilControllerTest {
         uczenUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
                 "Uczen", "uczen@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, uczenRole);
 
-		opiekunToken = jwtConfig.generateToken(opiekunUser.getEmail());
-		przewodniczacyToken = jwtConfig.generateToken(przewodniczacyUser.getEmail());
-		uczenToken = jwtConfig.generateToken(uczenUser.getEmail());
+		opiekunToken = jwtService.generateToken(opiekunUser.getEmail());
+		przewodniczacyToken = jwtService.generateToken(przewodniczacyUser.getEmail());
+		uczenToken = jwtService.generateToken(uczenUser.getEmail());
 
         testCouncil = Fixtures.councilNoId("Test Council", "2025/26", 
                 LocalDate.now(), LocalDate.now().plusMonths(6));

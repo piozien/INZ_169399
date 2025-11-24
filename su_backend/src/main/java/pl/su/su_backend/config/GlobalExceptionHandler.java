@@ -2,63 +2,73 @@ package pl.su.su_backend.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.security.access.AccessDeniedException;
 import pl.su.su_backend.exception.ApiException;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<Map<String, String>> handleApiException(ApiException ex) {
-        log.error("API Error: {}", ex.getMessage());
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getCode().name());
-        response.put("message", ex.getMessage());
-        
-        return ResponseEntity.status(ex.getStatus()).body(response);
-    }
+    public ProblemDetail handleApiException(ApiException ex) {
+        log.warn("Business exception occurred: {}", ex.getMessage());
 
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDeniedException(AccessDeniedException ex) {
-        log.error("Access denied: {}", ex.getMessage());
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("error", "ACCESS_DENIED");
-        response.put("message", "Access denied");
-        
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        problem.setTitle(ex.getCode().name());
+
+        return problem;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
-        log.error("Validation error: {}", ex.getMessage());
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("error", "VALIDATION_ERROR");
-        response.put("message", "Invalid input data");
-        
-        return ResponseEntity.badRequest().body(response);
+    public ProblemDetail handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        log.warn("Validation failed: {}", errorMessage);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Walidacja nie powiodła się");
+        problem.setTitle("VALIDATION_ERROR");
+
+        List<Map<String, String>> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(err -> Map.of(
+                        "field", err.getField(),
+                        "message", err.getDefaultMessage() != null ? err.getDefaultMessage() : "Nieprawidłowa wartość"
+                ))
+                .collect(Collectors.toList());
+
+        problem.setProperty("fieldErrors", fieldErrors);
+
+        return problem;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Unauthorized access attempt: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
+                "Nie masz uprawnień dostępu do tego zasobu.");
+        problem.setTitle("ACCESS_DENIED");
+
+        return problem;
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        log.error("Unexpected error: {}", ex.getMessage());
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("error", "INTERNAL_SERVER_ERROR");
-        response.put("message", "Something went wrong");
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    public ProblemDetail handleGenericException(Exception ex) {
+        log.error("Unexpected server error", ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Wystąpił nieoczekiwany błąd wewnętrzny serwera.");
+        problem.setTitle("INTERNAL_SERVER_ERROR");
+
+        return problem;
     }
 }
-
-

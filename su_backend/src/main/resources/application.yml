@@ -80,10 +80,6 @@ app:
   frontend:
     url: ${FRONTEND_URL}
 
-  # Scheduling configuration
-  scheduling:
-    enabled: ${SCHEDULING_ENABLED}
-
   # Microsoft Graph / Outlook Calendar
   microsoft:
     graph:

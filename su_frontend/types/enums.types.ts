@@ -8,9 +8,6 @@ export type RoleCode =
   | 'SKARBNIK_SU'
   | 'CZLONEK_SU'
   | 'BYLY_CZLONEK_SU'
-  | 'PRZEWODNICZACY_KLASY'
-  | 'ZASTEPCA_KLASY'
-  | 'SKARBNIK_KLASY'
   | 'UCZEN'
   | 'BYLY_UCZEN'
   | 'ADMINISTRATOR';
@@ -19,7 +16,6 @@ export type RoleCategory =
   | 'SCHOOL_MANAGEMENT'
   | 'TEACHERS'
   | 'SU'
-  | 'CLASS'
   | 'OTHER'
   | 'SYSTEM';
 

@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.flywaydb.core.Flyway;
-import pl.su.su_backend.config.JwtConfig;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.EventStatus;
@@ -56,7 +56,7 @@ class EventControllerTest {
     private EventRepository eventRepository;
 
     @Autowired
-    private JwtConfig jwtConfig;
+    private JwtService jwtService;
 
     @Autowired
     private PermissionRepository permissionRepository;
@@ -102,9 +102,9 @@ class EventControllerTest {
         studentUser = Fixtures.createUserWithRole(usersRepository, userRoleRepository,
                 "Student", "student@test.local", StatusEnum.CONFIRMED, AuthProvider.LOCAL, studentRole);
 
-        teacherToken = jwtConfig.generateToken(teacherUser.getEmail());
-        supervisorToken = jwtConfig.generateToken(supervisorUser.getEmail());
-        studentToken = jwtConfig.generateToken(studentUser.getEmail());
+        teacherToken = jwtService.generateToken(teacherUser.getEmail());
+        supervisorToken = jwtService.generateToken(supervisorUser.getEmail());
+        studentToken = jwtService.generateToken(studentUser.getEmail());
 
         testEvent = Fixtures.eventNoId("Test Event", "Test Description",
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2));

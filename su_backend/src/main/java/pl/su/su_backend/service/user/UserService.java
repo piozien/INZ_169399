@@ -2,512 +2,211 @@ package pl.su.su_backend.service.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import io.jsonwebtoken.JwtException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import pl.su.su_backend.config.JwtConfig;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
-import pl.su.su_backend.dto.auth.LoginRequestDto;
-import pl.su.su_backend.dto.auth.LoginResponseDto;
-import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
-import pl.su.su_backend.dto.user.*;
+import pl.su.su_backend.dto.user.UserMapper;
+import pl.su.su_backend.dto.user.UserRequestDto;
+import pl.su.su_backend.dto.user.UserResponseDto;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.PermissionCode;
-import pl.su.su_backend.model.enums.StatusEnum;
-import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.model.enums.RoleCode;
-import pl.su.su_backend.repositories.role.RoleRepository;
-import pl.su.su_backend.repositories.user.UserRoleRepository;
+import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
+import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
+import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
-import pl.su.su_backend.service.auth.TokenService;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class UserService {
 
     private final UsersRepository usersRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtConfig jwtConfig;
-    private final TokenService tokenService;
-    private final MailService mailService;
     private final RoleRepository roleRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
     private final ActivityLogService activityLogService;
     private final PermissionService permissionService;
+    private final JwtService jwtService;
+    private final UserMapper userMapper;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public UserResponseDto registerUser(UserRequestDto userRequestDto) {
-        log.info("Registering new user with email: {}", userRequestDto.getEmail());
+    @Transactional
+    public Users getOrCreateMicrosoftUser(String email, String fullName, String externalId) {
+        return usersRepository.findByEmail(email)
+                .orElseGet(() -> createMicrosoftUser(email, fullName, externalId));
+    }
 
-        if (usersRepository.findByEmail(userRequestDto.getEmail()).isPresent()) {
-            throw ApiException.conflict(
-                    ErrorCode.EMAIL_IN_USE, "Email already in use");
+    @Transactional
+    public UserResponseDto registerLocalUser(UserRequestDto request) {
+        log.info("Registering local user: {}", request.getEmail());
+
+        if (usersRepository.existsByEmail(request.getEmail())) {
+            throw ApiException.conflict("Adres e-mail jest już używany.");
         }
 
-        AuthProvider provider = userRequestDto.getAuthProvider() != null ? userRequestDto.getAuthProvider() : AuthProvider.LOCAL;
-        if (provider != AuthProvider.LOCAL) {
-            throw ApiException.badRequest(
-                    ErrorCode.INVALID_CREDENTIALS,
-                    "Use OAuth2 registration for this provider");
-        }
-        if (userRequestDto.getPassword() == null || userRequestDto.getPassword().isEmpty()) {
-            throw ApiException.badRequest(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Password is required for local registration");
+        if (request.getPassword() == null || request.getPassword().isEmpty()) {
+            throw ApiException.badRequest("Hasło jest wymagane do rejestracji.");
         }
 
         Users user = Users.builder()
-                .fullName(userRequestDto.getFullName())
-                .email(userRequestDto.getEmail())
-                .password(passwordEncoder.encode(normalizeClientSecret(userRequestDto.getPassword())))
-                .status(userRequestDto.getStatus() != null ? userRequestDto.getStatus() : StatusEnum.PENDING)
-                .authProvider(provider)
-                .externalId(userRequestDto.getExternalId())
-                .createdAt(LocalDateTime.now())
+                .email(request.getEmail())
+                .fullName(request.getFullName())
+                .password(passwordEncoder.encode(request.getPassword().trim()))
+                .authProvider(AuthProvider.LOCAL)
+                .status(StatusEnum.PENDING)
+                .userRoles(new HashSet<>())
                 .build();
 
         Users savedUser = usersRepository.save(user);
+
         assignDefaultRole(savedUser);
         sendActivationEmail(savedUser);
-        log.info("User registered successfully with ID: {}", savedUser.getId());
-        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "User registered");
 
-        return UserMapper.toResponseDto(savedUser);
+        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "User registered locally");
+
+        return userMapper.toResponseDto(savedUser);
     }
 
+    private Users createMicrosoftUser(String email, String fullName, String externalId) {
+        log.info("Creating new Microsoft user: {}", email);
 
-    public LoginResponseDto loginUser(LoginRequestDto loginRequestDto) {
-        log.info("Attempting login for user: {}", loginRequestDto.getEmail());
-
-        Users user = usersRepository.findByEmail(loginRequestDto.getEmail())
-                .orElseThrow(() -> ApiException.unauthorized(
-                        ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
-
-        String normalizedPassword = normalizeClientSecret(loginRequestDto.getPassword());
-        if (!passwordEncoder.matches(normalizedPassword, user.getPassword())) {
-            log.warn("Invalid credentials for user: {}", loginRequestDto.getEmail());
-            throw ApiException.unauthorized(ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
-        }
-
-        if (StatusEnum.BLOCKED.equals(user.getStatus())) {
-            log.warn("Blocked user attempted login: {}", user.getEmail());
-            throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
-        }
-
-        if (user.getStatus() != StatusEnum.CONFIRMED) {
-            log.warn("User with unconfirmed account attempted login: {} (status: {})", 
-                    user.getEmail(), user.getStatus());
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, 
-                    "Your account has not been activated. Check your email and click on the activation link.");
-        }
-
-        log.info("User logged in successfully: {}", user.getEmail());
-        activityLogService.log(user.getId(), ActionType.LOGIN, "User logged in");
-
-        return buildLoginResponse(user);
-    }
-
-
-    public LoginResponseDto refreshToken(RefreshTokenRequestDto refreshTokenRequestDto) {
-        log.info("Refreshing token");
-
-        String rawRefreshToken = refreshTokenRequestDto.getRefreshToken();
-        if (!StringUtils.hasText(rawRefreshToken)) {
-            throw ApiException.unauthorized(
-                    ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
-        }
-
-        String email;
-        try {
-            email = jwtConfig.extractEmail(rawRefreshToken);
-        } catch (JwtException | IllegalArgumentException ex) {
-            log.warn("Failed to extract email from refresh token: {}", ex.getMessage());
-            throw ApiException.unauthorized(ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
-        }
-
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.unauthorized(
-                        ErrorCode.INVALID_CREDENTIALS, "Invalid credentials"));
-
-        if (!tokenService.isRefreshTokenValid(user.getId(), rawRefreshToken)) {
-            throw ApiException.unauthorized(
-                    ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
-        }
-
-        String newAccessToken = jwtConfig.generateToken(user.getEmail(), user.getFullName());
-        String newRefreshToken = jwtConfig.generateRefreshToken(user.getEmail());
-
-        tokenService.saveRefreshToken(user.getId(), newRefreshToken);
-
-        List<String> roles = user.getUserRoles().stream()
-                .map(userRole -> userRole.getRole().getRoleCode().name())
-                .collect(Collectors.toList());
-
-        log.info("Token refreshed successfully for user: {}", user.getEmail());
-
-        activityLogService.log(user.getId(), ActionType.LOGIN, "User refreshed token");
-
-        return LoginResponseDto.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user))
-                .roles(roles)
+        Users newUser = Users.builder()
+                .email(email)
+                .fullName(fullName)
+                .externalId(externalId)
+                .authProvider(AuthProvider.MICROSOFT)
+                .status(StatusEnum.CONFIRMED) // MS trusted
+                .password(null)
+                .userRoles(new HashSet<>())
                 .build();
-    }
 
-    public void logoutUser(UUID userId) {
-        log.info("Logging out user with ID: {}", userId);
-        tokenService.revokeRefreshToken(userId);
-        activityLogService.log(userId, ActionType.LOGOUT, "User logged out");
-        log.info("User logged out successfully");
+        Users savedUser = usersRepository.save(newUser);
+        assignDefaultRole(savedUser);
+
+        mailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFullName());
+        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "User registered via Microsoft");
+
+        return savedUser;
     }
 
     @Transactional(readOnly = true)
-    public UserResponseDto getUserById(UUID userId, String currentUserEmail) {
-        log.info("Fetching user with ID: {} by user: {}", userId, currentUserEmail);
-
-        Users currentUser = getCurrentUser(currentUserEmail);
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
+    public UserResponseDto getUserById(UUID userId) {
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-        return UserMapper.toResponseDto(user);
-    }
+                .orElseThrow(() -> ApiException.notFound("User not found"));
 
-
-    @Transactional(readOnly = true)
-    public List<String> getUserRoles(UUID userId) {
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-        return user.getUserRoles().stream()
-                .map(ur -> ur.getRole().getRoleCode().name())
-                .collect(Collectors.toList());
+        return userMapper.toResponseDto(user);
     }
 
     @Transactional(readOnly = true)
-    public UserResponseDto getUserByEmail(String email) {
-        log.info("Fetching user with email: {}", email);
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        return UserMapper.toResponseDto(user);
-    }
-
-    public UUID getCurrentUserId(String email) {
-        return getUserByEmail(email).getId();
-    }
-
     public List<UserResponseDto> getAllUsers(String currentUserEmail) {
-        log.info("Fetching all users for: {}", currentUserEmail);
-
-        Users currentUser = getCurrentUser(currentUserEmail);
+        Users currentUser = getUserByEmailEntity(currentUserEmail);
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
+            throw ApiException.forbidden("Access denied");
         }
 
         return usersRepository.findAll().stream()
                 .filter(user -> !user.isBlocked())
-                .map(UserMapper::toResponseDto)
+                .map(userMapper::toResponseDto)
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDto updateUser(UUID userId, UserRequestDto userRequestDto) {
-        log.info("Updating user with ID: {}", userId);
+    @Transactional
+    public UserResponseDto updateUser(UUID userId, UserRequestDto request, String currentUserEmail) {
+        Users currentUser = getUserByEmailEntity(currentUserEmail);
+
+        boolean canEdit = currentUser.getId().equals(userId) ||
+                permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT);
+
+        if (!canEdit) {
+            throw ApiException.forbidden("Access denied");
+        }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
 
-        user.setFullName(userRequestDto.getFullName());
-        user.setEmail(userRequestDto.getEmail());
-        if (userRequestDto.getPassword() != null && !userRequestDto.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(normalizeClientSecret(userRequestDto.getPassword())));
-        }
-        if (userRequestDto.getStatus() != null) {
-            user.setStatus(userRequestDto.getStatus());
+        user.setFullName(request.getFullName());
+        if (request.getStatus() != null && permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
+            user.setStatus(request.getStatus());
         }
 
         Users updatedUser = usersRepository.save(user);
-        activityLogService.log(updatedUser.getId(), ActionType.UPDATE_PROFILE, "User profile updated");
-        log.info("User updated successfully with ID: {}", updatedUser.getId());
+        activityLogService.log(updatedUser.getId(), ActionType.UPDATE_PROFILE, "User updated profile");
 
-        return UserMapper.toResponseDto(updatedUser);
+        return userMapper.toResponseDto(updatedUser);
     }
 
-    public void deleteUser(UUID userId) {
-        log.info("Soft deleting (blocking) user with ID: {}", userId);
+    @Transactional
+    public void deleteUser(UUID userId, String currentUserEmail) {
+        Users currentUser = getUserByEmailEntity(currentUserEmail);
+
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
+            throw ApiException.forbidden("Access denied");
+        }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
 
-        if (user.isBlocked()) {
-            throw ApiException.badRequest(
-                    ErrorCode.VALIDATION_ERROR, "User already blocked");
-        }
-
-        user.setStatus(StatusEnum.BLOCKED);
+        user.setStatus(StatusEnum.BLOCKED); // Soft delete
         usersRepository.save(user);
 
-        tokenService.revokeRefreshToken(userId);
-        activityLogService.log(userId, ActionType.SOFT_DELETE, "User soft deleted (blocked)");
-
-        log.info("User soft deleted (blocked) successfully with ID: {}", userId);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean userExists(String email) {
-        return usersRepository.findByEmail(email).isPresent();
+        activityLogService.log(userId, ActionType.SOFT_DELETE, "User blocked");
     }
 
 
-    public LoginResponseDto loginOAuth2User(String email) {
-        log.info("OAuth2 login for existing user: {}", email);
-
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (user.isBlocked()) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        if (user.getStatus() != StatusEnum.CONFIRMED) {
-            log.warn("OAuth2 user with unconfirmed account attempted login: {} (status: {})", 
-                    user.getEmail(), user.getStatus());
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, 
-                    "Your account has not been activated. Check your email and click on the activation link.");
-        }
-
-        String accessToken = jwtConfig.generateToken(user.getEmail(), user.getFullName());
-        String refreshToken = jwtConfig.generateRefreshToken(user.getEmail());
-
-        tokenService.saveRefreshToken(user.getId(), refreshToken);
-
-        List<String> roles = user.getUserRoles().stream()
-                .map(userRole -> userRole.getRole().getRoleCode().name())
-                .collect(Collectors.toList());
-
-        log.info("OAuth2 user logged in successfully: {}", user.getEmail());
-        activityLogService.log(user.getId(), ActionType.LOGIN, "OAuth2 user logged in");
-
-        return LoginResponseDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user))
-                .roles(roles)
-                .build();
-    }
-
-    public LoginResponseDto registerOAuth2User(String email, String fullName, String externalId, AuthProvider authProvider) {
-        log.info("OAuth2 registration for new user: {}", email);
-
-        if (usersRepository.findByEmail(email).isPresent()) {
-            throw ApiException.conflict(
-                    ErrorCode.EMAIL_IN_USE, "Email already in use");
-        }
-
-        Users user = Users.builder()
-                .fullName(fullName != null ? fullName : email)
-                .email(email)
-                .password("")
-                .status(StatusEnum.CONFIRMED)
-                .authProvider(authProvider)
-                .externalId(externalId)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Users savedUser = usersRepository.save(user);
-        Role defaultRole = roleRepository.findByRoleCode(RoleCode.UCZEN)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.DEFAULT_ROLE_MISSING, "Default role missing"));
-        UserRole userRole = UserRole.builder()
-                .id(new UserRole.Id(savedUser.getId(), defaultRole.getId()))
-                .user(savedUser)
-                .role(defaultRole)
-                .build();
-        userRoleRepository.save(userRole);
-        mailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFullName());
-        log.info("OAuth2 user registered successfully with ID: {}", savedUser.getId());
-
-        return loginOAuth2User(email);
-    }
-
-    public LoginResponseDto loginOrRegisterOAuth2(String email, String fullName, String externalId, AuthProvider provider) {
-        if (provider == null || provider == AuthProvider.LOCAL) {
-            throw ApiException.badRequest(
-                    ErrorCode.VALIDATION_ERROR, "Invalid OAuth2 provider");
-        }
-
+    public Users getUserByEmailEntity(String email) {
         return usersRepository.findByEmail(email)
-                .map(user -> {
-                    if (user.getAuthProvider() != provider) {
-                        throw ApiException.unauthorized(
-                                ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
-                    }
-                    return loginOAuth2User(email);
-                })
-                .orElseGet(() -> registerOAuth2User(email, fullName, externalId, provider));
-    }
-
-    public UserResponseDto updateUser(UUID userId, UserRequestDto userRequestDto, String currentUserEmail) {
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
-
-            return updateUser(userId, userRequestDto);
-        }
-
-        if (!currentUser.getId().equals(userId)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        return updateUser(userId, userRequestDto);
-    }
-
-
-    public UserResponseDto blockUser(UUID userId, String currentUserEmail) {
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        if (currentUser.getId().equals(userId)) {
-            throw ApiException.badRequest(
-                    ErrorCode.VALIDATION_ERROR, "Cannot block yourself");
-        }
-
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        user.setStatus(StatusEnum.BLOCKED);
-        usersRepository.save(user);
-        activityLogService.log(currentUser.getId(), ActionType.USER_BLOCKED, "Blocked user: " + user.getEmail());
-
-        return UserMapper.toResponseDto(user);
-    }
-
-    public UserResponseDto unblockUser(UUID userId, String currentUserEmail) {
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw ApiException.forbidden(
-                    ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        user.setStatus(StatusEnum.CONFIRMED);
-        usersRepository.save(user);
-        activityLogService.log(currentUser.getId(), ActionType.USER_UNBLOCKED, "Unblocked user: " + user.getEmail());
-
-        return UserMapper.toResponseDto(user);
-    }
-
-
-    private Users getCurrentUser(String currentUserEmail) {
-        return usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nieznaleziony"));
     }
 
     private void assignDefaultRole(Users user) {
         Role defaultRole = roleRepository.findByRoleCode(RoleCode.UCZEN)
-                .orElseThrow(() -> ApiException.badRequest(
-                        ErrorCode.DEFAULT_ROLE_MISSING, "Default role missing"));
-        UserRole userRole = UserRole.builder()
-                .id(new UserRole.Id(user.getId(), defaultRole.getId()))
-                .user(user)
-                .role(defaultRole)
-                .build();
-        userRoleRepository.save(userRole);
+                .orElseThrow(() -> {
+                    log.error("CRITICAL: Default role UCZEN missing in DB");
+                    return ApiException.notFound(ErrorCode.DEFAULT_ROLE_MISSING, "Błąd systemu: Brakuje domyślnej roli");
+                });
+
+        UserRole assignment = new UserRole();
+        assignment.setId(new UserRole.Id(user.getId(), defaultRole.getId()));
+        assignment.setUser(user);
+        assignment.setRole(defaultRole);
+        assignment.setAssignedAt(LocalDateTime.now());
+
+        user.getUserRoles().add(assignment);
     }
 
     private void sendActivationEmail(Users user) {
-        String activationToken = jwtConfig.generateActivationToken(user.getEmail());
-        String activationUrl = UriComponentsBuilder
-                .fromUriString(frontendUrl)
-                .path("/activate")
-                .queryParam("token", activationToken)
-                .build()
-                .toUriString();
-        mailService.sendActivationEmail(user.getEmail(), user.getFullName(), activationUrl);
-    }
+        try {
+            String activationToken = jwtService.generateActivationToken(user.getEmail());
+            String activationUrl = UriComponentsBuilder
+                    .fromUriString(frontendUrl)
+                    .path("/activate")
+                    .queryParam("token", activationToken)
+                    .build()
+                    .toUriString();
 
-    private LoginResponseDto buildLoginResponse(Users user) {
-        String accessToken = jwtConfig.generateToken(user.getEmail(), user.getFullName());
-        String refreshToken = jwtConfig.generateRefreshToken(user.getEmail());
-        tokenService.saveRefreshToken(user.getId(), refreshToken);
-
-        List<String> roles = user.getUserRoles().stream()
-                .map(userRole -> userRole.getRole().getRoleCode().name())
-                .collect(Collectors.toList());
-
-        return LoginResponseDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtConfig.getJwtExpiration() / 1000)
-                .user(UserMapper.toResponseDto(user))
-                .roles(roles)
-                .build();
-    }
-
-    private String normalizeClientSecret(String candidate) {
-        if (candidate == null) {
-            return null;
+            mailService.sendActivationEmail(user.getEmail(), user.getFullName(), activationUrl);
+        } catch (Exception e) {
+            log.error("Failed to send activation email: {}", e.getMessage());
         }
-        return candidate.trim();
     }
 }

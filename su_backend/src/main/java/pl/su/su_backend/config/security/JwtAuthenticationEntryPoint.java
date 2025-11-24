@@ -25,10 +25,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                          AuthenticationException authException) {
 
         log.error("Unauthorized error: {}", authException.getMessage());
-
-        // Key move: Instead of writing the response manually, we pass the exception
-        // to our GlobalExceptionHandler. This ensures the response format (ProblemDetail)
-        // is consistent across the entire application.
         resolver.resolveException(request, response, null, authException);
     }
 }

@@ -1,18 +1,21 @@
-package pl.su.su_backend.config;
+package pl.su.su_backend.service.auth;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Map;
+import java.util.function.Function;
 
 @Service
-public class JwtConfig {
+public class JwtService {
 
     @Value("${app.jwt.secret}")
     private String secretKey;
@@ -28,54 +31,67 @@ public class JwtConfig {
     @Value("${app.activation.expiration-ms:10800000}")
     private long activationExpiration;
 
+    private SecretKey cachedSignInKey;
+
+    @PostConstruct
+    public void init() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        this.cachedSignInKey = Keys.hmacShaKeyFor(keyBytes);
+    }
+
     public String extractEmail(String token) {
-        Claims claims = extractAllClaims(token);
-        return claims.getSubject();
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
     }
 
     public String generateToken(String email) {
-        return generateToken(email, null);
+        return generateToken(Map.of(), email);
     }
 
     public String generateToken(String email, String fullName) {
-        var builder = Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration));
+        Map<String, Object> extraClaims = (fullName != null && !fullName.isEmpty())
+                ? Map.of("name", fullName, "email", email)
+                : Map.of("email", email);
 
-        if (fullName != null && !fullName.isEmpty()) {
-            builder.claim("name", fullName);
-        }
-        builder.claim("email", email);
+        return generateToken(extraClaims, email);
+    }
 
-        return builder
-                .signWith(getSignInKey(), Jwts.SIG.HS256)
-                .compact();
+    public String generateToken(Map<String, Object> extraClaims, String email) {
+        return buildToken(extraClaims, email, jwtExpiration);
     }
 
     public String generateRefreshToken(String email) {
-        return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
-                .signWith(getSignInKey(), Jwts.SIG.HS256)
-                .compact();
+        return buildToken(Map.of(), email, refreshExpiration);
     }
 
     public String generateActivationToken(String email) {
         return Jwts.builder()
                 .subject(email)
                 .claim("typ", "activation")
-                .issuedAt(new Date())
+                .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + activationExpiration))
-                .signWith(getSignInKey(), Jwts.SIG.HS256)
+                .signWith(cachedSignInKey, Jwts.SIG.HS256)
+                .compact();
+    }
+
+    private String buildToken(Map<String, Object> extraClaims, String email, long expiration) {
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(cachedSignInKey, Jwts.SIG.HS256)
                 .compact();
     }
 
     public boolean isActivationToken(String token) {
         try {
-            Claims claims = extractAllClaims(token);
-            return "activation".equals(claims.get("typ"));
+            final String type = extractClaim(token, claims -> claims.get("typ", String.class));
+            return "activation".equals(type);
         } catch (Exception e) {
             return false;
         }
@@ -87,19 +103,18 @@ public class JwtConfig {
     }
 
     private boolean isTokenExpired(String token) {
-        return extractAllClaims(token).getExpiration().before(new Date());
+        return extractExpiration(token).before(new Date());
+    }
+
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSignInKey())
+                .verifyWith(cachedSignInKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-    }
-
-    private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
     }
 }
