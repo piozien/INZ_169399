@@ -30,10 +30,6 @@ public class ApiException extends RuntimeException {
         return new ApiException(code, HttpStatus.BAD_REQUEST, msg);
     }
 
-    public static ApiException notFound(ErrorCode code, String msg) {
-        return new ApiException(code, HttpStatus.NOT_FOUND, msg);
-    }
-
 }
 
 

@@ -1,4 +1,4 @@
-package pl.su.su_backend.dto.user;
+package pl.su.su_backend.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

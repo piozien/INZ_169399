@@ -1,0 +1,34 @@
+package pl.su.su_backend.config.security;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+
+@Component
+@Slf4j
+public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    private final HandlerExceptionResolver resolver;
+
+    public JwtAuthenticationEntryPoint(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+        this.resolver = resolver;
+    }
+
+    @Override
+    public void commence(HttpServletRequest request,
+                         HttpServletResponse response,
+                         AuthenticationException authException) {
+
+        log.error("Unauthorized error: {}", authException.getMessage());
+
+        // Key move: Instead of writing the response manually, we pass the exception
+        // to our GlobalExceptionHandler. This ensures the response format (ProblemDetail)
+        // is consistent across the entire application.
+        resolver.resolveException(request, response, null, authException);
+    }
+}

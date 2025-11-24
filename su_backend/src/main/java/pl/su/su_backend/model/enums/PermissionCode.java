@@ -12,23 +12,6 @@ public enum PermissionCode {
     USER_ASSIGN_ROLE("user.assign_role", "Assign roles to users"),
     ROLE_MANAGE("role.manage", "Manage user roles"),
 
-    // Class Management
-    CLASS_VIEW("class.view", "View classes"),
-    CLASS_CREATE("class.create", "Create classes"),
-    CLASS_EDIT("class.edit", "Edit classes"),
-    CLASS_DELETE("class.delete", "Delete classes"),
-
-    // Class Budget Management
-    CLASS_BUDGET_VIEW("class_budget.view", "View class budgets"),
-    CLASS_BUDGET_CREATE("class_budget.create", "Create class budgets"),
-    CLASS_BUDGET_EDIT("class_budget.edit", "Edit class budgets"),
-    CLASS_BUDGET_DELETE("class_budget.delete", "Delete class budgets"),
-
-    // Class Transaction Management
-    CLASS_TRANSACTION_VIEW("class_transaction.view", "View class transactions"),
-    CLASS_TRANSACTION_CREATE("class_transaction.create", "Create class transactions"),
-    CLASS_TRANSACTION_EDIT("class_transaction.edit", "Edit class transactions"),
-    CLASS_TRANSACTION_DELETE("class_transaction.delete", "Delete class transactions"),
 
     // Council Management
     COUNCIL_VIEW("council.view", "View council"),

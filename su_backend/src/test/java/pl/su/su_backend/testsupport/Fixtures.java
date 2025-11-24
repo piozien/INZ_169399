@@ -1,6 +1,5 @@
 package pl.su.su_backend.testsupport;
 
-import pl.su.su_backend.dto.classes.ClassesRequestDto;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.repositories.user.UsersRepository;
@@ -8,12 +7,10 @@ import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.model.roles.Role;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.dto.suggestion.SuggestionRequestDto;
-import pl.su.su_backend.dto.user.LoginRequestDto;
-import pl.su.su_backend.dto.user.RefreshTokenRequestDto;
+import pl.su.su_backend.dto.auth.LoginRequestDto;
+import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
 import pl.su.su_backend.dto.user.UserRequestDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
-import pl.su.su_backend.model.budget.*;
-import pl.su.su_backend.model.classes.Classes;
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.*;
 import pl.su.su_backend.model.event.Event;
@@ -26,7 +23,6 @@ import pl.su.su_backend.model.suggestion.SuggestionTag;
 import pl.su.su_backend.model.users.PasswordResetToken;
 import pl.su.su_backend.model.users.Users;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -86,30 +82,6 @@ public final class Fixtures {
         UserRole.Id id = new UserRole.Id(user.getId(), role.getId());
         UserRole userRole = UserRole.builder().id(id).user(user).role(role).build();
         return userRole;
-    }
-
-    // ===== CLASS METHODS =====
-
-    public static Classes schoolClass(String name, String year) {
-        Classes c = Classes.builder().name(name).year(year).build();
-        c.setId(UUID.randomUUID());
-        return c;
-    }
-
-    public static ClassesRequestDto classesRequestDto(String name, String year) {
-        return ClassesRequestDto.builder().name(name).year(year).build();
-    }
-
-    public static ClassBudget classBudget(Classes classes, BigDecimal initialAmount, Users createdBy) {
-        ClassBudget cb = ClassBudget.builder().classes(classes).initialAmount(initialAmount).createdBy(createdBy).build();
-        cb.setId(UUID.randomUUID());
-        return cb;
-    }
-
-    public static ClassTransaction classTransaction(ClassBudget budget, TransactionType type, BigDecimal amount, String description, Users addedBy) {
-        ClassTransaction transaction = ClassTransaction.builder().budget(budget).type(type).amount(amount).description(description).addedBy(addedBy).build();
-        transaction.setId(UUID.randomUUID());
-        return transaction;
     }
 
     // ===== COUNCIL METHODS =====

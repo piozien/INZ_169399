@@ -18,10 +18,6 @@ public enum ActionType {
     ASSIGN_ROLE,
     REMOVE_ROLE,
 
-    // CLASS
-    ASSIGN_CLASS,
-    UNASSIGN_CLASS,
-
     // USER ADMIN ACTIONS
     USER_DELETED,
     USER_BLOCKED,

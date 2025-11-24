@@ -1,4 +1,4 @@
-package pl.su.su_backend.config;
+package pl.su.su_backend.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import pl.su.su_backend.service.auth.PasswordResetService;
 @EnableScheduling
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true")
 public class ScheduledTasksConfig {
 
     private final PasswordResetService passwordResetService;

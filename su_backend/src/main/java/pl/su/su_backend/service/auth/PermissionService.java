@@ -9,7 +9,6 @@ import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.PermissionCode;
-import pl.su.su_backend.model.enums.RoleCategory;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.roles.Role;
@@ -87,26 +86,6 @@ public class PermissionService {
         return result;
     }
 
-    public boolean canAccessClassBudget(UUID userId, UUID classId, PermissionCode permission) {
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + userId));
-
-        if (!hasPermission(userId, permission)) {
-            return false;
-        }
-
-        Set<Role> allRoles = collectAllUserRoles(user);
-
-        return allRoles.stream()
-                .anyMatch(role -> {
-                    RoleCode roleCode = role.getRoleCode();
-                    if (roleCode.getCategory() == RoleCategory.CLASS) {
-                        return user.getClasses() != null &&
-                                user.getClasses().getId().equals(classId);
-                    }
-                    return true;
-                });
-    }
 
     private Set<Role> collectAllUserRoles(Users user) {
         Set<Role> allRoles = new HashSet<>();

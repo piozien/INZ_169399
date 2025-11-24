@@ -17,7 +17,6 @@ public enum ErrorCode {
     INVALID_ROLE_ASSIGNMENT,
     
     // Class and budget related errors
-    CLASS_NOT_FOUND,
     BUDGET_NOT_FOUND,
     BUDGET_ALREADY_EXISTS,
     TRANSACTION_NOT_FOUND,

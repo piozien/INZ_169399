@@ -14,9 +14,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -25,8 +22,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.su.su_backend.model.classes.Classes;
-import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.StatusEnum;
 
@@ -55,10 +50,6 @@ public class Users {
     @Column(nullable = false)
     @Builder.Default
     private StatusEnum status = StatusEnum.PENDING;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", referencedColumnName = "id")
-    private Classes classes;
 
     private LocalDateTime createdAt;
 

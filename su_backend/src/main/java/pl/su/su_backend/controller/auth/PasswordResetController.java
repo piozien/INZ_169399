@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.su.su_backend.dto.user.PasswordResetConfirmDto;
-import pl.su.su_backend.dto.user.PasswordResetRequestDto;
+import pl.su.su_backend.dto.auth.PasswordResetConfirmDto;
+import pl.su.su_backend.dto.auth.PasswordResetRequestDto;
 import pl.su.su_backend.service.auth.PasswordResetService;
 
 @RestController

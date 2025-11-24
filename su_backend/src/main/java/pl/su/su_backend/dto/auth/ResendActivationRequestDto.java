@@ -1,4 +1,4 @@
-package pl.su.su_backend.dto.user;
+package pl.su.su_backend.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,12 +11,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginRequestDto {
+public class ResendActivationRequestDto {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
-
-    @NotBlank(message = "Password is required")
-    private String password;
 }
+

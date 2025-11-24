@@ -21,6 +21,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import pl.su.su_backend.config.security.CustomPermissionEvaluator;
+import pl.su.su_backend.config.security.JwtAuthenticationEntryPoint;
+import pl.su.su_backend.config.security.JwtRequestFilter;
 import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.auth.PermissionService;
 

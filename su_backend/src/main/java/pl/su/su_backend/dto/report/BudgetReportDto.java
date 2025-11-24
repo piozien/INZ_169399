@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class BudgetReportDto {
     private String budgetName;
-    private String budgetType; // "CLASS" or "COUNCIL"
+    private String budgetType; // "COUNCIL"
     private BigDecimal initialAmount;
     private BigDecimal totalIncome;
     private BigDecimal totalExpenses;
