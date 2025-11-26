@@ -16,5 +16,5 @@ public class ReportRequestDto {
     private LocalDate toDate;
     private String reportType; // "SUMMARY", "DETAILED", "CATEGORY"
     private boolean includeTransactions;
-    private boolean showPayerInfo; // For class transactions - whether to show who paid
+    private boolean showPayerInfo;
 }

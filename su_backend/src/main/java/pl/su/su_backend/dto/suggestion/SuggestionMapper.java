@@ -1,56 +1,34 @@
 package pl.su.su_backend.dto.suggestion;
 
-import pl.su.su_backend.model.enums.PermissionCode;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import pl.su.su_backend.model.suggestion.Suggestion;
-import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.service.auth.PermissionService;
+import pl.su.su_backend.model.suggestion.SuggestionTag;
 
-import java.util.UUID;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-public class SuggestionMapper {
+@Mapper(componentModel = "spring")
+public interface SuggestionMapper {
 
-	public static SuggestionResponseDto toResponse(Suggestion s) {
-		if (s == null) return null;
-		return SuggestionResponseDto.builder()
-				.id(s.getId())
-				.userId(s.getUser() != null ? s.getUser().getId() : null)
-				.title(s.getTitle())
-				.description(s.getDescription())
-				.isAnonymous(s.getIsAnonymous())
-				.status(s.getStatus())
-				.rejectionReason(s.getRejectionReason())
-				.createdAt(s.getCreatedAt())
-				.tags(s.getTags() == null ? null : s.getTags().stream().map(t -> t.getId().getTag()).collect(Collectors.toSet()))
-				.build();
-	}
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagsToStrings")
+    SuggestionResponseDto toResponse(Suggestion suggestion);
 
-	public static SuggestionResponseDto toResponse(Suggestion s, Users currentUser, PermissionService permissionService) {
-		if (s == null) return null;
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "rejectionReason", ignore = true)
+    @Mapping(target = "status", constant = "PENDING")
+    @Mapping(target = "tags", ignore = true)
+    Suggestion toEntity(SuggestionRequestDto dto);
 
-		UUID userId = null;
-		if (s.getUser() != null) {
-			boolean isAnonymous = s.getIsAnonymous() != null && s.getIsAnonymous();
-			boolean canViewAnonymous = currentUser != null && 
-				permissionService.hasPermission(currentUser.getId(), PermissionCode.SUGGESTION_VIEW_ANONYMOUS);
-			
-			if (!isAnonymous || canViewAnonymous) {
-				userId = s.getUser().getId();
-			}
-		}
-		
-		return SuggestionResponseDto.builder()
-				.id(s.getId())
-				.userId(userId)
-				.title(s.getTitle())
-				.description(s.getDescription())
-				.isAnonymous(s.getIsAnonymous())
-				.status(s.getStatus())
-				.rejectionReason(s.getRejectionReason())
-				.createdAt(s.getCreatedAt())
-				.tags(s.getTags() == null ? null : s.getTags().stream().map(t -> t.getId().getTag()).collect(Collectors.toSet()))
-				.build();
-	}
+    @Named("mapTagsToStrings")
+    default Set<String> mapTagsToStrings(Set<SuggestionTag> tags) {
+        if (tags == null) return Set.of();
+        return tags.stream()
+                .map(tag -> tag.getId().getTag())
+                .collect(Collectors.toSet());
+    }
 }
-
-

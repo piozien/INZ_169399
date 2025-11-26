@@ -34,6 +34,8 @@ public class CouncilTransaction {
 	@Column(nullable = false)
 	private TransactionType type;
 
+    // consider adding a category to transactions in the future
+
 	@Column(nullable = false, precision = 12, scale = 2)
 	private BigDecimal amount;
 

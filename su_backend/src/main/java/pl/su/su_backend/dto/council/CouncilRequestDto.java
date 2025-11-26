@@ -15,15 +15,15 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class CouncilRequestDto {
 
-    @NotBlank(message = "Council name is required")
+    @NotBlank(message = "Nazwa samorządu jest wymagana")
     private String name;
 
-    @NotBlank(message = "Academic year is required")
+    @NotBlank(message = "Wymagane jest podanie roku szkolnego")
     private String academicYear;
 
-    @NotNull(message = "Start date is required")
+    @NotNull(message = "Wymagana jest data rozpoczęcia")
     private LocalDate startDate;
 
-    @NotNull(message = "End date is required")
+    @NotNull(message = "Wymagana jest data zakończenia")
     private LocalDate endDate;
 }

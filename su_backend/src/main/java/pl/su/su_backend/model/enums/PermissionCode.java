@@ -56,11 +56,8 @@ public enum PermissionCode {
     REPORT_GENERATE("report.generate", "Generate reports"),
 
     // Activity Log Management
-    ACTIVITY_LOG_VIEW("activity_log.view", "View activity logs"),
+    ACTIVITY_LOG_VIEW("activity_log.view", "View activity logs");
 
-
-    // Admin Management
-    ADMIN("admin", "Full administrative access");
 
     private final String code;
     private final String description;

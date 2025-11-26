@@ -1,35 +1,28 @@
 package pl.su.su_backend.controller.auth;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 import pl.su.su_backend.dto.auth.LoginRequestDto;
 import pl.su.su_backend.dto.auth.LoginResponseDto;
+import pl.su.su_backend.dto.auth.MicrosoftLoginDto;
 import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
 import pl.su.su_backend.dto.auth.ResendActivationRequestDto;
-import pl.su.su_backend.dto.user.*;
-import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.service.auth.AuthenticationService;
-import pl.su.su_backend.service.user.UserService;
-import pl.su.su_backend.service.user.MailService;
-import pl.su.su_backend.service.auth.CookieService;
-import pl.su.su_backend.config.JwtConfig;
-import pl.su.su_backend.model.enums.StatusEnum;
-import pl.su.su_backend.repositories.user.UsersRepository;
+import pl.su.su_backend.dto.user.UserRequestDto;
+import pl.su.su_backend.dto.user.UserResponseDto;
 import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.exception.ErrorCode;
-
-import java.util.UUID;
+import pl.su.su_backend.model.enums.StatusEnum;
+import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.repositories.user.UsersRepository;
+import pl.su.su_backend.service.auth.AuthenticationService;
+import pl.su.su_backend.service.auth.JwtService;
+import pl.su.su_backend.service.user.MailService;
+import pl.su.su_backend.service.user.UserService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -38,115 +31,83 @@ import java.util.UUID;
 public class AuthController {
 
     private final UserService userService;
-    private final MailService mailService;
-    private final JwtConfig jwtConfig;
-    private final UsersRepository usersRepository;
-    private final CookieService cookieService;
     private final AuthenticationService authenticationService;
+    private final JwtService jwtService;
+    private final UsersRepository usersRepository;
+    private final MailService mailService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDto> register(@Valid @RequestBody UserRequestDto userRequestDto) {
-        log.info("Registration request for email: {}", userRequestDto.getEmail());
-        UserResponseDto user = userService.registerUser(userRequestDto);
+        log.info("Registration request for: {}", userRequestDto.getEmail());
+        UserResponseDto user = userService.registerLocalUser(userRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequestDto,
-                                                  HttpServletResponse response) {
-        log.info("Login request for email: {}", loginRequestDto.getEmail());
-        LoginResponseDto loginResponse = userService.loginUser(loginRequestDto);
-        cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());
-        loginResponse.setAccessToken(null);
-        loginResponse.setRefreshToken(null);
-        return ResponseEntity.ok(loginResponse);
+    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
+        return ResponseEntity.ok(authenticationService.authenticateLocal(loginRequestDto));
     }
 
+    @PostMapping("/microsoft")
+    public ResponseEntity<LoginResponseDto> microsoftLogin(@Valid @RequestBody MicrosoftLoginDto request) {
+        return ResponseEntity.ok(authenticationService.authenticateMicrosoft(request));
+    }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDto> refreshToken(@CookieValue(value = "refreshToken", required = false) String refreshTokenFromCookie,
-                                                          @Valid @RequestBody(required = false) RefreshTokenRequestDto refreshTokenRequestDto,
-                                                          HttpServletResponse response) {
-        log.info("Token refresh request");
-        
-        String refreshToken = refreshTokenFromCookie;
-        if (refreshToken == null && refreshTokenRequestDto != null) {
-            refreshToken = refreshTokenRequestDto.getRefreshToken();
-        }
-        
-        if (refreshToken == null || refreshToken.isEmpty()) {
-            throw ApiException.unauthorized(ErrorCode.INVALID_CREDENTIALS, "Refresh token is required");
-        }
-        
-        RefreshTokenRequestDto requestDto = RefreshTokenRequestDto.builder()
-                .refreshToken(refreshToken)
-                .build();
-        
-        LoginResponseDto loginResponse = userService.refreshToken(requestDto);
-        cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());
-        loginResponse.setAccessToken(null);
-        loginResponse.setRefreshToken(null);
-        return ResponseEntity.ok(loginResponse);
+    public ResponseEntity<LoginResponseDto> refreshToken(@Valid @RequestBody RefreshTokenRequestDto request) {
+        return ResponseEntity.ok(authenticationService.refreshToken(request.getRefreshToken()));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        Authentication authentication,
-        @AuthenticationPrincipal Object principal
-    ) {
-        if (principal != null) {
-            String email = authenticationService.getEmailFromPrincipal(principal);
-            UUID userId = userService.getCurrentUserId(email);
-            log.info("Logout request for user ID: {}", userId);
-            userService.logoutUser(userId);
-        }
-
-        SecurityContextLogoutHandler securityContextLogoutHandler = new SecurityContextLogoutHandler();
-        securityContextLogoutHandler.logout(request, response, authentication);
-
-        cookieService.clearAuthCookies(response);
+    public ResponseEntity<Void> logout() {
+        log.info("User logged out (token removed on client side)");
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/activate")
     public ResponseEntity<Void> activate(@RequestParam("token") String token) {
-        if (!jwtConfig.isActivationToken(token)) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Invalid activation token");
+        if (!jwtService.isActivationToken(token)) {
+            throw ApiException.badRequest("Nieprawidłowy link aktywacyjny");
         }
-        String email = jwtConfig.extractEmail(token);
+
+        String email = jwtService.extractEmail(token);
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje"));
+
         if (user.getStatus() != StatusEnum.CONFIRMED) {
             user.setStatus(StatusEnum.CONFIRMED);
             usersRepository.save(user);
+            log.info("User {} activated successfully", email);
         }
+
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/activate/resend")
     public ResponseEntity<Void> resendActivation(@Valid @RequestBody ResendActivationRequestDto requestDto) {
         String email = requestDto.getEmail();
-        log.info("Resend activation request for email: {}", email);
-        
+
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje"));
+
         if (user.getStatus() == StatusEnum.CONFIRMED) {
-            log.info("User {} is already confirmed, skipping activation email", email);
             return ResponseEntity.ok().build();
         }
-        
-        String activationToken = jwtConfig.generateActivationToken(user.getEmail());
-        String activationUrl = frontendUrl + "/activate?token=" + activationToken;
-        
+
+        String activationToken = jwtService.generateActivationToken(user.getEmail());
+
+        String activationUrl = UriComponentsBuilder
+                .fromUriString(frontendUrl)
+                .path("/activate")
+                .queryParam("token", activationToken)
+                .build()
+                .toUriString();
+
         mailService.sendActivationEmail(user.getEmail(), user.getFullName(), activationUrl);
-        log.info("Activation email sent to: {}", email);
+
         return ResponseEntity.ok().build();
     }
-
 }

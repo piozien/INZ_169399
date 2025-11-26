@@ -14,19 +14,19 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventRequestDto {
-	@NotBlank(message = "Event title is required")
-	private String title;
-	
-	@NotBlank(message = "Event description is required")
-	private String description;
-	
-	@NotNull(message = "Start date is required")
-	private LocalDateTime startDate;
-	
-	@NotNull(message = "End date is required")
-	private LocalDateTime endDate;
-	private String location;
-	private String calendarEventId;
+    @NotBlank(message = "Tytuł wydarzenia jest wymagany")
+    private String title;
+
+    @NotBlank(message = "Opis jest wymagany")
+    private String description;
+
+    @NotNull(message = "Data rozpoczęcia jest wymagana")
+    private LocalDateTime startDate;
+
+    @NotNull(message = "Data zakończenia jest wymagana")
+    private LocalDateTime endDate;
+
+    private String location;
+
+    private String calendarEventId;
 }
-
-

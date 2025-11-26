@@ -1,4 +1,6 @@
 //https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html 24.11.2025 9:20
+// https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-1.0 24.10 - 25.10 - 13:30
+
 package pl.su.su_backend.config;
 
 import org.springframework.beans.factory.annotation.Value;

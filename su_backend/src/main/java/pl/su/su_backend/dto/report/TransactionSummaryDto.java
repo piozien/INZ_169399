@@ -19,5 +19,5 @@ public class TransactionSummaryDto {
     private String category;
     private LocalDate transactionDate;
     private String createdBy;
-    private String payerUser; // Only for class transactions
+    private String payerUser;
 }

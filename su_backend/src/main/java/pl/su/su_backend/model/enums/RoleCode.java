@@ -46,11 +46,11 @@ public enum RoleCode {
             case DYREKTOR -> 90;
             case ZASTEPCA_DYREKTORA -> 80;
             case OPIEKUN_SU -> 70;
+            case NAUCZYCIEL -> 65;
             case PRZEWODNICZACY_SU -> 60;
             case ZASTEPCA_SU -> 50;
             case SKARBNIK_SU -> 40;
             case CZLONEK_SU -> 30;
-            case NAUCZYCIEL -> 5;
             case UCZEN -> 1;
             case BYLY_UCZEN, BYLY_CZLONEK_SU -> 0;
         };

@@ -4,35 +4,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.exception.ErrorCode;
-import pl.su.su_backend.dto.budget.*;
+import pl.su.su_backend.dto.council.CouncilMapper;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
-import pl.su.su_backend.dto.council.CouncilMapper;
-import pl.su.su_backend.dto.event.EventResponseDto;
-import pl.su.su_backend.model.budget.CouncilBudget;
-import pl.su.su_backend.model.budget.CouncilTransaction;
+import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
-import pl.su.su_backend.model.enums.RoleCode;
-import pl.su.su_backend.model.enums.TransactionType;
 import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.repositories.budget.CouncilBudgetRepository;
 import pl.su.su_backend.repositories.council.CouncilRepository;
-import pl.su.su_backend.repositories.budget.CouncilTransactionRepository;
-import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
-import pl.su.su_backend.service.event.EventService;
+import pl.su.su_backend.service.user.UserService;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.Random;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,403 +30,100 @@ import java.util.Random;
 public class CouncilService {
 
     private final CouncilRepository councilRepository;
-    private final CouncilBudgetRepository councilBudgetRepository;
-    private final CouncilTransactionRepository councilTransactionRepository;
-    private final UsersRepository usersRepository;
+    private final UserService userService;
     private final ActivityLogService activityLogService;
-    private final EventService eventService;
     private final PermissionService permissionService;
     private final CouncilMemberService councilMemberService;
+    private final CouncilMapper councilMapper;
 
-    @Transactional(readOnly = true)
-    public List<CouncilResponseDto> getCouncil(String currentUserEmail) {
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-
-        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL)) {
-            List<Council> allCouncils = councilRepository.findAll();
-            return allCouncils.stream()
-                    .map(council -> CouncilMapper.toResponseDto(council, councilMemberService))
-                    .toList();
-        }
-
-        List<CouncilMember> userMemberships = councilMemberService.getUserCouncilMemberships(currentUser.getId());
-        List<UUID> userCouncilIds = userMemberships.stream()
-                .map(membership -> membership.getId().getCouncilId())
-                .toList();
-        
-        List<Council> userCouncils = councilRepository.findAllById(userCouncilIds);
-        
-        return userCouncils.stream()
-                .map(council -> CouncilMapper.toResponseDto(council, councilMemberService))
-                .toList();
-    }
-
-    public CouncilBudgetResponseDto createBudget(UUID councilId, CouncilBudgetRequestDto dto, String currentUserEmail) {
-        log.info("Creating council budget for council {} by user: {}", councilId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_BUDGET_CREATE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-
-        if (!councilMemberService.isMemberOfCouncil(user.getId(), councilId)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You must be a member of the council to create budgets");
-        }
-        
-        String year = dto.getYear() != null ? dto.getYear() : String.valueOf(java.time.LocalDateTime.now().getYear());
-        if (councilBudgetRepository.findByCouncil_IdAndYear(council.getId(), year).isPresent()) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget for council and year " + year + " already exists");
-        }
-        
-        CouncilBudget budget = CouncilBudget.builder()
-                .council(council)
-                .year(year)
-                .initialAmount(dto.getInitialAmount() != null ? dto.getInitialAmount() : BigDecimal.ZERO)
-                .createdBy(user)
-                .createdAt(java.time.LocalDateTime.now())
-                .build();
-        
-        CouncilBudget savedBudget = councilBudgetRepository.save(budget);
-        
-        activityLogService.log(user.getId(), ActionType.BUDGET_CREATE, "Created council budget for year: " + dto.getYear());
-        
-        return CouncilBudgetMapper.toResponse(savedBudget);
-    }
-
-    public CouncilBudgetResponseDto getBudget(UUID councilId, String currentUserEmail) {
-        log.info("Fetching council budget for council {} by user: {}", councilId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_BUDGET_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-
-        if (!councilMemberService.isMemberOfCouncil(user.getId(), councilId)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You must be a member of the council to view budgets");
-        }
-        
-        CouncilBudget budget = councilBudgetRepository.findByCouncil_IdOrderByYearDesc(councilId)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found for council"));
-        
-        return CouncilBudgetMapper.toResponse(budget);
-    }
-
-    public CouncilTransactionResponseDto createTransaction(UUID councilId, CouncilTransactionRequestDto dto, String currentUserEmail) {
-        log.info("Creating council transaction for council {} by user: {}", councilId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_CREATE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        CouncilBudget budget = councilBudgetRepository.findById(dto.getBudgetId())
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found"));
-        
-        if (!budget.getCouncil().getId().equals(councilId)) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget does not belong to specified council");
-        }
-        
-        CouncilTransaction transaction = CouncilTransactionMapper.toEntity(dto, budget, user);
-        CouncilTransaction savedTransaction = councilTransactionRepository.save(transaction);
-        
-        updateBudgetBalance(dto.getBudgetId());
-        
-        activityLogService.log(user.getId(), ActionType.TRANSACTION_CREATE, "Created council transaction: " + dto.getDescription());
-        
-        return CouncilTransactionMapper.toResponse(savedTransaction);
-    }
-
-    public CouncilTransactionResponseDto updateTransaction(UUID transactionId, CouncilTransactionRequestDto dto, String currentUserEmail) {
-        log.info("Updating council transaction {} by user: {}", transactionId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_EDIT)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        CouncilTransaction transaction = councilTransactionRepository.findById(transactionId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Transaction not found"));
-        
-        transaction.setType(dto.getType());
-        transaction.setAmount(dto.getAmount());
-        transaction.setDescription(dto.getDescription());
-        transaction.setDate(dto.getDate());
-        
-        CouncilTransaction updatedTransaction = councilTransactionRepository.save(transaction);
-        
-        updateBudgetBalance(transaction.getBudget().getId());
-        
-        activityLogService.log(user.getId(), ActionType.TRANSACTION_EDIT, "Updated council transaction: "
-         + dto.getDescription());
-        
-        return CouncilTransactionMapper.toResponse(updatedTransaction);
-    }
-
-    public void deleteTransaction(UUID transactionId, String currentUserEmail) {
-        log.info("Deleting council transaction {} by user: {}", transactionId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_DELETE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        CouncilTransaction transaction = councilTransactionRepository.findById(transactionId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR,
-                 "Transaction not found"));
-        
-        UUID budgetId = transaction.getBudget().getId();
-        councilTransactionRepository.delete(transaction);
-        
-        updateBudgetBalance(budgetId);
-        
-        activityLogService.log(user.getId(), ActionType.TRANSACTION_DELETE, "Deleted council transaction: "
-         + transaction.getDescription());
-    }
-
-    public List<CouncilTransactionResponseDto> getTransactionsByBudget(UUID budgetId, String currentUserEmail) {
-        log.info("Fetching transactions for budget: {} by user: {}", budgetId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        List<CouncilTransaction> transactions = councilTransactionRepository.findByBudgetId(budgetId);
-        return CouncilTransactionMapper.toResponseList(transactions);
-    }
-
-    public List<EventResponseDto> getDraftEvents(String currentUserEmail) {
-        log.info("Fetching draft events for SU by user: {}", currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        return eventService.getDraftEventsForSU(currentUserEmail);
-    }
-
-    public List<EventResponseDto> getPendingEvents(String currentUserEmail) {
-        log.info("Fetching pending events for SU review by user: {}", currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        return eventService.getPendingEvents();
-    }
-
-    public EventResponseDto approveEvent(UUID eventId, String currentUserEmail) {
-        log.info("Approving event {} by SU user: {}", eventId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        return eventService.approveEvent(eventId, user.getId());
-    }
-
-    public EventResponseDto rejectEvent(UUID eventId, String currentUserEmail) {
-        log.info("Rejecting event {} by SU user: {}", eventId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_APPROVE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        return eventService.rejectEvent(eventId, user.getId());
-    }
-
-    public EventResponseDto submitEventForApproval(UUID eventId, String currentUserEmail) {
-        log.info("Submitting event {} for approval by SU user: {}", eventId, currentUserEmail);
-        
-        Users user = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.EVENT_CREATE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        return eventService.submitEventForApproval(eventId, user.getId());
-    }
-
-    public CouncilResponseDto addMemberToCouncil(UUID councilId, UUID userId, String currentUserEmail) {
-        log.info("Adding member {} to council {} by user: {}", userId, councilId, currentUserEmail);
-
-        councilMemberService.addMemberWithRole(councilId, userId, 
-                RoleCode.CZLONEK_SU, currentUserEmail);
-
-        Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-        
-        return CouncilMapper.toResponseDto(council, councilMemberService);
-    }
-
-    public CouncilResponseDto removeMemberFromCouncil(UUID councilId, UUID userId, String currentUserEmail) {
-        log.info("Removing member {} from council {} by user: {}", userId, councilId, currentUserEmail);
-
-        councilMemberService.removeMember(councilId, userId, currentUserEmail);
-
-        Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-        
-        return CouncilMapper.toResponseDto(council, councilMemberService);
-    }
 
     public CouncilResponseDto createCouncil(CouncilRequestDto dto, String currentUserEmail) {
-        log.info("Creating council: {} for academic year: {} by user: {}", dto.getName(), dto.getAcademicYear(), currentUserEmail);
-        
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_CREATE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        Council council = CouncilMapper.toEntity(dto);
-        
+        log.info("Creating council: {} by user: {}", dto.getName(), currentUserEmail);
+
+        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
+
+        Council council = councilMapper.toEntity(dto);
+
         String joinCode = generateJoinCodeForCouncil(dto.getAcademicYear());
         council.setJoinCode(joinCode);
-        
+
         council = councilRepository.save(council);
-        
+
         activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE,
-                "Created council: " + dto.getName() + " for academic year: " + dto.getAcademicYear() + " with join code: " + joinCode);
-        
-        return CouncilMapper.toResponseDto(council, councilMemberService);
+                "Created council: " + dto.getName() + " (" + joinCode + ")");
+
+
+        return councilMapper.toResponseDto(council);
     }
 
-    private String generateJoinCodeForCouncil(String academicYear) {
-        String year = academicYear.split("/")[0]; // "2024/2025" -> "2024"
-        String prefix = "SU" + year;
-        
-        String code;
-        do {
-            int randomNumber = new Random().nextInt(10000); // 0-9999
-            code = prefix + String.format("%04d", randomNumber);
-        } while (councilRepository.findByJoinCode(code).isPresent());
-        
-        return code;
-    }
+    @Transactional(readOnly = true)
+    public List<CouncilResponseDto> getCouncils(String currentUserEmail) {
+        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
-    @Transactional
-    public void updateBudgetBalance(UUID budgetId) {
-        log.info("Updating balance for council budget: {}", budgetId);
-        
-        CouncilBudget budget = councilBudgetRepository.findById(budgetId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Budget not found: "
-                 + budgetId));
-
-        BigDecimal newBalance = getBigDecimal(budget);
-
-        budget.setBalance(newBalance);
-        councilBudgetRepository.save(budget);
-        
-        log.info("Council budget balance updated to: {}", newBalance);
-    }
-
-    private static BigDecimal getBigDecimal(CouncilBudget budget) {
-        BigDecimal totalIncome = BigDecimal.ZERO;
-        BigDecimal totalExpenses = BigDecimal.ZERO;
-
-        for (CouncilTransaction transaction : budget.getTransactions()) {
-            if (transaction.getType() == TransactionType.INCOME) {
-                totalIncome = totalIncome.add(transaction.getAmount());
-            } else if (transaction.getType() == TransactionType.EXPENSE) {
-                totalExpenses = totalExpenses.add(transaction.getAmount());
-            }
+        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL)) {
+            return councilRepository.findAll().stream()
+                    .map(councilMapper::toResponseDto)
+                    .collect(Collectors.toList());
         }
 
-        BigDecimal newBalance = (budget.getInitialAmount() != null ? budget.getInitialAmount() : BigDecimal.ZERO)
-                .add(totalIncome)
-                .subtract(totalExpenses);
-        return newBalance;
+        List<CouncilMember> memberships = councilMemberService.getUserCouncilMemberships(currentUser.getId());
+
+        List<UUID> councilIds = memberships.stream()
+                .map(member -> member.getCouncil().getId())
+                .collect(Collectors.toList());
+
+        return councilRepository.findAllById(councilIds).stream()
+                .map(councilMapper::toResponseDto)
+                .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public CouncilResponseDto getCouncilById(UUID id, String currentUserEmail) {
+        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
+
+        Council council = councilRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o ID: " + id));
+
+        boolean hasGlobalAccess = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL);
+        boolean isMember = councilMemberService.isMemberOfCouncil(currentUser.getId(), id);
+
+        if (!hasGlobalAccess && !isMember) {
+            throw ApiException.forbidden("Nie masz dostępu do tego samorządu.");
+        }
+
+        return councilMapper.toResponseDto(council);
+    }
 
     public CouncilResponseDto joinCouncilByCode(String joinCode, String currentUserEmail) {
         log.info("User {} attempting to join council with code: {}", currentUserEmail, joinCode);
-        
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_JOIN)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied - no permission to join council");
-        }
-        
+
+        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
+
         Council council = councilRepository.findByJoinCode(joinCode)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Invalid join code"));
-        
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o kodzie: " + joinCode));
+
         if (!council.getIsActive()) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council is not active");
+            throw ApiException.badRequest("Ten samorząd nie jest już aktywny.");
         }
 
         councilMemberService.joinCouncilAsBasicMember(council.getId(), currentUser.getId());
-        
-        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED,
-                "Joined council using code: " + joinCode);
-        
-        log.info("User {} successfully joined council {}", currentUserEmail, council.getName());
 
-        council = councilRepository.findById(council.getId())
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
-        
-        return CouncilMapper.toResponseDto(council, councilMemberService);
-    }
-    
-    public CouncilResponseDto getCouncilById(UUID id, String currentUserEmail) {
-        log.info("Fetching council by ID: {} for user: {}", id, currentUserEmail);
-        
-        Users currentUser = usersRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
-        
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
-        }
-        
-        Council council = councilRepository.findById(id)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Council not found"));
-        
-        return CouncilMapper.toResponseDto(council, councilMemberService);
+        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Dołączono do samorządu: " + council.getName());
+
+        return councilMapper.toResponseDto(council);
     }
 
-    public List<CouncilResponseDto> getCouncils(String email) {
-        //todo
-        return new ArrayList<>();
+    private String generateJoinCodeForCouncil(String academicYear) {
+        // "2024/2025" -> "2024"
+        String yearPart = academicYear.split("/")[0];
+        String prefix = "SU" + yearPart;
+
+        String code;
+        do {
+            int randomNumber = new Random().nextInt(10000); // 0000-9999
+            code = prefix + String.format("%04d", randomNumber);
+        } while (councilRepository.findByJoinCode(code).isPresent());
+
+        return code;
     }
 }

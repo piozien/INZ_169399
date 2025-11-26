@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MicrosoftLoginDto {
 
-    @NotBlank(message = "Token is required")
+    @NotBlank(message = "Wymagany jest token")
     private String token;
 }

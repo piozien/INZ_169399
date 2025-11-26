@@ -2,25 +2,16 @@ package pl.su.su_backend.model.enums;
 
 public enum ActionType {
 
-    // AUTHENTICATION & USER MANAGEMENT
-    LOGIN,
-    LOGOUT,
     REGISTER,
-    ACTIVATE,
-    DEACTIVATE,
     UPDATE_PROFILE,
     SOFT_DELETE,
-    RESTORE,
-    DELETE,
-    UPDATE,
 
     // ROLES
     ASSIGN_ROLE,
     REMOVE_ROLE,
+    PERMISSION_UPDATE,
 
     // USER ADMIN ACTIONS
-    USER_DELETED,
-    USER_BLOCKED,
     USER_UNBLOCKED,
     USER_UPDATED,
 
@@ -28,10 +19,7 @@ public enum ActionType {
 
     // EVENTS
     EVENT_CREATE,
-    EVENT_EDIT,
-    EVENT_UPDATE,
     EVENT_DELETE,
-    EVENT_JOIN,
     EVENT_LEAVE,
     EVENT_APPROVE,
     EVENT_REJECT,
@@ -39,7 +27,6 @@ public enum ActionType {
 
     // SUGGESTIONS
     SUGGESTION_CREATE,
-    SUGGESTION_EDIT,
     SUGGESTION_UPDATE,
     SUGGESTION_APPROVE,
     SUGGESTION_REJECT,
@@ -47,12 +34,6 @@ public enum ActionType {
 
     // BUDGET
     BUDGET_CREATE,
-    BUDGET_EDIT,
     BUDGET_DELETE,
     TRANSACTION_CREATE,
-    TRANSACTION_EDIT,
-    TRANSACTION_CONFIRM,
-    TRANSACTION_DELETE,
-
-
 }

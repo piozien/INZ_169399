@@ -17,15 +17,15 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${app.jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String secretKey;
 
     @Getter
-    @Value("${app.jwt.expiration}")
+    @Value("${JWT_EXPIRATION}")
     private long jwtExpiration;
 
     @Getter
-    @Value("${app.jwt.refresh-token.expiration}")
+    @Value("${JWT_REFRESH_EXPIRATION}")
     private long refreshExpiration;
 
     @Value("${app.activation.expiration-ms:10800000}")
@@ -46,10 +46,6 @@ public class JwtService {
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
-    }
-
-    public String generateToken(String email) {
-        return generateToken(Map.of(), email);
     }
 
     public String generateToken(String email, String fullName) {

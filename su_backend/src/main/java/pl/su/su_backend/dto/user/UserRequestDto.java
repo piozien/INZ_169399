@@ -18,16 +18,16 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserRequestDto {
 
-    @NotBlank(message = "Full name is required")
-    @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
+    @NotBlank(message = "Wymagane jest podanie pełnego imienia i nazwiska.")
+    @Size(min = 2, max = 100, message = "Pełna nazwa musi zawierać od 2 do 100 znaków.")
     private String fullName;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @NotBlank(message = "Wymagany jest adres e-mail")
+    @Email(message = "Adres e-mail powinien być prawidłowy.")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @NotBlank(message = "Wymagane hasło")
+    @Size(min = 8, message = "Hasło musi mieć co najmniej 8 znaków.")
     private String password;
 
     private StatusEnum status;

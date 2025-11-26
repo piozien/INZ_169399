@@ -29,6 +29,7 @@ import pl.su.su_backend.service.log.ActivityLogService;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -51,8 +52,37 @@ public class UserService {
 
     @Transactional
     public Users getOrCreateMicrosoftUser(String email, String fullName, String externalId) {
-        return usersRepository.findByEmail(email)
-                .orElseGet(() -> createMicrosoftUser(email, fullName, externalId));
+        Optional<Users> existingUser = usersRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            Users user = existingUser.get();
+
+            if (user.isBlocked()) {
+                log.warn("Login attempt failed: User {} is currently blocked.", email);
+                throw ApiException.forbidden("Konto zablokowane. Skontaktuj się z administratorem.");
+            }
+
+            if (user.getAuthProvider() == AuthProvider.LOCAL) {
+                log.warn("Account UPGRADE: Converting local account {} to Microsoft account.", email);
+
+                user.setExternalId(externalId);
+                user.setAuthProvider(AuthProvider.MICROSOFT);
+                user.setPassword(null);
+                user.setStatus(StatusEnum.CONFIRMED);
+
+                if (user.getFullName() == null || user.getFullName().isEmpty()) {
+                    user.setFullName(fullName);
+                }
+
+                Users updatedUser = usersRepository.save(user);
+                activityLogService.log(updatedUser.getId(), ActionType.UPDATE_PROFILE, "Konto lokalne połączone z Microsoft");
+
+                return updatedUser;
+            }
+            return user;
+        }
+
+        return createMicrosoftUser(email, fullName, externalId);
     }
 
     @Transactional
@@ -81,7 +111,7 @@ public class UserService {
         assignDefaultRole(savedUser);
         sendActivationEmail(savedUser);
 
-        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "User registered locally");
+        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "Użytkownik zarejestrowany lokalnei.");
 
         return userMapper.toResponseDto(savedUser);
     }
@@ -103,7 +133,7 @@ public class UserService {
         assignDefaultRole(savedUser);
 
         mailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFullName());
-        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "User registered via Microsoft");
+        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "Użytkownik zarejestrowany przez Microsoft.");
 
         return savedUser;
     }
@@ -111,7 +141,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponseDto getUserById(UUID userId) {
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.notFound("User not found"));
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
 
         return userMapper.toResponseDto(user);
     }
@@ -121,12 +151,22 @@ public class UserService {
         Users currentUser = getUserByEmailEntity(currentUserEmail);
 
         if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_VIEW)) {
-            throw ApiException.forbidden("Access denied");
+            throw ApiException.forbidden("Odmowa dostępu");
         }
 
         return usersRepository.findAll().stream()
                 .filter(user -> !user.isBlocked())
                 .map(userMapper::toResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getUserRoles(UUID userId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
+
+        return user.getUserRoles().stream()
+                .map(ur -> ur.getRole().getRoleCode().name())
                 .collect(Collectors.toList());
     }
 
@@ -138,11 +178,11 @@ public class UserService {
                 permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT);
 
         if (!canEdit) {
-            throw ApiException.forbidden("Access denied");
+            throw ApiException.forbidden("Odmowa dostępu");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.notFound("User not found"));
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
 
         user.setFullName(request.getFullName());
         if (request.getStatus() != null && permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
@@ -150,7 +190,7 @@ public class UserService {
         }
 
         Users updatedUser = usersRepository.save(user);
-        activityLogService.log(updatedUser.getId(), ActionType.UPDATE_PROFILE, "User updated profile");
+        activityLogService.log(updatedUser.getId(), ActionType.UPDATE_PROFILE, "Profil użytkownika zaktualizowany");
 
         return userMapper.toResponseDto(updatedUser);
     }
@@ -159,17 +199,36 @@ public class UserService {
     public void deleteUser(UUID userId, String currentUserEmail) {
         Users currentUser = getUserByEmailEntity(currentUserEmail);
 
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
-            throw ApiException.forbidden("Access denied");
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_DELETE)) {
+            throw ApiException.forbidden("Odmowa dostępu");
         }
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.notFound("User not found"));
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
 
         user.setStatus(StatusEnum.BLOCKED); // Soft delete
         usersRepository.save(user);
 
         activityLogService.log(userId, ActionType.SOFT_DELETE, "User blocked");
+    }
+
+    @Transactional
+    public UserResponseDto unblockUser(UUID userId, String currentUserEmail) {
+        Users currentUser = getUserByEmailEntity(currentUserEmail);
+
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.USER_EDIT)) {
+            throw ApiException.forbidden("Brak uprawnień");
+        }
+
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje"));
+
+        user.setStatus(StatusEnum.CONFIRMED);
+        usersRepository.save(user);
+
+        activityLogService.log(userId, ActionType.USER_UNBLOCKED, "Użytkownik odblokowany");
+
+        return userMapper.toResponseDto(user);
     }
 
 
@@ -209,4 +268,8 @@ public class UserService {
             log.error("Failed to send activation email: {}", e.getMessage());
         }
     }
+    public UUID getCurrentUserId(String email) {
+        return getUserByEmailEntity(email).getId();
+    }
+
 }

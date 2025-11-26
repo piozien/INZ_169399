@@ -5,9 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
-import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCategory;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.roles.Role;
@@ -16,58 +14,51 @@ import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.repositories.user.UserRoleRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
-import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 
 import java.util.Comparator;
 import java.util.UUID;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class RoleAssignmentService {
 
     private final UsersRepository usersRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final ActivityLogService activityLogService;
-    private final PermissionService permissionService;
 
+
+    @Transactional
     public void assignRoleByEmail(String actingEmail, UUID targetUserId, RoleCode roleCode, String reason) {
-        Users acting = usersRepository.findByEmail(actingEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found: " + actingEmail));
-        assignRole(acting.getId(), targetUserId, roleCode, reason);
+        Users acting = getUserEntity(actingEmail);
+        Users target = getUserEntity(targetUserId);
+        assignRole(acting, target, roleCode, reason);
     }
 
+    @Transactional
     public void revokeRoleByEmail(String actingEmail, UUID targetUserId, RoleCode roleCode, String reason) {
-        Users acting = usersRepository.findByEmail(actingEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found: " + actingEmail));
-        revokeRole(acting.getId(), targetUserId, roleCode, reason);
+        Users acting = getUserEntity(actingEmail);
+        Users target = getUserEntity(targetUserId);
+        revokeRole(acting, target, roleCode, reason);
     }
 
-    public void assignRole(UUID actingUserId, UUID targetUserId, RoleCode roleCode, String reason) {
-        Users acting = getUserOrThrow(actingUserId);
-        Users target = getUserOrThrow(targetUserId);
+
+    private void assignRole(Users acting, Users target, RoleCode roleCode, String reason) {
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.ROLE_NOT_FOUND, "Role not found: " + roleCode));
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono roli: " + roleCode));
 
         if (role.getCategory() == RoleCategory.SU) {
-            throw ApiException.badRequest(ErrorCode.INVALID_ROLE_ASSIGNMENT, 
-                "Cannot assign SU roles globally. SU roles must be assigned through council membership.");
+            throw ApiException.badRequest("Role samorządowe (SU) muszą być nadawane przez moduł Samorządu.");
         }
 
         if (target.isBlocked()) {
-            throw ApiException.badRequest(ErrorCode.USER_BLOCKED, "Cannot modify roles of blocked user");
-        }
-
-        if (!permissionService.hasPermission(acting.getId(), PermissionCode.USER_ASSIGN_ROLE)) {
-            throw ApiException.forbidden(ErrorCode.INSUFFICIENT_PERMISSIONS, "You are not allowed to assign roles");
+            throw ApiException.badRequest("Nie można edytować ról zablokowanego użytkownika.");
         }
 
         if (userRoleRepository.existsByUser_IdAndRole_Id(target.getId(), role.getId())) {
-            log.info("Role {} already assigned to user {}", roleCode, target.getEmail());
+            log.info("Użytkownik {} posiada już rolę {}", target.getEmail(), roleCode);
             return;
         }
 
@@ -76,57 +67,60 @@ public class RoleAssignmentService {
                 .user(target)
                 .role(role)
                 .build();
+
         userRoleRepository.save(userRole);
-        activityLogService.log(actingUserId, ActionType.ASSIGN_ROLE, "Assigned role " +
-                roleCode + " to user " + targetUserId);
+
+        activityLogService.log(acting.getId(), ActionType.ASSIGN_ROLE,
+                "Nadano rolę " + roleCode + " użytkownikowi " + target.getEmail());
 
         log.info("Role {} assigned to user {} by {}. Reason: {}", roleCode, target.getEmail(), acting.getEmail(), reason);
     }
 
-    public void revokeRole(UUID actingUserId, UUID targetUserId, RoleCode roleCode, String reason) {
-        Users acting = getUserOrThrow(actingUserId);
-        Users target = getUserOrThrow(targetUserId);
+    private void revokeRole(Users acting, Users target, RoleCode roleCode, String reason) {
         Role role = roleRepository.findByRoleCode(roleCode)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.ROLE_NOT_FOUND, "Role not found: " + roleCode));
-
-        if (!permissionService.hasPermission(acting.getId(), PermissionCode.USER_ASSIGN_ROLE)) {
-            throw ApiException.forbidden(ErrorCode.INSUFFICIENT_PERMISSIONS, "You are not allowed to revoke roles");
-        }
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono roli: " + roleCode));
 
         RoleCode actingHighestRole = getHighestRole(acting);
         RoleCode targetHighestRole = getHighestRole(target);
-        
-        if (!actingHighestRole.hasHigherOrEqualRankThan(targetHighestRole)) {
-                throw ApiException.forbidden(ErrorCode.CANNOT_MODIFY_HIGHER_RANK, "You cannot revoke roles from users with higher or equal rank than yours");
+
+        if (!actingHighestRole.hasHigherOrEqualRankThan(targetHighestRole) && actingHighestRole != RoleCode.ADMINISTRATOR) {
+            throw ApiException.forbidden("Nie możesz modyfikować uprawnień użytkownika o wyższej lub równej randze.");
         }
 
         if (roleCode == RoleCode.ADMINISTRATOR) {
-            long admins = userRoleRepository.findByRole_Id(role.getId()).size();
-            if (admins <= 1) {
-                throw ApiException.badRequest(ErrorCode.CANNOT_REVOKE_LAST_ADMIN, "Cannot revoke the last ADMINISTRATOR role");
+            long adminCount = userRoleRepository.findByRole_Id(role.getId()).size();
+            if (adminCount <= 1) {
+                throw ApiException.badRequest("Nie można usunąć ostatniego administratora w systemie.");
             }
         }
 
-        if (!userRoleRepository.existsByUser_IdAndRole_Id(target.getId(), role.getId())) {
-            log.info("User {} does not have role {}", target.getEmail(), roleCode);
+        UserRole.Id id = new UserRole.Id(target.getId(), role.getId());
+
+        if (!userRoleRepository.existsById(id)) {
+            log.info("Użytkownik {} nie posiada roli {}", target.getEmail(), roleCode);
             return;
         }
 
-        UserRole.Id id = new UserRole.Id(target.getId(), role.getId());
-        userRoleRepository.findById(id).ifPresent(userRole -> {
-            userRoleRepository.delete(userRole);
-            target.getUserRoles().removeIf(existing -> existing.getId().equals(id));
-        });
-        userRoleRepository.flush();
-        activityLogService.log(actingUserId, ActionType.REMOVE_ROLE, "Revoked role " + roleCode + " from user " + targetUserId);
+        userRoleRepository.deleteById(id);
+
+        target.getUserRoles().removeIf(ur -> ur.getRole().getRoleCode() == roleCode);
+
+        activityLogService.log(acting.getId(), ActionType.REMOVE_ROLE,
+                "Odebrano rolę " + roleCode + " użytkownikowi " + target.getEmail());
+
         log.info("Role {} revoked from user {} by {}. Reason: {}", roleCode, target.getEmail(), acting.getEmail(), reason);
     }
 
-    private Users getUserOrThrow(UUID userId) {
-        return usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + userId));
+
+    private Users getUserEntity(String email) {
+        return usersRepository.findByEmail(email)
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje: " + email));
     }
 
+    private Users getUserEntity(UUID id) {
+        return usersRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje: " + id));
+    }
 
     private RoleCode getHighestRole(Users user) {
         return user.getUserRoles().stream()
@@ -134,7 +128,4 @@ public class RoleAssignmentService {
                 .max(Comparator.comparingInt(RoleCode::getRank))
                 .orElse(RoleCode.UCZEN);
     }
-
 }
-
-
