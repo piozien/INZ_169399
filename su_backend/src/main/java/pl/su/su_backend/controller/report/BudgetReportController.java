@@ -44,7 +44,7 @@ public class BudgetReportController {
         ReportRequestDto request = ReportRequestDto.builder()
                 .includeTransactions(true)
                 .reportType("SUMMARY")
-                .showPayerInfo(false) // Council reports don't have payer info
+                .showPayerInfo(false)
                 .build();
         BudgetReportDto report = budgetReportService.generateCouncilBudgetReport(budgetId, request, email);
         return ResponseEntity.ok(report);

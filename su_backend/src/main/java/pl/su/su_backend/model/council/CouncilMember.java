@@ -1,5 +1,6 @@
 package pl.su.su_backend.model.council;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import pl.su.su_backend.model.enums.RoleCode;
@@ -36,6 +37,8 @@ public class CouncilMember {
     @Column(nullable = false)
     private RoleCode role;
 
+    @JsonIgnore
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("userId")
     @JoinColumn(name = "user_id")

@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import pl.su.su_backend.model.enums.SuggestionStatus;
 
 import java.util.Set;
 import java.util.UUID;
@@ -16,20 +15,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SuggestionRequestDto {
-	@NotNull(message = "User ID is required")
+	@NotNull(message = "Wymagany jest identyfikator użytkownika")
 	private UUID userId;
 	
-	@NotBlank(message = "Suggestion title is required")
+	@NotBlank(message = "Tytuł sugestii jest wymagany")
 	private String title;
 	
-	@NotBlank(message = "Suggestion description is required")
+	@NotBlank(message = "Wymagany jest opis sugestii.")
 	private String description;
 	
-	@NotNull(message = "Anonymous flag is required")
+	@NotNull()
 	private Boolean isAnonymous;
-	
-	@NotNull(message = "Suggestion status is required")
-	private SuggestionStatus status;
+
 	private Set<String> tags;
 }
 

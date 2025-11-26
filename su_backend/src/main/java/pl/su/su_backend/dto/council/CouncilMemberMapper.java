@@ -1,22 +1,17 @@
 package pl.su.su_backend.dto.council;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pl.su.su_backend.model.council.CouncilMember;
 
-public class CouncilMemberMapper {
+@Mapper(componentModel = "spring")
+public interface CouncilMemberMapper {
 
-    public static CouncilMemberDto toDto(CouncilMember councilMember) {
-        if (councilMember == null) {
-            return null;
-        }
-
-        return CouncilMemberDto.builder()
-                .councilId(councilMember.getId().getCouncilId())
-                .userId(councilMember.getId().getUserId())
-                .userFullName(councilMember.getUser().getFullName())
-                .userEmail(councilMember.getUser().getEmail())
-                .role(councilMember.getRole())
-                .roleName(councilMember.getRole().getDisplayName())
-                .build();
-    }
+    @Mapping(target = "councilId", source = "id.councilId")
+    @Mapping(target = "userId", source = "id.userId")
+    @Mapping(target = "userFullName", source = "user.fullName")
+    @Mapping(target = "userEmail", source = "user.email")
+    @Mapping(target = "role", source = "role")
+    @Mapping(target = "roleName", expression = "java(councilMember.getRole().getDisplayName())")
+    CouncilMemberDto toDto(CouncilMember councilMember);
 }
-

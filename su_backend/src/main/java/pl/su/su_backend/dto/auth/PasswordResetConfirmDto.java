@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PasswordResetConfirmDto {
 
-    @NotBlank(message = "Token is required")
+    @NotBlank(message = "Wymagany jest token")
     private String token;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @NotBlank(message = "Wymagane hasło")
+    @Size(min = 8, message = "Hasło musi mieć co najmniej 8 znaków.")
     private String newPassword;
 }

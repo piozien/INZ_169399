@@ -1,21 +1,12 @@
 package pl.su.su_backend.dto.log;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pl.su.su_backend.model.log.ActivityLog;
 
-public class ActivityLogMapper {
+@Mapper(componentModel = "spring")
+public interface ActivityLogMapper {
 
-	private ActivityLogMapper() {}
-
-	public static ActivityLogResponseDto toResponse(ActivityLog log) {
-		if (log == null) return null;
-		return ActivityLogResponseDto.builder()
-				.id(log.getId())
-				.userId(log.getUser() != null ? log.getUser().getId() : null)
-				.actionType(log.getActionType())
-				.action(log.getAction())
-				.createdAt(log.getCreatedAt())
-				.build();
-	}
+    @Mapping(target = "userId", source = "user.id")
+    ActivityLogResponseDto toResponse(ActivityLog activityLog);
 }
-
-

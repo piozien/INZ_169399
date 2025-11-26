@@ -6,14 +6,13 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
   # Flyway configuration
@@ -21,7 +20,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    baseline-version: 0
     validate-on-migrate: true
 
   devtools:
@@ -74,9 +72,8 @@ app:
 
   # Password Reset Configuration
   password-reset:
-    expiration-hours: ${PASSWORD_RESET_EXPIRATION_HOURS:2}
+    expiration-hours: ${PASSWORD_RESET_EXPIRATION_HOURS:3}
 
-  # Frontend URL for password reset links
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
 
@@ -93,7 +90,7 @@ app:
       use-shared-owner: ${MS_CALENDAR_USE_SHARED_OWNER:false}
       owner-user-id: ${MS_CALENDAR_OWNER_USER_ID:}
       events-path:
-        me: ${MS_CALENDAR_EVENTS_PATH_ME:/me/events}
+        me: ${MS_CALENDAR_EVENTS_PATH_ME}
         user: ${MS_CALENDAR_EVENTS_PATH_USER:/users/%s/events}
     # System-level credentials for getSystemMicrosoftToken()
     client-id: ${MS_GRAPH_CLIENT_ID:}

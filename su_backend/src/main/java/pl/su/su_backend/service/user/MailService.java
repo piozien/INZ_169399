@@ -1,102 +1,94 @@
 package pl.su.su_backend.service.user;
 
 import com.azure.communication.email.EmailClient;
-import com.azure.communication.email.EmailClientBuilder;
 import com.azure.communication.email.models.EmailMessage;
 import com.azure.communication.email.models.EmailSendResult;
-import com.azure.communication.email.models.EmailSendStatus;
+import com.azure.core.util.polling.PollResponse;
 import com.azure.core.util.polling.SyncPoller;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MailService {
 
     private final EmailClient emailClient;
 
     @Value("${ACS_SENDER_ADDRESS}")
-    private String fromEmail;
+    private String senderAddress;
 
-    public MailService(@Value("${ACS_CONNECTION_STRING}") String connectionString) {
-        this.emailClient = new EmailClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
+    @Async
+    public void sendActivationEmail(String toEmail, String fullName, String activationUrl) {
+        log.info("Azure Email: Sending an activation link to {}", toEmail);
+
+        String subject = "Aktywacja konta - System Samorządu";
+        String htmlContent = """
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Cześć %s!</h2>
+                    <p>Dziękujemy za rejestrację w systemie.</p>
+                    <p>Kliknij poniższy przycisk, aby aktywować konto:</p>
+                    <a href="%s" style="background-color: #0078D4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Aktywuj konto</a>
+                    <p style="margin-top: 20px; font-size: 12px; color: #666;">Jeśli przycisk nie działa, skopiuj ten link: %s</p>
+                </div>
+                """.formatted(fullName, activationUrl, activationUrl);
+
+        sendEmail(toEmail, subject, htmlContent);
     }
 
-    private void sendEmail(String to, String subject, String htmlBody) {
+    @Async
+    public void sendWelcomeEmail(String toEmail, String fullName) {
+        log.info("Azure Email: Sending a welcome message to {}", toEmail);
+
+        String subject = "Witaj w Systemie Samorządu!";
+        String htmlContent = """
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Witaj %s!</h2>
+                    <p>Twoje konto zostało pomyślnie utworzone (logowanie przez Microsoft).</p>
+                    <p>Możesz już w pełni korzystać z systemu.</p>
+                </div>
+                """.formatted(fullName);
+
+        sendEmail(toEmail, subject, htmlContent);
+    }
+
+    @Async
+    public void sendPasswordResetEmail(String toEmail, String fullName, String resetUrl) {
+        log.info("Azure Email: Sending a password reset to {}", toEmail);
+
+        String subject = "Reset hasła - System Samorządu";
+        String htmlContent = """
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Cześć %s!</h2>
+                    <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta.</p>
+                    <p>Kliknij poniższy przycisk, aby ustawić nowe hasło:</p>
+                    <a href="%s" style="background-color: #D83B01; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Zresetuj hasło</a>
+                    <p style="margin-top: 20px; font-size: 12px; color: #666;">Link jest ważny przez 24 godziny. Jeśli to nie Ty wysłałeś prośbę, zignoruj tę wiadomość.</p>
+                    <p style="font-size: 12px; color: #666;">Link: %s</p>
+                </div>
+                """.formatted(fullName, resetUrl, resetUrl);
+
+        sendEmail(toEmail, subject, htmlContent);
+    }
+
+    private void sendEmail(String toEmail, String subject, String htmlContent) {
         try {
             EmailMessage message = new EmailMessage()
-                    .setSenderAddress(fromEmail)
-                    .setToRecipients(to)
+                    .setSenderAddress(senderAddress)
+                    .setToRecipients(toEmail)
                     .setSubject(subject)
-                    .setBodyHtml(htmlBody);
+                    .setBodyHtml(htmlContent);
 
             SyncPoller<EmailSendResult, EmailSendResult> poller = emailClient.beginSend(message);
-            poller.waitForCompletion();
+            PollResponse<EmailSendResult> result = poller.waitForCompletion();
 
-            EmailSendResult result = poller.getFinalResult();
-            if (result != null && result.getStatus() == EmailSendStatus.SUCCEEDED) {
-                log.info("Email sent successfully to {}", to);
-            } else {
-                log.warn("Email to {} did not complete successfully: {}", to, result != null ? result.getStatus() : "UNKNOWN");
-            }
+            log.info("Azure Email Status: {} | MessageId: {}", result.getStatus(), result.getValue().getId());
+
         } catch (Exception e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage());
+            log.error("Error sending email via Azure to {}: {}", toEmail, e.getMessage());
         }
-    }
-    
-    private String createHtmlTemplate(String title, String content, String buttonUrl, String buttonText) {
-        String buttonHtml = "";
-        if (buttonUrl != null && buttonText != null) {
-            buttonHtml = "<a href=\"" + buttonUrl + "\" style=\"background-color: #007bff; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px;\">" + buttonText + "</a>";
-        }
-
-        return "<!DOCTYPE html>" +
-                "<html>" +
-                "<head>" +
-                "<style>" +
-                "body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }" +
-                ".container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }" +
-                ".header { background-color: #004aad; color: #ffffff; padding: 20px; text-align: center; }" +
-                ".content { padding: 30px; line-height: 1.6; }" +
-                ".footer { background-color: #f4f4f4; color: #777; padding: 20px; text-align: center; font-size: 12px; }" +
-                "</style>" +
-                "</head>" +
-                "<body>" +
-                "<div class=\"container\">" +
-                "<div class=\"header\"><h1>" + title + "</h1></div>" +
-                "<div class=\"content\">" + content + (buttonHtml.isEmpty() ? "" : "<br><br><div style=\"text-align: center;\">" + buttonHtml + "</div>") + "</div>" +
-                "<div class=\"footer\"><p>Wiadomość wygenerowana automatycznie przez system Samorządu Uczniowskiego.</p></div>" +
-                "</div>" +
-                "</body>" +
-                "</html>";
-    }
-
-
-    public void sendWelcomeEmail(String to, String fullName) {
-        String title = "Witamy w systemie SU!";
-        String content = "Cześć " + (fullName != null ? fullName : to) + ",<br><br>" +
-                "Twoje konto w systemie Samorządu Uczniowskiego zostało pomyślnie utworzone. Możesz teraz zalogować się i korzystać z dostępnych funkcji.<br><br>" +
-                "Pozdrawiamy,<br>Zespół SU";
-        String htmlBody = createHtmlTemplate(title, content, null, null);
-        sendEmail(to, "Witamy w systemie Samorządu Uczniowskiego", htmlBody);
-    }
-
-    public void sendActivationEmail(String to, String fullName, String activationUrl) {
-        String title = "Aktywacja Konta";
-        String content = "Cześć " + (fullName != null ? fullName : to) + ",<br><br>" +
-                "Dziękujemy za rejestrację. Aby aktywować swoje konto, kliknij poniższy przycisk:";
-        String htmlBody = createHtmlTemplate(title, content, activationUrl, "Aktywuj Konto");
-        sendEmail(to, "Aktywacja konta - Samorząd Uczniowski", htmlBody);
-    }
-
-    public void sendPasswordResetEmail(String to, String fullName, String resetUrl) {
-        String title = "Resetowanie Hasła";
-        String content = "Cześć " + (fullName != null ? fullName : to) + ",<br><br>" +
-                "Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta. Aby kontynuować, kliknij poniższy przycisk:";
-        String htmlBody = createHtmlTemplate(title, content, resetUrl, "Zresetuj Hasło");
-        sendEmail(to, "Resetowanie hasła - Samorząd Uczniowski", htmlBody);
     }
 }

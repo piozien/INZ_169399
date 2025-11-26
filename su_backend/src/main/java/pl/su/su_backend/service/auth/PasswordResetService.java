@@ -6,14 +6,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
+import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.exception.ErrorCode;
+import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.PasswordResetToken;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.auth.PasswordResetTokenRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.user.MailService;
-import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.exception.ErrorCode;
-import pl.su.su_backend.model.enums.StatusEnum;
+import pl.su.su_backend.service.user.UserService;
+
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -26,24 +29,23 @@ public class PasswordResetService {
 
     private final PasswordResetTokenRepository tokenRepository;
     private final UsersRepository usersRepository;
+    private final UserService userService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.password-reset.expiration-hours:24}")
+    @Value("${PASSWORD_RESET_EXPIRATION_HOURS}")
     private int expirationHours;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
-
     public void sendPasswordResetEmail(String email) {
-        log.info("Sending password reset email to: {}", email);
-        
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+        log.info("Request password reset for: {}", email);
+
+        Users user = userService.getUserByEmailEntity(email);
 
         if (user.isBlocked()) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Access denied");
+            throw ApiException.forbidden("Twoje konto jest zablokowane. Nie możesz zresetować hasła.");
         }
 
         tokenRepository.deleteByUser_Id(user.getId());
@@ -57,36 +59,40 @@ public class PasswordResetService {
 
         tokenRepository.save(resetToken);
 
-        String resetUrl = frontendUrl + "/reset-password?token=" + token;
+        String resetUrl = UriComponentsBuilder
+                .fromUriString(frontendUrl)
+                .path("/reset-password")
+                .query("token={token}")
+                .buildAndExpand(token)
+                .toUriString();
+
         mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetUrl);
-        
-        log.info("Password reset email sent successfully to: {}", email);
+
+        log.info("Reset email sent to: {}", email);
     }
 
     public void resetPassword(String token, String newPassword) {
-        log.info("Resetting password with token");
-        
+        log.info("Attempt to reset password with token...");
+
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Invalid or expired token"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Nieprawidłowy lub przestarzały token"));
 
         if (!resetToken.isValid()) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Token expired or used");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Token wygasł lub został już użyty");
         }
 
         Users user = resetToken.getUser();
 
         if (StatusEnum.BLOCKED.equals(user.getStatus())) {
-            log.warn("Blocked user attempted password reset: {}", user.getEmail());
-            throw ApiException.forbidden(ErrorCode.USER_BLOCKED, "User account is blocked");
+            throw ApiException.forbidden("Konto użytkownika jest zablokowane.");
         }
-
-        user.setPassword(passwordEncoder.encode(normalizeClientSecret(newPassword)));
+        user.setPassword(passwordEncoder.encode(newPassword.trim()));
         usersRepository.save(user);
 
         resetToken.markAsUsed();
         tokenRepository.save(resetToken);
 
-        log.info("Password reset successfully for user: {}", user.getEmail());
+        log.info("The password has been successfully changed for: {}", user.getEmail());
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +103,7 @@ public class PasswordResetService {
     }
 
     public void cleanupExpiredTokens() {
-        log.info("Cleaning up expired password reset tokens");
+        log.info("Cleaning expired password reset tokens...");
         tokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
     }
 
@@ -106,12 +112,5 @@ public class PasswordResetService {
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private String normalizeClientSecret(String candidate) {
-        if (candidate == null) {
-            return null;
-        }
-        return candidate.trim();
     }
 }

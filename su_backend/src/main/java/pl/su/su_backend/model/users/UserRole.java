@@ -1,5 +1,6 @@
 package pl.su.su_backend.model.users;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import pl.su.su_backend.model.roles.Role;
 
 import java.io.Serializable;
@@ -36,6 +38,8 @@ public class UserRole {
 	@EmbeddedId
 	private Id id;
 
+    @JsonIgnore
+    @ToString.Exclude
 	@ManyToOne(fetch = FetchType.LAZY)
 	@MapsId("userId")
 	@JoinColumn(name = "user_id")

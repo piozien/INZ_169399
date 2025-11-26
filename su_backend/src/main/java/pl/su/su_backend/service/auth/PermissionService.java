@@ -11,7 +11,9 @@ import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
+import pl.su.su_backend.model.permissions.Permission;
 import pl.su.su_backend.model.roles.Role;
+import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
@@ -36,7 +38,7 @@ public class PermissionService {
 
     public UserPermissionsResponse getUserPermissions(String userEmail) {
         Users user = usersRepository.findByEmail(userEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         Set<Role> allRoles = collectAllUserRoles(user);
 
@@ -46,7 +48,7 @@ public class PermissionService {
 
         Set<String> permissions = allRoles.stream()
                 .flatMap(role -> role.getPermissions().stream())
-                .map(permission -> permission.getName())
+                .map(Permission::getName)
                 .collect(Collectors.toSet());
 
         return new UserPermissionsResponse(roleNames, permissions);
@@ -54,17 +56,31 @@ public class PermissionService {
 
     public boolean hasPermission(String userEmail, PermissionCode permission) {
         Users user = usersRepository.findByEmail(userEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + userEmail));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika: " + userEmail));
+
+        Set<Role> allRoles = collectAllUserRoles(user);
+
+        boolean isAdmin = allRoles.stream()
+                .anyMatch(role -> RoleCode.ADMINISTRATOR.equals(role.getRoleCode()));
+
+        if (isAdmin) {
+            log.info("ADMINISTRATOR ACCESS: Granting access to {} for user {}", permission, userEmail);
+            return true;
+        }
 
         log.info("Checking permission for user: {} permission: {}", userEmail, permission);
-        boolean result = hasPermission(user.getId(), permission);
+
+        boolean result = allRoles.stream()
+                .anyMatch(role -> role.getPermissions().stream()
+                        .anyMatch(p -> p.getName().equals(permission.name())));
+
         log.info("Permission result: {}", result);
         return result;
     }
 
     public boolean hasPermission(UUID userId, PermissionCode permission) {
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found: " + userId));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika: " + userId));
 
         if (user.getStatus() != StatusEnum.CONFIRMED) {
             log.warn("User {} attempted to access resource with status: {}. Account must be activated.",
@@ -77,10 +93,8 @@ public class PermissionService {
         log.info("User {} has {} total roles (global + council)", user.getEmail(), allRoles.size());
 
         boolean result = allRoles.stream()
-                .anyMatch(role -> {
-                    return role.getPermissions().stream()
-                            .anyMatch(permissionEntity -> permissionEntity.getName().equals(permission.getCode()));
-                });
+                .anyMatch(role -> role.getPermissions().stream()
+                        .anyMatch(permissionEntity -> permissionEntity.getName().equals(permission.getCode())));
 
         log.info("Final permission result: {}", result);
         return result;
@@ -92,7 +106,7 @@ public class PermissionService {
 
         if (user.getUserRoles() != null) {
             user.getUserRoles().stream()
-                    .map(userRole -> userRole.getRole())
+                    .map(UserRole::getRole)
                     .forEach(allRoles::add);
         }
         log.info("User {} has {} global roles", user.getEmail(), allRoles.size());

@@ -42,13 +42,12 @@ public class EventController {
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
                 ? authorizationHeader.substring(7)
                 : null;
-        UUID userId = userService.getCurrentUserId(email);
-        EventResponseDto event = eventService.createEvent(dto, userId, accessToken);
+        EventResponseDto event = eventService.createEvent(dto, email, accessToken);
         return ResponseEntity.status(HttpStatus.CREATED).body(event);
     }
 
     @GetMapping
-    @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
+    @PreAuthorize("hasPermission(null, 'EVENT_VIEW_DRAFTS')")
     public ResponseEntity<List<EventResponseDto>> getAllEvents(@AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Fetching all approved events for user: {}", email);
@@ -129,7 +128,7 @@ public class EventController {
     }
 
     @DeleteMapping("/{eventId}/participants/{userId}")
-    @PreAuthorize("hasPermission(null, 'EVENT_EDIT')")
+    @PreAuthorize("hasPermission(null, 'EVENT_DELETE')")
     public ResponseEntity<Void> removeParticipant(@PathVariable UUID eventId, @PathVariable UUID userId,
                                                   @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);

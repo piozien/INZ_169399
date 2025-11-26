@@ -38,26 +38,26 @@ public class CouncilMemberService {
         log.info("Adding member {} to council {} with role {} by user: {}", userId, councilId, roleCode, actingUserEmail);
 
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         if (!permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You don't have permission to manage council members");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Nie masz uprawnień do zarządzania członkami samorządu.");
         }
 
         Council council = councilRepository.findById(councilId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Nie znaleziono samorządu"));
 
         Users member = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         CouncilMember.CouncilMemberId membershipId = new CouncilMember.CouncilMemberId(councilId, userId);
         if (councilMemberRepository.existsById(membershipId)) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "User is already a member of this council");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Użytkownik jest już członkiem tego samorządu.");
         }
 
         if (roleCode.getCategory() != RoleCategory.SU) {
             throw ApiException.badRequest(ErrorCode.INVALID_ROLE_ASSIGNMENT, 
-                "Only SU roles can be assigned to council members. Use global role assignment for other roles.");
+                "Członkom rady można przypisywać wyłącznie role SU. W przypadku innych ról skontaktuj się z Dyrekcją!");
         }
 
         CouncilMember councilMember = new CouncilMember();
@@ -69,7 +69,7 @@ public class CouncilMemberService {
         CouncilMember savedMember = councilMemberRepository.save(councilMember);
 
         activityLogService.log(actingUser.getId(), ActionType.USER_UPDATED,
-                "Added " + member.getFullName() + " to council " + council.getName() + " with role " + roleCode.getDisplayName());
+                "Dodano " + member.getFullName() + " do samorządu " + council.getName() + " z rolą " + roleCode.getDisplayName());
 
         log.info("Member {} added to council {} with role {}", member.getEmail(), council.getName(), roleCode);
 
@@ -80,19 +80,19 @@ public class CouncilMemberService {
         log.info("Updating member {} role in council {} to {} by user: {}", userId, councilId, newRoleCode, actingUserEmail);
 
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         if (!permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You don't have permission to manage council members");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Nie masz uprawnień do zarządzania członkami samorządu.");
         }
 
         CouncilMember.CouncilMemberId membershipId = new CouncilMember.CouncilMemberId(councilId, userId);
         CouncilMember councilMember = councilMemberRepository.findById(membershipId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council member not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Nie znaleziono członka samorządu"));
 
         if (newRoleCode.getCategory() != RoleCategory.SU) {
-            throw ApiException.badRequest(ErrorCode.INVALID_ROLE_ASSIGNMENT, 
-                "Only SU roles can be assigned to council members");
+            throw ApiException.badRequest(ErrorCode.INVALID_ROLE_ASSIGNMENT,
+                    "Członkom rady można przypisywać wyłącznie role SU. W przypadku innych ról skontaktuj się z Dyrekcją!");
         }
 
         RoleCode oldRole = councilMember.getRole();
@@ -101,8 +101,8 @@ public class CouncilMemberService {
         CouncilMember updatedMember = councilMemberRepository.save(councilMember);
 
         activityLogService.log(actingUser.getId(), ActionType.USER_UPDATED,
-                "Updated " + councilMember.getUser().getFullName() + " role in council from " 
-                + oldRole.getDisplayName() + " to " + newRoleCode.getDisplayName());
+                "Aktualizowanie " + councilMember.getUser().getFullName() + " roli w samorządzie, z "
+                + oldRole.getDisplayName() + " na " + newRoleCode.getDisplayName());
 
         log.info("Member {} role updated from {} to {}", councilMember.getUser().getEmail(), oldRole, newRoleCode);
 
@@ -113,15 +113,15 @@ public class CouncilMemberService {
         log.info("Removing member {} from council {} by user: {}", userId, councilId, actingUserEmail);
 
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Acting user not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         if (!permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You don't have permission to manage council members");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Nie masz uprawnień do zarządzania członkami samorządu.");
         }
 
         CouncilMember.CouncilMemberId membershipId = new CouncilMember.CouncilMemberId(councilId, userId);
         CouncilMember councilMember = councilMemberRepository.findById(membershipId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council member not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Nie znaleziono członka samorządu"));
 
         String memberName = councilMember.getUser().getFullName();
         String councilName = councilMember.getCouncil().getName();
@@ -129,7 +129,7 @@ public class CouncilMemberService {
         councilMemberRepository.delete(councilMember);
 
         activityLogService.log(actingUser.getId(), ActionType.USER_UPDATED,
-                "Removed " + memberName + " from council " + councilName);
+                "Usunięto " + memberName + " z samorządu " + councilName);
 
         log.info("Member {} removed from council {}", memberName, councilName);
     }
@@ -139,14 +139,14 @@ public class CouncilMemberService {
         log.info("Fetching members of council {} by user: {}", councilId, actingUserEmail);
 
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         if (!permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_VIEW)) {
-            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "You don't have permission to view council members");
+            throw ApiException.forbidden(ErrorCode.ACCESS_DENIED, "Nie masz uprawnień do przeglądania członków samorządu.");
         }
 
         if (!councilRepository.existsById(councilId)) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Nie znaleziono samorządu");
         }
 
         return councilMemberRepository.findByCouncilId(councilId);
@@ -162,7 +162,7 @@ public class CouncilMemberService {
         log.info("Fetching council memberships for user: {}", userId);
 
         if (!usersRepository.existsById(userId)) {
-            throw ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found");
+            throw ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika");
         }
 
         return councilMemberRepository.findByIdUserId(userId);
@@ -174,18 +174,18 @@ public class CouncilMemberService {
         return councilMemberRepository.existsById(membershipId);
     }
 
-    public CouncilMember joinCouncilAsBasicMember(UUID councilId, UUID userId) {
+    public void joinCouncilAsBasicMember(UUID councilId, UUID userId) {
         log.info("User {} joining council {} as basic member", userId, councilId);
 
         Council council = councilRepository.findById(councilId)
                 .orElseThrow(() -> ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Council not found"));
 
         Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
 
         CouncilMember.CouncilMemberId membershipId = new CouncilMember.CouncilMemberId(councilId, userId);
         if (councilMemberRepository.existsById(membershipId)) {
-            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "User is already a member of this council");
+            throw ApiException.badRequest(ErrorCode.VALIDATION_ERROR, "Użytkownik jest już członkiem tej rady.");
         }
 
         CouncilMember councilMember = new CouncilMember();
@@ -194,11 +194,10 @@ public class CouncilMemberService {
         councilMember.setUser(user);
         councilMember.setRole(RoleCode.CZLONEK_SU);
 
-        CouncilMember savedMember = councilMemberRepository.save(councilMember);
+        councilMemberRepository.save(councilMember);
 
         log.info("User {} joined council {} as {}", user.getEmail(), council.getName(), RoleCode.CZLONEK_SU);
 
-        return savedMember;
     }
 }
 

@@ -19,6 +19,6 @@ public class CouncilBudgetRequestDto {
 
 	private String year;
 
-	@NotNull(message = "Initial amount is required")
+	@NotNull(message = "Wymagana jest kwota początkowa")
 	private BigDecimal initialAmount;
 }

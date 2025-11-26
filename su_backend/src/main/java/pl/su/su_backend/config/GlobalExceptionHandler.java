@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
         log.warn("Unauthorized access attempt: {}", ex.getMessage());
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
-                "Nie masz uprawnień dostępu do tego zasobu.");
+                "Nie masz dostępu do tego zasobu.");
         problem.setTitle("ACCESS_DENIED");
 
         return problem;
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
         log.error("Unexpected server error", ex);
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Wystąpił nieoczekiwany błąd wewnętrzny serwera.");
+                "Wystąpił nieoczekiwany błąd serwera.");
         problem.setTitle("INTERNAL_SERVER_ERROR");
 
         return problem;

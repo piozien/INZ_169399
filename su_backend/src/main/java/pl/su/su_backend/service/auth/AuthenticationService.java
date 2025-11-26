@@ -14,6 +14,7 @@ import pl.su.su_backend.dto.auth.LoginResponseDto;
 import pl.su.su_backend.dto.auth.MicrosoftLoginDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
 import pl.su.su_backend.exception.ApiException;
+import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.user.UserService;
@@ -43,6 +44,16 @@ public class AuthenticationService {
             UserDetails userDetails = (UserDetails) auth.getPrincipal();
             Users user = usersRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje"));
+
+            if (user.isBlocked()) {
+                log.warn("A blocked user is attempting to log in: {}", user.getEmail());
+                throw ApiException.forbidden("Twoje konto zostało zablokowane. Skontaktuj się z administratorem.");
+            }
+
+            if (user.getStatus() == StatusEnum.PENDING) {
+                log.warn("An inactive user is attempting to log in.: {}", user.getEmail());
+                throw ApiException.forbidden("Konto nie zostało jeszcze aktywowane. Sprawdź skrzynkę email.");
+            }
 
             return generateResponse(user);
         } catch (Exception e) {
@@ -81,7 +92,7 @@ public class AuthenticationService {
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Błąd MS: {}", e.getMessage());
+            log.error("Error MS: {}", e.getMessage());
             throw ApiException.unauthorized( "Błąd weryfikacji konta Microsoft");
         }
     }
@@ -119,5 +130,22 @@ public class AuthenticationService {
             case null -> null;
             default -> throw new IllegalArgumentException("Unknown principal");
         };
+    }
+
+    public LoginResponseDto refreshToken(String refreshToken) {
+        String email;
+        try {
+            email = jwtService.extractEmail(refreshToken);
+        } catch (Exception e) {
+            throw ApiException.unauthorized("Nieprawidłowy token odświeżający");
+        }
+
+        Users user = usersRepository.findByEmail(email)
+                .orElseThrow(() -> ApiException.unauthorized("Użytkownik nie istnieje"));
+
+        if (!jwtService.isTokenValid(refreshToken, email)) {
+            throw ApiException.unauthorized("Token odświeżający wygasł");
+        }
+        return generateResponse(user);
     }
 }

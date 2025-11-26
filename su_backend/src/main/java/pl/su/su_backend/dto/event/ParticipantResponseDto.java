@@ -14,11 +14,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ParticipantResponseDto {
-	private UUID eventId;
-	private UUID userId;
-	private EventParticipantRole role;
-	private Boolean confirmed;
-	private LocalDateTime assignedAt;
+    private UUID eventId;
+    private UUID userId;
+    private EventParticipantRole role;
+    private Boolean confirmed;
+    private LocalDateTime assignedAt;
 }
-
-

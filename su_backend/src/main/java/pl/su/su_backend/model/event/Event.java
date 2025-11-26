@@ -70,8 +70,4 @@ public class Event {
 			status = EventStatus.DRAFT;
 		}
 	}
-
-	public boolean isApproved() {
-		return EventStatus.APPROVED.equals(this.status);
-	}
 }

@@ -1,44 +1,24 @@
 package pl.su.su_backend.dto.budget;
 
-import pl.su.su_backend.model.budget.CouncilBudget;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pl.su.su_backend.model.budget.CouncilTransaction;
+import pl.su.su_backend.model.budget.CouncilBudget;
 import pl.su.su_backend.model.users.Users;
 
-import java.util.ArrayList;
-import java.util.List;
+@Mapper(componentModel = "spring")
+public interface CouncilTransactionMapper {
 
-public class CouncilTransactionMapper {
+    @Mapping(target = "budgetId", source = "budget.id")
+    @Mapping(target = "addedById", source = "addedBy.id")
+    CouncilTransactionResponseDto toResponse(CouncilTransaction transaction);
 
-    private CouncilTransactionMapper() {}
-
-    public static CouncilTransactionResponseDto toResponse(CouncilTransaction transaction) {
-        return CouncilTransactionResponseDto.builder()
-                .id(transaction.getId())
-                .budgetId(transaction.getBudget() != null ? transaction.getBudget().getId() : null)
-                .type(transaction.getType())
-                .amount(transaction.getAmount())
-                .description(transaction.getDescription())
-                .date(transaction.getDate())
-                .addedById(transaction.getAddedBy() != null ? transaction.getAddedBy().getId() : null)
-                .build();
-    }
-
-    public static List<CouncilTransactionResponseDto> toResponseList(List<CouncilTransaction> transactions) {
-        List<CouncilTransactionResponseDto> result = new ArrayList<>();
-        for (CouncilTransaction transaction : transactions) {
-            result.add(toResponse(transaction));
-        }
-        return result;
-    }
-
-    public static CouncilTransaction toEntity(CouncilTransactionRequestDto dto, CouncilBudget budget, Users addedBy) {
-        return CouncilTransaction.builder()
-                .budget(budget)
-                .type(dto.getType())
-                .amount(dto.getAmount())
-                .description(dto.getDescription())
-                .date(dto.getDate())
-                .addedBy(addedBy)
-                .build();
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "budget", source = "budget")
+    @Mapping(target = "addedBy", source = "addedBy")
+    @Mapping(target = "type", source = "dto.type")
+    @Mapping(target = "amount", source = "dto.amount")
+    @Mapping(target = "description", source = "dto.description")
+    @Mapping(target = "date", source = "dto.date")
+    CouncilTransaction toEntity(CouncilTransactionRequestDto dto, CouncilBudget budget, Users addedBy);
 }

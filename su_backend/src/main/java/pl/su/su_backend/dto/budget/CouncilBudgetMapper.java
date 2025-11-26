@@ -1,27 +1,44 @@
 package pl.su.su_backend.dto.budget;
 
+import org.mapstruct.AfterMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import pl.su.su_backend.model.budget.CouncilBudget;
-import pl.su.su_backend.model.council.Council;
-import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.model.budget.CouncilTransaction;
+import pl.su.su_backend.model.enums.TransactionType;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigDecimal;
 
-public class CouncilBudgetMapper {
+@Mapper(componentModel = "spring")
+public interface CouncilBudgetMapper {
 
-    private CouncilBudgetMapper() {}
+    @Mapping(target = "councilId", source = "council.id")
+    @Mapping(target = "councilName", source = "council.name")
+    @Mapping(target = "createdById", source = "createdBy.id")
+    @Mapping(target = "totalIncome", ignore = true)
+    @Mapping(target = "totalExpenses", ignore = true)
+    CouncilBudgetResponseDto toResponse(CouncilBudget budget);
 
-    public static CouncilBudgetResponseDto toResponse(CouncilBudget budget) {
-        return CouncilBudgetResponseDto.builder()
-                .id(budget.getId())
-                .councilId(budget.getCouncil() != null ? budget.getCouncil().getId() : null)
-                .councilName(budget.getCouncil() != null ? budget.getCouncil().getName() : null)
-                .year(budget.getYear())
-                .initialAmount(budget.getInitialAmount())
-                .balance(budget.getBalance())
-                .createdById(budget.getCreatedBy() != null ? budget.getCreatedBy().getId() : null)
-                .createdAt(budget.getCreatedAt())
-                .build();
+    @AfterMapping
+    default void calculateTotals(CouncilBudget source, @MappingTarget CouncilBudgetResponseDto target) {
+        if (source.getTransactions() == null) {
+            target.setTotalIncome(BigDecimal.ZERO);
+            target.setTotalExpenses(BigDecimal.ZERO);
+            return;
+        }
+
+        BigDecimal income = source.getTransactions().stream()
+                .filter(t -> t.getType() == TransactionType.INCOME)
+                .map(CouncilTransaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal expenses = source.getTransactions().stream()
+                .filter(t -> t.getType() == TransactionType.EXPENSE)
+                .map(CouncilTransaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        target.setTotalIncome(income);
+        target.setTotalExpenses(expenses);
     }
-
 }

@@ -1,18 +1,16 @@
-// https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-1.0 24.10 - 25.10 - 13:30
 package pl.su.su_backend.service.event;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 import pl.su.su_backend.model.event.Event;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,101 +19,96 @@ import java.util.Map;
 @Slf4j
 public class CalendarService {
 
-    @Qualifier("graphWebClient")
-    private final WebClient graphWebClient;
+    @Qualifier("graphRestClient")
+    private final RestClient graphRestClient;
 
-    @Value("${app.microsoft.calendar.enabled:false}")
+    @Value("${app.microsoft.calendar.enabled}")
     private boolean calendarEnabled;
-
-    @Value("${app.microsoft.calendar.use-shared-owner}")
-    private boolean useSharedOwner;
-
-    @Value("${app.microsoft.calendar.owner-user-id}")
-    private String ownerUserId;
 
     @Value("${app.microsoft.calendar.events-path.me}")
     private String meEventsPath;
 
-    @Value("${app.microsoft.calendar.events-path.user}")
-    private String userEventsPath;
-
     public String createCalendarEvent(String accessToken, Event event) {
         if (!calendarEnabled) return null;
-        String path = resolveEventsPath();
+
         Map<String, Object> payload = toGraphEvent(event);
-        return graphWebClient.post()
-                .uri(path)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .map(body -> String.valueOf(body.get("id")))
-                .block();
+
+        try {
+            Map response = graphRestClient.post()
+                    .uri(meEventsPath)
+                    .headers(h -> h.setBearerAuth(accessToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(Map.class);
+
+            return response != null ? String.valueOf(response.get("id")) : null;
+        } catch (Exception e) {
+            log.error("Failed to create calendar event: {}", e.getMessage());
+            return null;
+        }
     }
 
     public void updateCalendarEvent(String accessToken, String calendarEventId, Event event) {
         if (!calendarEnabled || calendarEventId == null) return;
-        String path = resolveEventsPath() + "/" + calendarEventId;
+
         Map<String, Object> payload = toGraphEvent(event);
-        graphWebClient.patch()
-                .uri(path)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payload)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+
+        try {
+            graphRestClient.patch()
+                    .uri(meEventsPath + "/" + calendarEventId)
+                    .headers(h -> h.setBearerAuth(accessToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.warn("Failed to update calendar event: {}", e.getMessage());
+        }
     }
 
     public void deleteCalendarEvent(String accessToken, String calendarEventId) {
         if (!calendarEnabled || calendarEventId == null) return;
-        String path = resolveEventsPath() + "/" + calendarEventId;
-        graphWebClient.delete()
-                .uri(path)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
-    }
-    
-    public void addAttendeeToEvent(String accessToken, String calendarEventId, String attendeeEmail) {
-        if (!calendarEnabled || calendarEventId == null) return;
-        
-        String path = resolveEventsPath() + "/" + calendarEventId;
-        
-        Map<String, Object> attendee = Map.of(
-            "emailAddress", Map.of(
-                "address", attendeeEmail,
-                "name", attendeeEmail
-            ),
-            "type", "required"
-        );
-        
-        Map<String, Object> payload = Map.of(
-            "attendees", List.of(attendee)
-        );
-        
-        graphWebClient.patch()
-                .uri(path)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payload)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+
+        try {
+            graphRestClient.delete()
+                    .uri(meEventsPath + "/" + calendarEventId)
+                    .headers(h -> h.setBearerAuth(accessToken))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.warn("Failed to delete calendar event: {}", e.getMessage());
+        }
     }
 
-    private String resolveEventsPath() {
-        if (useSharedOwner && ownerUserId != null && !ownerUserId.isBlank()) {
-            return userEventsPath.replace("{userId}", ownerUserId);
+    public void addAttendeeToEvent(String accessToken, String calendarEventId, String attendeeEmail) {
+        if (!calendarEnabled || calendarEventId == null) return;
+
+        Map<String, Object> attendee = Map.of(
+                "emailAddress", Map.of("address", attendeeEmail, "name", attendeeEmail),
+                "type", "required"
+        );
+
+        Map<String, Object> payload = Map.of("attendees", List.of(attendee));
+
+        try {
+            graphRestClient.patch()
+                    .uri(meEventsPath + "/" + calendarEventId)
+                    .headers(h -> h.setBearerAuth(accessToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.warn("Failed to add attendee: {}", e.getMessage());
         }
-        return meEventsPath;
     }
 
     private Map<String, Object> toGraphEvent(Event event) {
-        OffsetDateTime start = event.getStartDate().atOffset(ZoneOffset.systemDefault().getRules().getOffset(event.getStartDate()));
-        OffsetDateTime end = event.getEndDate().atOffset(ZoneOffset.systemDefault().getRules().getOffset(event.getEndDate()));
+        ZoneId polishZone = ZoneId.of("Europe/Warsaw");
+        ZonedDateTime start = event.getStartDate().atZone(polishZone);
+        ZonedDateTime end = event.getEndDate().atZone(polishZone);
+
         return Map.of(
                 "subject", event.getTitle(),
                 "body", Map.of(
@@ -123,12 +116,12 @@ public class CalendarService {
                         "content", event.getDescription() == null ? "" : event.getDescription()
                 ),
                 "start", Map.of(
-                        "dateTime", start.toString(),
-                        "timeZone", start.getOffset().toString()
+                        "dateTime", start.toOffsetDateTime().toString(), // Format ISO-8601
+                        "timeZone", "UTC"
                 ),
                 "end", Map.of(
-                        "dateTime", end.toString(),
-                        "timeZone", end.getOffset().toString()
+                        "dateTime", end.toOffsetDateTime().toString(),
+                        "timeZone", "UTC"
                 ),
                 "location", Map.of(
                         "displayName", event.getLocation() == null ? "" : event.getLocation()
@@ -136,5 +129,3 @@ public class CalendarService {
         );
     }
 }
-
-
