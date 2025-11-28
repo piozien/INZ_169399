@@ -1,58 +1,70 @@
 'use client';
 
-import { useState, FormEvent, Suspense, useEffect } from 'react';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import MicrosoftIcon from '@/components/icons/MicrosoftIcon';
 import FormField from '@/components/FormField';
-import { LoginRequestDTO } from '@/types/auth.types';
-import { login } from '@/lib/api/auth';
+
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { ApiError } from '@/types/error.types';
+import { LoginRequestDto } from '@/types/auth.types';
 
 function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
 
   const registered = searchParams.get('registered') === 'true';
   const successMessage = registered
     ? 'Rejestracja zakończona pomyślnie! Na podany adres email wysłano link aktywacyjny.'
     : null;
 
-  const loginMutation = useMutation({
-    mutationFn: login,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      router.push('/dashboard');
-    },
-    onError: (err) => {
-      setError(
-        err instanceof Error ? err.message : 'Wystąpił błąd podczas logowania',
-      );
-    },
-  });
-
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsPending(true);
 
-    const payload: LoginRequestDTO = {
-      email: email,
-      password: password,
-    };
+    const payload: LoginRequestDto = { email, password };
 
-    loginMutation.mutate(payload);
+    try {
+      await login(payload);
+      router.push('/dashboard');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Wystąpił nieznany błąd podczas logowania');
+      }
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleMicrosoftLogin = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const oauth2Url = `${apiUrl}/oauth2/authorization/microsoft`;
-    window.location.href = oauth2Url;
+    const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
+    const clientId = process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/callback/microsoft`;
+
+    const azureUrl =
+      `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+      `client_id=${clientId}` +
+      `&response_type=token` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=openid profile email user.read` +
+      `&response_mode=fragment` +
+      `&nonce=${Math.floor(Math.random() * 1000000)}`;
+
+    window.location.href = azureUrl;
   };
 
   return (
@@ -78,7 +90,7 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="jan@kowalski.pl"
-            disabled={loginMutation.isPending}
+            disabled={isPending}
           />
 
           <FormField
@@ -88,7 +100,7 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Twoje hasło"
-            disabled={loginMutation.isPending}
+            disabled={isPending}
           />
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -98,10 +110,10 @@ function LoginForm() {
 
           <button
             type="submit"
-            disabled={loginMutation.isPending}
-            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center"
+            disabled={isPending}
+            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loginMutation.isPending ? 'Logowanie...' : 'Zaloguj się'}
+            {isPending ? 'Logowanie...' : 'Zaloguj się'}
           </button>
           <div className="text-center text-sm">
             <Link
@@ -123,8 +135,8 @@ function LoginForm() {
           <button
             type="button"
             onClick={handleMicrosoftLogin}
-            disabled={loginMutation.isPending}
-            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-microsoftbg cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3"
+            disabled={isPending}
+            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-microsoftbg cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3 hover:opacity-90 transition-opacity"
           >
             <MicrosoftIcon />
             <span>Zaloguj się przez Microsoft</span>
@@ -159,7 +171,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main>
+        <main className="min-h-screen flex items-center justify-center">
           <h1>Ładowanie...</h1>
         </main>
       }

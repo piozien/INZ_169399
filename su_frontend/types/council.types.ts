@@ -1,20 +1,10 @@
-import { RoleCode } from './enums.types';
-
 export interface CouncilMemberDto {
   councilId: string;
   userId: string;
   userFullName: string;
   userEmail: string;
-  role: RoleCode;
+  role: string;
   roleName: string;
-}
-
-export interface CouncilDto {
-  id: string;
-  name: string;
-  invitationCode: string;
-  createdAt: string;
-  members: CouncilMemberDto[];
 }
 
 export interface CouncilResponseDto {
@@ -26,13 +16,12 @@ export interface CouncilResponseDto {
   isActive: boolean;
   joinCode: string;
   createdAt: string;
-  members: CouncilMemberDto[];
+  members?: CouncilMemberDto[];
 }
 
 export interface CouncilRequestDto {
   name: string;
   academicYear: string;
-  startDate: string;
-  endDate: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
 }
-

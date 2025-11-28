@@ -73,6 +73,8 @@ public class AuthenticationService {
                     .retrieve()
                     .body(Map.class);
 
+            log.info("Odpowiedź z Microsoft Graph: {}", msUser);
+
             if (msUser == null) throw ApiException.unauthorized( "Nieprawidłowy token");
 
             String email = (String) msUser.getOrDefault("mail", msUser.get("userPrincipalName"));

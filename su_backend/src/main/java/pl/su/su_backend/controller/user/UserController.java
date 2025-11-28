@@ -29,9 +29,10 @@ public class UserController {
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Users> getMe(@AuthenticationPrincipal Object principal) {
+    public ResponseEntity<UserResponseDto> getMe(@AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
-        return ResponseEntity.ok(userService.getUserByEmailEntity(email));
+        UUID userId = userService.getCurrentUserId(email);
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     @GetMapping("/{userId}")

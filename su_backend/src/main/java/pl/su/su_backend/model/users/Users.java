@@ -1,5 +1,6 @@
 package pl.su.su_backend.model.users;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -50,6 +51,8 @@ public class Users {
     @Column(name = "refresh_token")
     private String refreshToken;
 
+    @JsonIgnore
+    @ToString.Exclude
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();

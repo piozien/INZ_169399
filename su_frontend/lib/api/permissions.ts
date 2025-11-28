@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface PermissionsResponse {
   roles: string[];
@@ -7,7 +7,7 @@ export interface PermissionsResponse {
 
 
 export async function fetchUserPermissions(): Promise<PermissionsResponse> {
-  const response = await fetch(`${API_URL}/api/permissions`, {
+  const response = await fetch(`${API_URL}/permissions`, {
     headers: {
       'Content-Type': 'application/json',
     },
