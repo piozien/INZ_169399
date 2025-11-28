@@ -1,10 +1,10 @@
-import { LoginRequestDTO } from "@/types/auth.types";
-import { User } from "@/types/user.types";
+import { LoginRequestDto } from "@/types/auth.types";
+import { UserDto } from "@/types/user.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export async function login(payload: LoginRequestDTO): Promise<User> {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+export async function login(payload: LoginRequestDto): Promise<UserDto> {
+  const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -23,7 +23,7 @@ export async function login(payload: LoginRequestDTO): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${API_URL}/api/auth/logout`, {
+  await fetch(`${API_URL}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -32,7 +32,7 @@ export async function logout(): Promise<void> {
 export async function requestPasswordReset(payload: {
   email: string;
 }): Promise<void> {
-  const response = await fetch(`${API_URL}/api/auth/password-reset/request`, {
+  const response = await fetch(`${API_URL}/auth/password-reset/request`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export async function requestPasswordReset(payload: {
 
 export async function validatePasswordResetToken(token: string): Promise<void> {
   const response = await fetch(
-    `${API_URL}/api/auth/password-reset/validate/${token}`,
+    `${API_URL}/auth/password-reset/validate/${token}`,
   );
 
   if (!response.ok) {
@@ -59,7 +59,7 @@ export async function confirmPasswordReset(payload: {
   token: string;
   newPassword: string;
 }): Promise<void> {
-  const response = await fetch(`${API_URL}/api/auth/password-reset/confirm`, {
+  const response = await fetch(`${API_URL}/auth/password-reset/confirm`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

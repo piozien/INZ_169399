@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -34,36 +35,38 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                String jwt = extractJwt(request);
 
-        try {
-            String jwt = extractJwt(request);
+                if (jwt != null) {
+                    String userEmail = jwtService.extractEmail(jwt);
 
-            if (jwt != null) {
-                String userEmail = jwtService.extractEmail(jwt);
+                    if (userEmail != null && jwtService.isTokenValid(jwt, userEmail)) {
 
-                if (userEmail != null && jwtService.isTokenValid(jwt, userEmail)) {
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContext context = SecurityContextHolder.createEmptyContext();
+                        context.setAuthentication(authToken);
+                        SecurityContextHolder.setContext(context);
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Authenticated user: {}", userEmail);
+                        log.debug("JWT Filter: Authenticated user: {}", userEmail);
+                    }
                 }
+            } catch (Exception e) {
+                log.trace("JWT token processing failed: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
             }
-        } catch (Exception e) {
-            log.debug("Could not set user authentication: {}", e.getMessage());
         }
 
+        // 2. Kontynuacja łańcucha (ZAWSZE, nawet jak token był zły)
         filterChain.doFilter(request, response);
     }
 

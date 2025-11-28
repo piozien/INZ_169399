@@ -1,71 +1,19 @@
-import { CouncilResponseDto, CouncilRequestDto } from '@/types/council.types';
+import { apiFetch } from "./httpClient";
+import { CouncilRequestDto, CouncilResponseDto } from "@/types/council.types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+export const fetchUserCouncils = async (): Promise<CouncilResponseDto[]> => {
+  return apiFetch<CouncilResponseDto[]>("/councils");
+};
 
-
-export async function fetchUserCouncils(): Promise<CouncilResponseDto[]> {
-  const response = await fetch(`${API_URL}/api/council`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
+export const joinCouncilByCode = async (joinCode: string): Promise<CouncilResponseDto> => {
+  return apiFetch<CouncilResponseDto>(`/councils/join/${joinCode}`, {
+    method: "POST",
   });
+};
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch councils');
-  }
-
-  return response.json();
-}
-
-export async function fetchCouncilById(id: string): Promise<CouncilResponseDto> {
-  const response = await fetch(`${API_URL}/api/council/${id}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch council');
-  }
-
-  return response.json();
-}
-
-export async function joinCouncilByCode(joinCode: string): Promise<CouncilResponseDto> {
-  const response = await fetch(`${API_URL}/api/council/join/${joinCode}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to join council' }));
-    throw new Error(error.message || 'Failed to join council');
-  }
-
-  return response.json();
-}
-
-
-export async function createCouncil(data: CouncilRequestDto): Promise<CouncilResponseDto> {
-  const response = await fetch(`${API_URL}/api/council`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
+export const createCouncil = async (data: CouncilRequestDto): Promise<CouncilResponseDto> => {
+  return apiFetch<CouncilResponseDto>("/councils", {
+    method: "POST",
     body: JSON.stringify(data),
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to create council' }));
-    throw new Error(error.message || 'Failed to create council');
-  }
-
-  return response.json();
-}
-
+};

@@ -1,10 +1,10 @@
 import { EventResponseDto } from '@/types/event.types';
 import { Event } from '@/types/event.types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function fetchAllEvents(): Promise<Event[]> {
-  const response = await fetch(`${API_URL}/api/events`, {
+  const response = await fetch(`${API_URL}/events`, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -17,7 +17,7 @@ export async function fetchAllEvents(): Promise<Event[]> {
 }
 
 export async function fetchUpcomingEvents(): Promise<Event[]> {
-    const response = await fetch(`${API_URL}/api/events/upcoming`, {
+    const response = await fetch(`${API_URL}/events/upcoming`, {
         headers: {
             'Content-Type': 'application/json',
         },
@@ -33,7 +33,7 @@ export const fetchEventsByDateRange = async (
   endDate: string,
 ): Promise<EventResponseDto[]> => {
   const response = await fetch(
-    `${API_URL}/api/events/range?startDate=${startDate}&endDate=${endDate}`,
+    `${API_URL}/events/range?startDate=${startDate}&endDate=${endDate}`,
     {
       method: 'GET',
       headers: {

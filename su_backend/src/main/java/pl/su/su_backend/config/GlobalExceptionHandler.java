@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -47,6 +48,14 @@ public class GlobalExceptionHandler {
 
         problem.setProperty("fieldErrors", fieldErrors);
 
+        return problem;
+    }
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthenticationException(AuthenticationException ex) {
+        log.debug("Błąd uwierzytelniania brak cookies niezalogowany uzytkownik: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Pełne uwierzytelnienie jest wymagane, aby uzyskać dostęp do tego zasobu.");
+        problem.setTitle("UNAUTHORIZED");
         return problem;
     }
 

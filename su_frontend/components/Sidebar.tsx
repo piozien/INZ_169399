@@ -3,32 +3,19 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import SchoolRounded from '@/components/icons/SchoolRounded';
-import FinanceIcon from '@/components/icons/sidebar/FinanceIcon';
 import HomeIcon from '@/components/icons/sidebar/HomeIcon';
-import ListIcon from '@/components/icons/sidebar/ListIcon';
 import ProfileIcon from '@/components/icons/sidebar/ProfileIcon';
 import SettingsIcon from '@/components/icons/sidebar/SettingsIcon';
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
-import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { LogOut, Sun, UsersRound, Landmark } from 'lucide-react';
+import { LogOut, Sun, Landmark } from 'lucide-react';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { logout } from '@/lib/api/auth';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 const Sidebar = () => {
   const pathname = usePathname();
-  const { data: user, isLoading } = useCurrentUser();
   const { toggleTheme } = useTheme();
-  const router = useRouter();
-  const queryClient = useQueryClient();
 
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      queryClient.clear();
-      router.push('/login');
-    },
-  });
+  const { user, isLoading, logout } = useAuth();
 
   const mainLinks = [
     { href: '/dashboard', label: 'Strona Główna', icon: HomeIcon },
@@ -48,6 +35,8 @@ const Sidebar = () => {
       </aside>
     );
   }
+
+  if (!user) return null;
 
   const NavGroup = ({
     title,
@@ -90,7 +79,12 @@ const Sidebar = () => {
         <SchoolRounded className="h-8 w-8 text-secondary" />
         <span className="text-lg font-bold">SAMORZĄD</span>
       </div>
-      <div className="mt-6 flex flex-1 flex-col justify-between">
+
+      <div className="px-3 py-2 text-xs text-lg">
+        Zalogowany: {user.fullName}
+      </div>
+
+      <div className="mt-2 flex flex-1 flex-col justify-between">
         <div className="space-y-6">
           <NavGroup links={mainLinks} />
         </div>
@@ -104,14 +98,11 @@ const Sidebar = () => {
             <Sun className="h-5 w-5" />
           </button>
           <button
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
+            onClick={() => logout()}
             className=" flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondarybg"
           >
             <LogOut className="h-5 w-5" />
-            <span>
-              {logoutMutation.isPending ? 'Wylogowywanie...' : 'Wyloguj'}
-            </span>
+            <span>Wyloguj</span>
           </button>
         </div>
       </div>

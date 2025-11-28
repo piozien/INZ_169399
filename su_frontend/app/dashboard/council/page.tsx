@@ -4,19 +4,21 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GraduationCap, Pencil, UserPlus, Loader2 } from 'lucide-react';
 import { fetchUserCouncils, joinCouncilByCode } from '@/lib/api/council';
-import { fetchUserPermissions } from '@/lib/api/permissions';
-import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import { CouncilResponseDto } from '@/types/council.types';
 import CouncilCard from '@/components/council/CouncilCard';
 import CreateCouncilForm from '@/components/council/CreateCouncilForm';
+import { ApiError } from '@/types/error.types';
 
 type Tab = 'create' | 'join' | null;
 
 export default function CouncilPage() {
   const [activeTab, setActiveTab] = useState<Tab>(null);
   const [joinCode, setJoinCode] = useState('');
+  const [joinError, setJoinError] = useState<string | null>(null);
+
   const queryClient = useQueryClient();
-  const { data: user } = useCurrentUser();
+  const { user } = useAuth();
 
   const {
     data: councils,
@@ -28,25 +30,33 @@ export default function CouncilPage() {
     retry: false,
   });
 
-  const { data: permissions } = useQuery({
-    queryKey: ['userPermissions'],
-    queryFn: fetchUserPermissions,
-  });
+  console.log(user);
 
   const hasCreatePermission =
-    permissions?.permissions?.includes('council.create') ?? false;
+    user?.roles?.includes('ADMINISTRATOR') ||
+    user?.roles?.includes('DYREKTOR') ||
+    user?.roles?.includes('OPIEKUN_SU');
 
   const joinMutation = useMutation({
     mutationFn: joinCouncilByCode,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
       setJoinCode('');
+      setJoinError(null);
       setActiveTab(null);
+    },
+    onError: (err) => {
+      if (err instanceof ApiError) {
+        setJoinError(err.message);
+      } else {
+        setJoinError('Wystąpił błąd podczas dołączania.');
+      }
     },
   });
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setJoinError(null);
     if (joinCode.trim()) {
       joinMutation.mutate(joinCode.trim());
     }
@@ -60,121 +70,125 @@ export default function CouncilPage() {
     );
   }
 
-  const hasNoCouncils = councilsError || !councils || councils.length === 0;
+  const hasNoCouncils = !councils || councils.length === 0;
 
   if (hasNoCouncils) {
     const firstName = user?.fullName?.split(' ')[0] || '';
 
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background text-foreground">
-        
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-foreground">
         <div className="flex flex-col items-center text-center mb-12">
           <div className="flex items-center gap-3 mb-6">
             <GraduationCap className="text-secondary h-10 w-10" />
-            <h1 className="text-xl font-bold uppercase tracking-wide text-foreground">
+            <h1 className="text-xl font-bold uppercase tracking-wide">
               Samorząd
             </h1>
           </div>
 
           <h2 className="text-4xl font-bold mb-4">Witaj, {firstName}!</h2>
           <p className="text-txtcolor-300 max-w-md">
-            Aby rozpocząć swoją przygodę z aplikacją, musisz mieć samorząd. Co robimy?
+            Aby rozpocząć, musisz dołączyć do samorządu.
           </p>
         </div>
 
         <div className="w-full max-w-4xl flex flex-col items-center">
-          
           <div className="flex flex-col md:flex-row gap-6 justify-center w-full max-w-2xl mb-12">
-            
             {hasCreatePermission && (
               <button
-                onClick={() => setActiveTab('create')}
+                onClick={() =>
+                  setActiveTab(activeTab === 'create' ? null : 'create')
+                }
                 className={`
-                  flex-1 p-12 rounded-xl flex flex-col items-center justify-center gap-4 transition-all duration-300
-                  ${activeTab === 'create' 
-                    ? 'bg-secondary text-background shadow-lg scale-105'
-                    : 'bg-secondarybg hover:bg-inputbg text-foreground'
+                  flex-1 p-8 rounded-xl flex flex-col items-center justify-center gap-4 transition-all duration-300 border border-border
+                  ${
+                    activeTab === 'create'
+                      ? 'bg-secondary text-background shadow-lg scale-105'
+                      : 'bg-secondarybg hover:bg-inputbg hover:border-secondary text-foreground'
                   }
                 `}
               >
-                <Pencil className={`h-8 w-8 ${activeTab === 'create' ? 'text-background' : 'text-secondary'}`} />
+                <Pencil
+                  className={`h-8 w-8 ${activeTab === 'create' ? 'text-background' : 'text-secondary'}`}
+                />
                 <span className="text-lg font-semibold">
                   Stwórz nowy samorząd
                 </span>
               </button>
             )}
 
-
             <button
-              onClick={() => setActiveTab('join')}
+              onClick={() => setActiveTab(activeTab === 'join' ? null : 'join')}
               className={`
-                flex-1 p-12 rounded-xl flex flex-col items-center justify-center gap-4 transition-all duration-300
-                ${activeTab === 'join' 
-                  ? 'bg-secondary text-background shadow-lg scale-105' 
-                  : 'bg-secondarybg hover:bg-inputbg text-foreground'
+                 max-w-[400px] flex-1 p-8 rounded-xl flex flex-col items-center justify-center gap-4 transition-all duration-300 border border-border
+                ${
+                  activeTab === 'join'
+                    ? 'bg-secondary text-background shadow-lg scale-105'
+                    : 'bg-secondarybg hover:bg-inputbg hover:border-secondary text-foreground'
                 }
               `}
             >
-              <UserPlus className={`h-8 w-8 ${activeTab === 'join' ? 'text-background' : 'text-secondary'}`} />
-              <span className="text-lg font-semibold">
-                Dołącz do samorządu
-              </span>
+              <UserPlus
+                className={`h-8 w-8 ${activeTab === 'join' ? 'text-background' : 'text-secondary'}`}
+              />
+              <span className="text-lg font-semibold">Dołącz kodem</span>
             </button>
           </div>
 
-
-          <div className="w-full max-w-lg transition-all duration-500 ease-in-out">
-            
+          <div className="w-full max-w-lg">
             {activeTab === 'create' && (
-              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                <CreateCouncilForm 
-                  onCancel={() => setActiveTab(null)} 
-                  onSuccess={() => setActiveTab(null)} 
+              <div className="animate-in fade-in slide-in-from-top-4 duration-300 bg-secondarybg p-6 rounded-xl border border-border">
+                <CreateCouncilForm
+                  onCancel={() => setActiveTab(null)}
+                  onSuccess={() => {
+                    setActiveTab(null);
+                    queryClient.invalidateQueries({
+                      queryKey: ['userCouncils'],
+                    });
+                  }}
                 />
               </div>
             )}
 
             {activeTab === 'join' && (
-              <div className="w-full animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="mb-6">
-                    <span className="text-lg font-medium text-foreground border-b-2 border-secondary pb-1">
-                        Dołącz do samorządu
-                    </span>
-                </div>
+              <div className="animate-in fade-in slide-in-from-top-4 duration-300 bg-secondarybg p-6 rounded-xl border border-border">
+                <h3 className="text-lg font-medium mb-4 text-center">
+                  Wpisz kod od przewodniczącego
+                </h3>
+                <form onSubmit={handleJoinSubmit} className="space-y-4">
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                    className="w-full bg-inputbg text-foreground rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary placeholder-txtcolor-300 border border-border"
+                    placeholder="Np. SU2024..."
+                    required
+                  />
 
-                <form onSubmit={handleJoinSubmit} className="space-y-6">
-                  <div>
-                    <label htmlFor="join-code" className="block text-xs text-txtcolor-300 mb-2">
-                      Kod dołączenia
-                    </label>
-                    <input
-                      type="text"
-                      id="join-code"
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value)}
-                      className="w-full bg-inputbg text-foreground rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary transition-all placeholder-txtcolor-300/50"
-                      placeholder="Wprowadź kod..."
-                      required
-                    />
-                  </div>
-                  
-                  {joinMutation.error && (
-                    <p className="text-error text-sm">
-                      {(joinMutation.error as Error).message}
+                  {joinError && (
+                    <p className="text-red-500 text-sm text-center">
+                      {joinError}
                     </p>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={joinMutation.isPending}
-                    className="bg-primary text-background font-semibold px-8 py-3 rounded-full hover:opacity-90 disabled:opacity-50 transition-opacity w-auto"
-                  >
-                    {joinMutation.isPending ? 'Dołączanie...' : 'Dołącz'}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(null)}
+                      className="flex-1 py-2 rounded-lg hover:bg-inputbg transition-colors"
+                    >
+                      Anuluj
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={joinMutation.isPending}
+                      className="flex-1 bg-primary text-darkgray font-bold py-2 rounded-lg hover:bg-secondary disabled:opacity-50"
+                    >
+                      {joinMutation.isPending ? 'Dołączanie...' : 'Dołącz'}
+                    </button>
+                  </div>
                 </form>
               </div>
             )}
-
           </div>
         </div>
       </div>
@@ -186,21 +200,36 @@ export default function CouncilPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8 text-foreground">
+      <h1 className="text-3xl font-bold mb-8 text-foreground flex items-center gap-3">
+        <GraduationCap className="text-secondary" />
         Twoje Samorządy
       </h1>
+
       {activeCouncil && (
         <div className="mb-12">
-          <div className="max-w-4xl mx-auto">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-4 tracking-wider">
+            Aktywny Samorząd
+          </h2>
+          <div className="max-w-4xl">
             <CouncilCard council={activeCouncil} isActive={true} />
           </div>
         </div>
       )}
+
       {otherCouncils.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {otherCouncils.map((council) => (
-            <CouncilCard key={council.id} council={council} isActive={false} />
-          ))}
+        <div>
+          <h2 className="text-sm font-semibold text-txtcolor-300 uppercase mb-4 tracking-wider">
+            Pozostałe
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {otherCouncils.map((council) => (
+              <CouncilCard
+                key={council.id}
+                council={council}
+                isActive={false}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

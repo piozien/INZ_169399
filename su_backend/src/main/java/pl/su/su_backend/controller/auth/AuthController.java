@@ -1,5 +1,6 @@
 package pl.su.su_backend.controller.auth;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.AuthenticationService;
+import pl.su.su_backend.service.auth.CookieService;
 import pl.su.su_backend.service.auth.JwtService;
 import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.service.user.UserService;
@@ -35,6 +37,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UsersRepository usersRepository;
     private final MailService mailService;
+    private final CookieService cookieService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -47,23 +50,38 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
-        return ResponseEntity.ok(authenticationService.authenticateLocal(loginRequestDto));
+    public ResponseEntity<UserResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) {
+       LoginResponseDto loginResponse = authenticationService.authenticateLocal(loginRequestDto);
+       cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());
+
+       return ResponseEntity.ok(loginResponse.getUser());
     }
 
     @PostMapping("/microsoft")
-    public ResponseEntity<LoginResponseDto> microsoftLogin(@Valid @RequestBody MicrosoftLoginDto request) {
-        return ResponseEntity.ok(authenticationService.authenticateMicrosoft(request));
+    public ResponseEntity<UserResponseDto> microsoftLogin(@Valid @RequestBody MicrosoftLoginDto request, HttpServletResponse response) {
+        LoginResponseDto loginResponse = authenticationService.authenticateMicrosoft(request);
+        cookieService.setAuthCookies(response, loginResponse.getAccessToken(), loginResponse.getRefreshToken());
+        return ResponseEntity.ok(loginResponse.getUser());
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDto> refreshToken(@Valid @RequestBody RefreshTokenRequestDto request) {
-        return ResponseEntity.ok(authenticationService.refreshToken(request.getRefreshToken()));
+    public ResponseEntity<Void> refreshToken(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+
+        if (refreshToken == null) {
+            throw ApiException.unauthorized("Brak tokenu odświeżającego w ciasteczkach");
+        }
+
+        LoginResponseDto newTokens = authenticationService.refreshToken(refreshToken);
+        cookieService.setAuthCookies(response, newTokens.getAccessToken(), newTokens.getRefreshToken());
+
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        log.info("User logged out (token removed on client side)");
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        cookieService.clearAuthCookies(response);
         return ResponseEntity.ok().build();
     }
 

@@ -1,9 +1,9 @@
-import { User } from "@/types/user.types";
+import { UserDto } from "@/types/user.types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function fetchCurrentUser(): Promise<User> {
-  const response = await fetch(`${API_URL}/api/users/me`, {
+export async function fetchCurrentUser(): Promise<UserDto> {
+  const response = await fetch(`${API_URL}/users/me`, {
     credentials: "include",
   });
 
