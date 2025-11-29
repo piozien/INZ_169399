@@ -1,13 +1,13 @@
-import { ApiError } from "@/types/error.types";
+import {ApiError} from "@/types/error.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 let isRefreshing = false;
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    
+
     const headers = new Headers(options.headers);
-    
+
     if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
         headers.set('Content-Type', 'application/json');
     }
@@ -15,7 +15,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     const defaultOptions: RequestInit = {
         ...options,
         headers,
-        credentials: 'include', 
+        credentials: 'include',
     };
 
     let response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
@@ -35,11 +35,11 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
                     response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
                 } else {
                     isRefreshing = false;
-                    
+
                     if (typeof window !== 'undefined' && !endpoint.includes('/users/me')) {
                         window.location.href = '/login';
                     }
-                    
+
                     throw new Error("Session expired");
                 }
             } catch (error) {
@@ -53,15 +53,15 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
     if (!response.ok) {
         let errorData;
-        try { 
-            errorData = await response.json(); 
-        } catch { 
-            errorData = {}; 
+        try {
+            errorData = await response.json();
+        } catch {
+            errorData = {};
         }
-        
+
         //  ProblemDetail (Spring Boot 3)
         const message = errorData.detail || errorData.message || errorData.title || 'Wystąpił błąd serwera';
-        
+
         throw new ApiError(message, response.status, errorData);
     }
 
@@ -70,5 +70,13 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
         return {} as T;
     }
 
-    return response.json() as Promise<T>;
+    const contentLength = response.headers.get("Content-Length");
+    if (contentLength === "0") {
+        return {} as T;
+    }
+
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : ({} as T);
 }
+

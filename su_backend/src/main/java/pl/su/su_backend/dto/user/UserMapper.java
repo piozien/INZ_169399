@@ -6,6 +6,7 @@ import org.mapstruct.Named;
 import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,8 +19,8 @@ public interface UserMapper {
 
     @Named("mapRolesToStrings")
     default List<String> mapRolesToStrings(Set<UserRole> userRoles) {
-        if (userRoles == null) {
-            return List.of();
+        if (userRoles == null || userRoles.isEmpty()) {
+            return new ArrayList<>();
         }
         return userRoles.stream()
                 .map(ur -> ur.getRole().getRoleCode().name())

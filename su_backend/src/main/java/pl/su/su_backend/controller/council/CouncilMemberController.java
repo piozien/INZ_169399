@@ -40,6 +40,7 @@ public class CouncilMemberController {
                 .collect(Collectors.toList()));
     }
 
+
     @PostMapping
     @PreAuthorize("hasPermission(null, 'COUNCIL_MEMBER_MANAGE')")
     public ResponseEntity<CouncilMemberDto> addMemberToCouncil(

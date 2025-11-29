@@ -12,6 +12,7 @@ import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.service.auth.PermissionService;
@@ -39,7 +40,6 @@ public class CouncilService {
 
     public CouncilResponseDto createCouncil(CouncilRequestDto dto, String currentUserEmail) {
         log.info("Creating council: {} by user: {}", dto.getName(), currentUserEmail);
-
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
         Council council = councilMapper.toEntity(dto);
@@ -52,7 +52,6 @@ public class CouncilService {
         activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE,
                 "Created council: " + dto.getName() + " (" + joinCode + ")");
 
-
         return councilMapper.toResponseDto(council);
     }
 
@@ -60,12 +59,21 @@ public class CouncilService {
     public List<CouncilResponseDto> getCouncils(String currentUserEmail) {
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
-        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL)) {
+        boolean isAdmin = currentUser.getUserRoles().stream()
+                .anyMatch(ur -> ur.getRole().getRoleCode() == RoleCode.ADMINISTRATOR);
+
+        boolean canViewAll = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL);
+
+        if (isAdmin || canViewAll) {
+            log.info("User {} has global access (Admin: {}, Perm: {}). Returning all councils.",
+                    currentUserEmail, isAdmin, canViewAll);
+
             return councilRepository.findAll().stream()
                     .map(councilMapper::toResponseDto)
                     .collect(Collectors.toList());
         }
 
+        log.info("User {} has restricted access. Returning memberships only.", currentUserEmail);
         List<CouncilMember> memberships = councilMemberService.getUserCouncilMemberships(currentUser.getId());
 
         List<UUID> councilIds = memberships.stream()
@@ -84,11 +92,13 @@ public class CouncilService {
         Council council = councilRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o ID: " + id));
 
+        boolean isAdmin = currentUser.getUserRoles().stream()
+                .anyMatch(ur -> ur.getRole().getRoleCode() == RoleCode.ADMINISTRATOR);
         boolean hasGlobalAccess = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL);
         boolean isMember = councilMemberService.isMemberOfCouncil(currentUser.getId(), id);
 
-        if (!hasGlobalAccess && !isMember) {
-            throw ApiException.forbidden("Nie masz dostępu do tego samorządu.");
+        if (!isAdmin && !hasGlobalAccess && !isMember) {
+            throw ApiException.forbidden("Brak dostępu do tego samorządu");
         }
 
         return councilMapper.toResponseDto(council);
@@ -108,22 +118,19 @@ public class CouncilService {
 
         councilMemberService.joinCouncilAsBasicMember(council.getId(), currentUser.getId());
 
-        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Dołączono do samorządu: " + council.getName());
+        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Joined council: " + council.getName());
 
         return councilMapper.toResponseDto(council);
     }
 
     private String generateJoinCodeForCouncil(String academicYear) {
-        // "2024/2025" -> "2024"
         String yearPart = academicYear.split("/")[0];
         String prefix = "SU" + yearPart;
-
         String code;
         do {
-            int randomNumber = new Random().nextInt(10000); // 0000-9999
+            int randomNumber = new Random().nextInt(10000);
             code = prefix + String.format("%04d", randomNumber);
         } while (councilRepository.findByJoinCode(code).isPresent());
-
         return code;
     }
 }

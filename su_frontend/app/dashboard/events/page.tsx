@@ -53,7 +53,7 @@ export default function EventsPage() {
     }
     if (isError) {
       return (
-        <p className="text-red-500">
+        <p className="text-error">
           Wystąpił błąd podczas pobierania wydarzeń: {error.message}
         </p>
       );

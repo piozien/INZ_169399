@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
 
         {successMessage ? (
           <div className="w-10/12 mt-8 text-center">
-            <p className="text-green-500">{successMessage}</p>
+            <p className="text-success">{successMessage}</p>
             <Link
               href="/login"
               className="mt-4 inline-block text-secondary font-medium"

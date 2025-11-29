@@ -165,7 +165,7 @@ export default function CouncilPage() {
                   />
 
                   {joinError && (
-                    <p className="text-red-500 text-sm text-center">
+                    <p className="text-error text-sm text-center">
                       {joinError}
                     </p>
                   )}
@@ -207,7 +207,7 @@ export default function CouncilPage() {
 
       {activeCouncil && (
         <div className="mb-12">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-4 tracking-wider">
+          <h2 className="text-sm font-semibold text-txtcolor-300 uppercase mb-4 tracking-wider">
             Aktywny Samorząd
           </h2>
           <div className="max-w-4xl">

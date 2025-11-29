@@ -10,4 +10,5 @@ export interface UserDto {
     fullName: string;
     status: StatusEnum;
     roles: string[];
+    permissions?: string[];
 }

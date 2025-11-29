@@ -99,7 +99,7 @@ function ResetPasswordForm() {
     if (!isTokenValid || (error && !mutation.isPending)) {
       return (
         <div className="w-10/12 mt-8 text-center">
-          <p className="text-red-500">{error}</p>
+          <p className="text-error">{error}</p>
           <Link
             href="/forgot-password"
             className="mt-4 inline-block text-secondary font-medium"
@@ -113,7 +113,7 @@ function ResetPasswordForm() {
     if (success) {
       return (
         <div className="w-10/12 mt-8 text-center">
-          <p className="text-green-500">
+          <p className="text-success">
             Hasło zostało pomyślnie zresetowane!
           </p>
           <p className="mt-2 text-sm text-txtcolor-300">
@@ -147,9 +147,9 @@ function ResetPasswordForm() {
           disabled={mutation.isPending}
         />
         {passwordError && (
-          <p className="text-red-500 text-sm -mt-2">{passwordError}</p>
+          <p className="text-error text-sm -mt-2">{passwordError}</p>
         )}
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && <p className="text-error text-sm">{error}</p>}
         <button
           type="submit"
           disabled={

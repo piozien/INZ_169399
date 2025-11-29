@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import pl.su.su_backend.model.enums.StatusEnum;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,5 +20,6 @@ public class UserResponseDto {
     private String fullName;
     private StatusEnum status;
 
-    private List<String> roles;
+    @Builder.Default
+    private List<String> roles = new ArrayList<>();
 }
