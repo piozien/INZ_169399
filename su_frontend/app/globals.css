@@ -12,5 +12,11 @@
   --color-inputbg: #372c1e;
   --color-microsoftbg: #f0f9ff;
   --color-focusering: #ff9d00;
+
+    --color-success: #22c55e;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+    --color-warning: #f59e0b;
+    --color-accent: #a855f7;
 }
 

@@ -29,18 +29,13 @@ public class CouncilController {
     public ResponseEntity<CouncilResponseDto> createCouncil(
             @Valid @RequestBody CouncilRequestDto dto,
             @AuthenticationPrincipal Object principal) {
-
         String email = getCurrentUserEmail(principal);
-        log.info("Creating council: {} by user: {}", dto.getName(), email);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(councilService.createCouncil(dto, email));
+        return ResponseEntity.status(HttpStatus.CREATED).body(councilService.createCouncil(dto, email));
     }
 
     @GetMapping
     @PreAuthorize("hasPermission(null, 'COUNCIL_VIEW')")
-    public ResponseEntity<List<CouncilResponseDto>> getCouncils(
-            @AuthenticationPrincipal Object principal) {
-
+    public ResponseEntity<List<CouncilResponseDto>> getCouncils(@AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.getCouncils(email));
     }
@@ -50,7 +45,6 @@ public class CouncilController {
     public ResponseEntity<CouncilResponseDto> getCouncilById(
             @PathVariable UUID id,
             @AuthenticationPrincipal Object principal) {
-
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.getCouncilById(id, email));
     }
@@ -60,9 +54,7 @@ public class CouncilController {
     public ResponseEntity<CouncilResponseDto> joinCouncilByCode(
             @PathVariable String joinCode,
             @AuthenticationPrincipal Object principal) {
-
         String email = getCurrentUserEmail(principal);
-        log.info("User {} attempting to join council with code: {}", email, joinCode);
         return ResponseEntity.ok(councilService.joinCouncilByCode(joinCode, email));
     }
 

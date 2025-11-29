@@ -6,6 +6,15 @@ export interface CouncilMemberDto {
   role: string;
   roleName: string;
 }
+export interface RoleOptionDto {
+    code: string;
+    label: string;
+}
+
+export interface RoleOptionDto {
+    code: string;
+    label: string;
+}
 
 export interface CouncilResponseDto {
   id: string;

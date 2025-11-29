@@ -1,10 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Event } from '@/types/event.types';
+import { EventResponseDto } from '@/types/event.types';
 import EventCard from '@/components/EventCard';
 
-async function getUpcomingEvents(): Promise<Event[]> {
+async function getUpcomingEvents(): Promise<EventResponseDto[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   const response = await fetch(`${apiUrl}/api/events/upcoming`);
 
@@ -20,7 +20,7 @@ export default function EventsPage() {
     isLoading,
     isError,
     error,
-  } = useQuery<Event[], Error>({
+  } = useQuery<EventResponseDto[], Error>({
     queryKey: ['upcomingEvents'],
     queryFn: getUpcomingEvents,
   });
@@ -36,7 +36,7 @@ export default function EventsPage() {
       )}
 
       {isError && (
-        <p className="text-center text-red-500">
+        <p className="text-center text-error">
           Wystąpił błąd: {error.message}
         </p>
       )}

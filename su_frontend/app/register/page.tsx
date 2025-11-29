@@ -7,9 +7,9 @@ import Link from 'next/link';
 
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import FormField from '@/components/FormField';
-import { UserRequestDTO } from '@/types/auth.types';
+import { UserRequestDto } from '@/types/auth.types';
 
-async function registerUser(payload: UserRequestDTO): Promise<void> {
+async function registerUser(payload: UserRequestDto): Promise<void> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   const response = await fetch(`${apiUrl}/api/auth/register`, {
     method: 'POST',
@@ -52,7 +52,7 @@ function RegistrationForm() {
     }
   }, [password, confirmPassword]);
 
-  const registrationMutation = useMutation<void, Error, UserRequestDTO>({
+  const registrationMutation = useMutation<void, Error, UserRequestDto>({
     mutationFn: registerUser,
     onSuccess: () => {
       router.push('/login?registered=true');
@@ -134,7 +134,7 @@ function RegistrationForm() {
             disabled={registrationMutation.isPending}
           />
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-error text-sm">{error}</p>}
 
           <button
             type="submit"

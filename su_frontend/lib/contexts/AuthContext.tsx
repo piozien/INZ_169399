@@ -1,96 +1,105 @@
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { UserDto } from '@/types/user.types';
 import { apiFetch } from '@/lib/api/httpClient';
+import { fetchMyPermissions } from '@/lib/api/permissions';
 import { useRouter } from 'next/navigation';
-import { ApiError } from '@/types/error.types';
 import { LoginRequestDto, MicrosoftLoginRequest } from '@/types/auth.types';
 
 interface AuthContextType {
-  user: UserDto | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (data: LoginRequestDto) => Promise<void>;
-  logout: () => Promise<void>;
-  loginWithMicrosoft: (data: MicrosoftLoginRequest) => Promise<void>;
+    user: UserDto | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    login: (data: LoginRequestDto) => Promise<void>;
+    logout: () => Promise<void>;
+    loginWithMicrosoft: (data: MicrosoftLoginRequest) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserDto | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+    const [user, setUser] = useState<UserDto | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+    useEffect(() => {
+        checkAuth();
+    }, []);
 
-  const checkAuth = async () => {
-    try {
-      const userData = await apiFetch<UserDto>('/users/me');
-      setUser(userData);
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const loadPermissionsBackground = async () => {
+        try {
+            const permsData = await fetchMyPermissions();
 
-  const login = async (data: LoginRequestDto) => {
-    const user = await apiFetch<UserDto>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    setUser(user);
-  };
+            setUser((prevUser) => {
+                if (!prevUser) return null;
+                return {
+                    ...prevUser,
+                    permissions: permsData.permissions,
+                };
+            });
+        } catch (error) {
+            console.error("Nie udało się pobrać uprawnień w tle", error);
+        }
+    };
 
-  const loginWithMicrosoft = async (data: MicrosoftLoginRequest) => {
-    const user = await apiFetch<UserDto>('/auth/microsoft', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    setUser(user);
-  };
+    const checkAuth = async () => {
+        try {
+            const userData = await apiFetch<UserDto>('/users/me');
+            setUser(userData);
 
-  const logout = async () => {
-    try {
-      await apiFetch('/auth/logout', { method: 'POST' });
-    } catch (e) {
-      console.warn('Logout API call failed', e);
-    } finally {
-      setUser(null);
-      router.push('/login');
-    }
-  };
+            setIsLoading(false);
 
-  const isAuthenticated = user !== null;
+            await loadPermissionsBackground();
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        isLoading,
-        login,
-        logout,
-        loginWithMicrosoft,
-      }}
-    >
-      {!isLoading && children}
-    </AuthContext.Provider>
-  );
+        } catch (error) {
+            setUser(null);
+            setIsLoading(false);
+        }
+    };
+
+    const login = async (data: LoginRequestDto) => {
+        const userData = await apiFetch<UserDto>('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+
+        setUser(userData);
+        loadPermissionsBackground();
+    };
+
+    const loginWithMicrosoft = async (data: MicrosoftLoginRequest) => {
+        const userData = await apiFetch<UserDto>('/auth/microsoft', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+
+        setUser(userData);
+        loadPermissionsBackground();
+    };
+
+    const logout = async () => {
+        try {
+            await apiFetch('/auth/logout', { method: 'POST' });
+        } finally {
+            setUser(null);
+            router.push('/login');
+        }
+    };
+
+    const isAuthenticated = user !== null;
+
+    return (
+        <AuthContext.Provider
+            value={{ user, isAuthenticated, isLoading, login, logout, loginWithMicrosoft }}
+        >
+            {!isLoading && children}
+        </AuthContext.Provider>
+    );
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+    const context = useContext(AuthContext);
+    if (!context) throw new Error('useAuth must be used within AuthProvider');
+    return context;
 };
