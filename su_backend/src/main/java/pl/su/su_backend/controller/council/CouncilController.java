@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
+import pl.su.su_backend.dto.council.RoleOptionDto;
+import pl.su.su_backend.service.council.CouncilMemberService;
 import pl.su.su_backend.service.council.CouncilService;
 
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class CouncilController {
 
     private final CouncilService councilService;
+    private final CouncilMemberService councilMemberService;
 
     @PostMapping
     @PreAuthorize("hasPermission(null, 'COUNCIL_CREATE')")
@@ -47,6 +50,11 @@ public class CouncilController {
             @AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.getCouncilById(id, email));
+    }
+    @GetMapping("/roles")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<RoleOptionDto>> getAvailableRoles() {
+        return ResponseEntity.ok(councilMemberService.getAvailableRoles());
     }
 
     @PostMapping("/join/{joinCode}")
