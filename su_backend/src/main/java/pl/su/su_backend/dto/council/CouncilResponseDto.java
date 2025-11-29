@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -25,4 +26,6 @@ public class CouncilResponseDto {
     private String joinCode;
     private LocalDateTime createdAt;
     private List<CouncilMemberDto> members;
+
+    private Set<String> myPermissions;
 }

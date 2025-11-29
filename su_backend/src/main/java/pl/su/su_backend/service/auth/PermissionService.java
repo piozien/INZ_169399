@@ -4,16 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.su.su_backend.dto.user.UserPermissionsResponse;
+import pl.su.su_backend.dto.auth.UserPermissionsResponse;
 import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.StatusEnum;
-import pl.su.su_backend.model.permissions.Permission;
 import pl.su.su_backend.model.roles.Role;
-import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.role.RoleRepository;
@@ -21,6 +18,7 @@ import pl.su.su_backend.repositories.user.UsersRepository;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,12 +33,53 @@ public class PermissionService {
     private final CouncilMemberRepository councilMemberRepository;
     private final RoleRepository roleRepository;
 
+    public boolean hasPermission(UUID userId, PermissionCode permission) {
+        return hasPermission(userId, permission, null);
+    }
+
+    public boolean hasPermission(String userEmail, PermissionCode permission) {
+        Users user = usersRepository.findByEmail(userEmail)
+                .orElseThrow(() -> ApiException.badRequest("Nie znaleziono użytkownika"));
+        return hasPermission(user.getId(), permission, null);
+    }
+
+    public boolean hasPermission(UUID userId, PermissionCode permission, UUID targetCouncilId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> ApiException.badRequest("Nie znaleziono użytkownika"));
+
+        if (user.getStatus() != StatusEnum.CONFIRMED) {
+            log.warn("User {} is not confirmed.", user.getEmail());
+            return false;
+        }
+
+        Set<Role> activeRoles = new HashSet<>();
+        if (user.getUserRoles() != null) {
+            user.getUserRoles().forEach(ur -> activeRoles.add(ur.getRole()));
+        }
+
+        if (activeRoles.stream().anyMatch(r -> RoleCode.ADMINISTRATOR.equals(r.getRoleCode()))) {
+            log.trace("ACCESS GRANTED (GOD MODE): User {} is ADMINISTRATOR.", user.getEmail());
+            return true;
+        }
+
+        if (targetCouncilId != null) {
+            Optional<CouncilMember> membership = councilMemberRepository.findByCouncilIdAndUserId(targetCouncilId, userId);
+
+            if (membership.isPresent()) {
+                RoleCode localRoleCode = membership.get().getRole();
+                roleRepository.findByRoleCode(localRoleCode).ifPresent(activeRoles::add);
+            }
+        }
+
+        return checkRolesForPermission(activeRoles, permission);
+    }
+
 
     public UserPermissionsResponse getUserPermissions(String userEmail) {
         Users user = usersRepository.findByEmail(userEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika"));
+                .orElseThrow(() -> ApiException.badRequest("Nie znaleziono użytkownika"));
 
-        Set<Role> allRoles = collectAllUserRoles(user);
+        Set<Role> allRoles = collectAllUserRolesForInfoOnly(user);
 
         Set<String> roleNames = allRoles.stream()
                 .map(role -> role.getRoleCode().name())
@@ -48,79 +87,40 @@ public class PermissionService {
 
         Set<String> permissions = allRoles.stream()
                 .flatMap(role -> role.getPermissions().stream())
-                .map(Permission::getName)
+                .map(permission -> permission.getName())
                 .collect(Collectors.toSet());
+
+        if (isSystemAdmin(user)) {
+            permissions.add("ALL_ACCESS");
+            roleNames.add("ADMINISTRATOR");
+        }
 
         return new UserPermissionsResponse(roleNames, permissions);
     }
 
-    public boolean hasPermission(String userEmail, PermissionCode permission) {
-        Users user = usersRepository.findByEmail(userEmail)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika: " + userEmail));
 
-        Set<Role> allRoles = collectAllUserRoles(user);
-
-        boolean isAdmin = allRoles.stream()
-                .anyMatch(role -> RoleCode.ADMINISTRATOR.equals(role.getRoleCode()));
-
-        if (isAdmin) {
-            log.info("ADMINISTRATOR ACCESS: Granting access to {} for user {}", permission, userEmail);
-            return true;
-        }
-
-        log.info("Checking permission for user: {} permission: {}", userEmail, permission);
-
-        boolean result = allRoles.stream()
-                .anyMatch(role -> role.getPermissions().stream()
-                        .anyMatch(p -> p.getName().equals(permission.name())));
-
-        log.info("Permission result: {}", result);
-        return result;
+    private boolean isSystemAdmin(Users user) {
+        return user.getUserRoles().stream()
+                .anyMatch(ur -> RoleCode.ADMINISTRATOR.equals(ur.getRole().getRoleCode()));
     }
 
-    public boolean hasPermission(UUID userId, PermissionCode permission) {
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> ApiException.badRequest(ErrorCode.USER_NOT_FOUND, "Nie znaleziono użytkownika: " + userId));
-
-        if (user.getStatus() != StatusEnum.CONFIRMED) {
-            log.warn("User {} attempted to access resource with status: {}. Account must be activated.",
-                    user.getEmail(), user.getStatus());
-            return false;
-        }
-
-        Set<Role> allRoles = collectAllUserRoles(user);
-
-        log.info("User {} has {} total roles (global + council)", user.getEmail(), allRoles.size());
-
-        boolean result = allRoles.stream()
-                .anyMatch(role -> role.getPermissions().stream()
-                        .anyMatch(permissionEntity -> permissionEntity.getName().equals(permission.getCode())));
-
-        log.info("Final permission result: {}", result);
-        return result;
+    private boolean checkRolesForPermission(Set<Role> roles, PermissionCode permission) {
+        return roles.stream()
+                .flatMap(r -> r.getPermissions().stream())
+                .anyMatch(p -> p.getName().equals(permission.name()));
     }
 
-
-    private Set<Role> collectAllUserRoles(Users user) {
+    private Set<Role> collectAllUserRolesForInfoOnly(Users user) {
         Set<Role> allRoles = new HashSet<>();
 
         if (user.getUserRoles() != null) {
-            user.getUserRoles().stream()
-                    .map(UserRole::getRole)
-                    .forEach(allRoles::add);
+            user.getUserRoles().forEach(ur -> allRoles.add(ur.getRole()));
         }
-        log.info("User {} has {} global roles", user.getEmail(), allRoles.size());
 
         List<CouncilMember> councilMemberships = councilMemberRepository.findByIdUserId(user.getId());
-        log.info("User {} has {} council memberships", user.getEmail(), councilMemberships.size());
-
         for (CouncilMember membership : councilMemberships) {
-            RoleCode councilRoleCode = membership.getRole();
-            roleRepository.findByRoleCode(councilRoleCode)
-                    .ifPresent(role -> {
-                        allRoles.add(role);
-                        log.info("Added council role: {} for user {}", councilRoleCode, user.getEmail());
-                    });
+            roleRepository.findByRoleCode(membership.getRole())
+                    .ifPresent(allRoles::add);
         }
 
         return allRoles;

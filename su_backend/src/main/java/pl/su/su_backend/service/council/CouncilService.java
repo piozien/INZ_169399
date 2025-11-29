@@ -13,14 +13,18 @@ import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCode;
+import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilRepository;
+import pl.su.su_backend.repositories.role.RoleRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.user.UserService;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,6 +40,7 @@ public class CouncilService {
     private final PermissionService permissionService;
     private final CouncilMemberService councilMemberService;
     private final CouncilMapper councilMapper;
+    private final RoleRepository roleRepository;
 
 
     public CouncilResponseDto createCouncil(CouncilRequestDto dto, String currentUserEmail) {
@@ -43,7 +48,6 @@ public class CouncilService {
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
         Council council = councilMapper.toEntity(dto);
-
         String joinCode = generateJoinCodeForCouncil(dto.getAcademicYear());
         council.setJoinCode(joinCode);
 
@@ -60,20 +64,21 @@ public class CouncilService {
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
         boolean isAdmin = currentUser.getUserRoles().stream()
-                .anyMatch(ur -> ur.getRole().getRoleCode() == RoleCode.ADMINISTRATOR);
+                .map(UserRole::getRole)
+                .anyMatch(role -> RoleCode.ADMINISTRATOR.equals(role.getRoleCode()));
 
-        boolean canViewAll = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL);
-
-        if (isAdmin || canViewAll) {
-            log.info("User {} has global access (Admin: {}, Perm: {}). Returning all councils.",
-                    currentUserEmail, isAdmin, canViewAll);
-
+        if (isAdmin) {
             return councilRepository.findAll().stream()
                     .map(councilMapper::toResponseDto)
                     .collect(Collectors.toList());
         }
 
-        log.info("User {} has restricted access. Returning memberships only.", currentUserEmail);
+        if (permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL)) {
+            return councilRepository.findAll().stream()
+                    .map(councilMapper::toResponseDto)
+                    .collect(Collectors.toList());
+        }
+
         List<CouncilMember> memberships = councilMemberService.getUserCouncilMemberships(currentUser.getId());
 
         List<UUID> councilIds = memberships.stream()
@@ -92,36 +97,54 @@ public class CouncilService {
         Council council = councilRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o ID: " + id));
 
+        CouncilResponseDto dto = councilMapper.toResponseDto(council);
+
+        Set<String> permissions = new HashSet<>();
+
         boolean isAdmin = currentUser.getUserRoles().stream()
-                .anyMatch(ur -> ur.getRole().getRoleCode() == RoleCode.ADMINISTRATOR);
+                .anyMatch(ur -> RoleCode.ADMINISTRATOR.equals(ur.getRole().getRoleCode()));
+
+        if (isAdmin) {
+            permissions.add("ALL_ACCESS");
+        } else {
+            councilMemberService.getMemberInCouncil(id, currentUser.getId())
+                    .ifPresent(member -> {
+                        RoleCode code = member.getRole();
+                        permissions.add("ROLE_" + code.name());
+                        roleRepository.findByRoleCode(code).ifPresent(roleEntity -> {
+                            roleEntity.getPermissions().forEach(p -> permissions.add(p.getName()));
+                        });
+                    });
+        }
+
+        dto.setMyPermissions(permissions);
+
         boolean hasGlobalAccess = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_VIEW_ALL);
-        boolean isMember = councilMemberService.isMemberOfCouncil(currentUser.getId(), id);
+        boolean isMember = !permissions.isEmpty();
 
         if (!isAdmin && !hasGlobalAccess && !isMember) {
             throw ApiException.forbidden("Brak dostępu do tego samorządu");
         }
-
-        return councilMapper.toResponseDto(council);
+        return dto;
     }
 
     public CouncilResponseDto joinCouncilByCode(String joinCode, String currentUserEmail) {
-        log.info("User {} attempting to join council with code: {}", currentUserEmail, joinCode);
-
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
         Council council = councilRepository.findByJoinCode(joinCode)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o kodzie: " + joinCode));
 
-        if (!council.getIsActive()) {
+        if (Boolean.FALSE.equals(council.getIsActive())) {
             throw ApiException.badRequest("Ten samorząd nie jest już aktywny.");
         }
 
         councilMemberService.joinCouncilAsBasicMember(council.getId(), currentUser.getId());
 
-        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Joined council: " + council.getName());
+        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Dołączył do rady: " + council.getName());
 
         return councilMapper.toResponseDto(council);
     }
+
 
     private String generateJoinCodeForCouncil(String academicYear) {
         String yearPart = academicYear.split("/")[0];

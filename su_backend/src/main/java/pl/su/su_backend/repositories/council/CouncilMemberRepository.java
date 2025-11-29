@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import pl.su.su_backend.model.council.CouncilMember;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -12,4 +13,6 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Co
 
     List<CouncilMember> findByCouncilId(UUID councilId);
     List<CouncilMember> findByIdUserId(UUID userId);
+
+    Optional<CouncilMember> findByCouncilIdAndUserId(UUID targetCouncilId, UUID userId);
 }
