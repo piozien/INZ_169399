@@ -1,121 +1,247 @@
 'use client';
 
-import { use } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchCouncilById } from '@/lib/api/council';
-import { CouncilResponseDto } from '@/types/council.types';
+import {use, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {fetchCouncilById} from '@/lib/api/council';
+import {CouncilResponseDto} from '@/types/council.types';
 import {
-  Loader2,
-  Users,
-  CalendarDays,
-  PartyPopper,
-  PiggyBank,
+    Loader2,
+    CalendarDays,
+    Users,
+    Hash,
+    Check,
+    Copy,
+    ArrowRight,
+    PiggyBank,
+    PartyPopper,
+    Settings
 } from 'lucide-react';
-import CouncilHeader from '@/components/council/dashboard/CouncilHeader';
-import JoinCodeCard from '@/components/council/dashboard/JoinCodeCard';
-import StatCard from '@/components/council/dashboard/StatCard';
-import QuickActionCard from '@/components/council/dashboard/QuickActionCard';
+import SchoolRounded from '@/components/icons/SchoolRounded';
+import Link from 'next/link';
+import EditCouncilModal from '@/components/council/EditCouncilModal';
 
 export default function CouncilDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
+                                              params,
+                                          }: {
+    params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+    const {id} = use(params);
+    const [copied, setCopied] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const {
-    data: council,
-    isLoading,
-    error,
-  } = useQuery<CouncilResponseDto>({
-    queryKey: ['council', id],
-    queryFn: () => fetchCouncilById(id),
-    retry: 1,
-  });
+    const {
+        data: council,
+        isLoading,
+        error,
+    } = useQuery<CouncilResponseDto>({
+        queryKey: ['council', id],
+        queryFn: () => fetchCouncilById(id),
+        retry: 1,
+    });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+    const hasPermission = (perm: string) => {
+        if (!council?.myPermissions) return false;
+        return council.myPermissions.includes('ALL_ACCESS') ||
+            council.myPermissions.includes(perm);
+    };
 
-  if (error || !council) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[50vh] text-txtcolor-300">
-        <h2 className="text-2xl font-bold mb-2">Nie znaleziono samorządu</h2>
-        <p>Upewnij się, że masz odpowiednie uprawnienia.</p>
-      </div>
-    );
-  }
+    const copyToClipboard = () => {
+        if (council?.joinCode) {
+            navigator.clipboard.writeText(council.joinCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
 
-  return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
-      <CouncilHeader
-        name={council.name}
-        academicYear={council.academicYear}
-        isActive={council.isActive}
-      />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <JoinCodeCard joinCode={council.joinCode} />
-
-        <StatCard
-          icon={Users}
-          iconColor="text-info"
-          title="Członkowie"
-          value={council.members?.length || 0}
-          unit="osób"
-          linkHref={`/dashboard/council/${id}/members`}
-          linkLabel="Zarządzaj członkami"
-        />
-
-        <StatCard
-          icon={CalendarDays}
-          iconColor="text-warning"
-          title="Kadencja"
-          customContent={
-            <div className="space-y-3 mt-4">
-              <div className="flex justify-between items-center">
-                <span className="text-txtcolor-300 text-sm">Start:</span>
-                <span className="font-medium">
-                  {new Date(council.startDate).toLocaleDateString('pl-PL')}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-txtcolor-300 text-sm">Koniec:</span>
-                <span className="font-medium">
-                  {new Date(council.endDate).toLocaleDateString('pl-PL')}
-                </span>
-              </div>
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-[50vh]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary"/>
             </div>
-          }
-        />
-      </div>
-      <div>
-        <h2 className="text-xl font-semibold mb-4 text-foreground">
-          Szybkie akcje
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <QuickActionCard
-            href={`/dashboard/council/${id}/events`}
-            icon={PartyPopper}
-            title="Wydarzenia"
-            description="Planuj apele, dyskoteki i zbiórki."
-            bgColorClass="bg-accent/10"
-            iconColorClass="text-accent"
-          />
+        );
+    }
 
-          <QuickActionCard
-            href={`/dashboard/council/${id}/finances`}
-            icon={PiggyBank}
-            title="Budżet i Finanse"
-            description="Zarządzaj wydatkami i zbiórkami."
-            bgColorClass="bg-success/10"
-            iconColorClass="text-success"
-          />
+    if (error || !council) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[50vh] text-txtcolor-300">
+                <h2 className="text-2xl font-bold mb-2">Nie znaleziono samorządu</h2>
+                <p>Sprawdź, czy masz odpowiednie uprawnienia.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-6 space-y-8 max-w-7xl mx-auto">
+
+            <div
+                className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-4 bg-secondarybg rounded-2xl border border-border">
+                        <SchoolRounded className="h-10 w-10 text-secondary"/>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-3xl font-bold text-foreground">{council.name}</h1>
+                            <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                                    council.isActive
+                                        ? 'bg-success/10 text-success border-success/20'
+                                        : 'bg-error/10 text-error border-error/20'
+                                }`}
+                            >
+                                {council.isActive ? 'Aktywny' : 'Archiwalny'}
+                            </span>
+                        </div>
+                        <p className="text-txtcolor-300 mt-1 flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4"/>
+                            Rok szkolny: <span className="text-foreground font-medium">{council.academicYear}</span>
+                        </p>
+                    </div>
+                </div>
+
+                {hasPermission('COUNCIL_EDIT') && (
+                    <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-secondarybg border border-border hover:border-secondary rounded-lg text-sm font-medium transition-colors text-foreground"
+                    >
+                        <Settings className="h-4 w-4"/>
+                        Ustawienia
+                    </button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {hasPermission('COUNCIL_JOIN') && (
+                    <div
+                        className="bg-secondarybg p-6 rounded-xl border border-border flex flex-col justify-between group hover:border-secondary/50 transition-colors">
+                        <div>
+                            <div className="flex items-center gap-2 text-txtcolor-300 mb-2">
+                                <Hash className="h-5 w-5 text-secondary"/>
+                                <span className="text-sm font-medium uppercase tracking-wider">Kod dołączenia</span>
+                            </div>
+                            <p className="text-sm text-txtcolor-300 mb-4">
+                                Podaj ten kod uczniom, aby mogli dołączyć do samorządu.
+                            </p>
+                        </div>
+                        <button
+                            onClick={copyToClipboard}
+                            className="flex items-center justify-between w-full bg-inputbg p-3 rounded-lg border border-border hover:border-secondary group-hover:bg-background transition-all"
+                        >
+                            <code className="text-xl font-mono font-bold text-primary tracking-widest">
+                                {council.joinCode}
+                            </code>
+                            {copied ? (
+                                <Check className="h-5 w-5 text-success"/>
+                            ) : (
+                                <Copy className="h-5 w-5 text-txtcolor-300 group-hover:text-secondary"/>
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                <div className="bg-secondarybg p-6 rounded-xl border border-border flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center gap-2 text-txtcolor-300 mb-2">
+                            <Users className="h-5 w-5 text-info"/>
+                            <span className="text-sm font-medium uppercase tracking-wider">Członkowie</span>
+                        </div>
+                        <div className="mt-4">
+                            <span className="text-4xl font-bold text-foreground">
+                                {council.members?.length || 0}
+                            </span>
+                            <span className="text-txtcolor-300 ml-2">osób</span>
+                        </div>
+                    </div>
+                    <Link
+                        href={`/dashboard/council/${id}/members`}
+                        className="mt-4 flex items-center text-sm text-secondary font-medium hover:underline"
+                    >
+                        Zarządzaj członkami <ArrowRight className="h-4 w-4 ml-1"/>
+                    </Link>
+                </div>
+
+                <div className="bg-secondarybg p-6 rounded-xl border border-border flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center gap-2 text-txtcolor-300 mb-2">
+                            <CalendarDays className="h-5 w-5 text-warning"/>
+                            <span className="text-sm font-medium uppercase tracking-wider">Kadencja</span>
+                        </div>
+                        <div className="space-y-3 mt-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-txtcolor-300 text-sm">Start:</span>
+                                <span
+                                    className="font-medium">{new Date(council.startDate).toLocaleDateString('pl-PL')}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-txtcolor-300 text-sm">Koniec:</span>
+                                <span
+                                    className="font-medium">{new Date(council.endDate).toLocaleDateString('pl-PL')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2 className="text-xl font-semibold mb-4 text-foreground">Szybkie akcje</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    {hasPermission('COUNCIL_VIEW') && (
+                        <Link href={`/dashboard/council/${id}/events`} className="group">
+                            <div
+                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4">
+                                <div
+                                    className="p-3 bg-accent/10 rounded-lg text-accent group-hover:scale-110 transition-transform">
+                                    <PartyPopper className="h-6 w-6"/>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-foreground">Wydarzenia</h3>
+                                    <p className="text-sm text-txtcolor-300">Planuj apele, dyskoteki i zbiórki.</p>
+                                </div>
+                            </div>
+                        </Link>
+                    )}
+
+                    {hasPermission('COUNCIL_BUDGET_VIEW') && (
+                        <Link href={`/dashboard/council/${id}/finances`} className="group">
+                            <div
+                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4">
+                                <div
+                                    className="p-3 bg-success/10 rounded-lg text-success group-hover:scale-110 transition-transform">
+                                    <PiggyBank className="h-6 w-6"/>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-foreground">Budżet i Finanse</h3>
+                                    <p className="text-sm text-txtcolor-300">Zarządzaj wydatkami i zbiórkami.</p>
+                                </div>
+                            </div>
+                        </Link>
+                    )}
+
+                    {!hasPermission('COUNCIL_BUDGET_VIEW') && (
+                        <div
+                            className="p-6 bg-secondarybg/50 rounded-xl border border-border flex items-center gap-4 opacity-50 cursor-not-allowed">
+                            <div className="p-3 bg-darkgray rounded-lg text-darkgray">
+                                <PiggyBank className="h-6 w-6"/>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-foreground">Finanse (Brak dostępu)</h3>
+                                <p className="text-sm text-txtcolor-300">Dostęp tylko dla Skarbnika i Zarządu.</p>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+
+            {council && (
+                <EditCouncilModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    council={council}
+                />
+            )}
         </div>
-      </div>
-    </div>
-  );
+    );
 }

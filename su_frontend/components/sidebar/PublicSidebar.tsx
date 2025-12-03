@@ -18,7 +18,7 @@ const PublicSidebar = () => {
       <div className="mt-6 flex flex-1 flex-col justify-between">
         <nav className="flex flex-col space-y-1">
           <Link
-            href="/"
+            href="/public"
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-foreground hover:secondarybg`}
           >
             <HomeIcon className="h-5 w-5" />

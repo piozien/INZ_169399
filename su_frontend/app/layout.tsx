@@ -4,7 +4,8 @@ import './globals.css';
 import Providers from './providers';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import ThemeScript from '@/components/ThemeScript';
-import ConditionalSidebar from '@/components/ConditionalSidebar';
+import ConditionalSidebar from '@/components/sidebar/ConditionalSidebar';
+import CookieConsent from '@/components/CookieConsent';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           <ThemeProvider>
             <ConditionalSidebar />
             <main className="flex-1">{children}</main>
+            <CookieConsent />
           </ThemeProvider>
         </Providers>
       </body>

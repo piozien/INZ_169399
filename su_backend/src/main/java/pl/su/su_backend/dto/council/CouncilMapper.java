@@ -15,5 +15,6 @@ public interface CouncilMapper {
     Council toEntity(CouncilRequestDto dto);
 
     @Mapping(target = "members", source = "members")
+    @Mapping(target = "myPermissions", ignore = true)
     CouncilResponseDto toResponseDto(Council council);
 }

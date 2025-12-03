@@ -22,7 +22,7 @@ export default function EditRoleModal({ isOpen, onClose, onSave, isSaving, curre
         queryKey: ['councilRoles'],
         queryFn: fetchAvailableCouncilRoles,
         enabled: isOpen,
-        staleTime: 1000 * 60 * 60 * 24,
+        staleTime: 1000 * 60 * 60 * 24, //24h
     });
 
     useEffect(() => {
@@ -34,11 +34,11 @@ export default function EditRoleModal({ isOpen, onClose, onSave, isSaving, curre
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bacground/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="w-full max-w-md bg-background border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 
                 <div className="flex justify-between items-center p-4 border-b border-border bg-secondarybg">
-                    <h3 className="font-bold text-lg">Zmień rolę</h3>
+                    <h3 className="font-bold text-lg text-foreground">Zmień rolę</h3>
                     <button onClick={onClose} className="text-txtcolor-300 hover:text-foreground transition-colors">
                         <X className="h-5 w-5" />
                     </button>
@@ -56,7 +56,7 @@ export default function EditRoleModal({ isOpen, onClose, onSave, isSaving, curre
                     )}
 
                     {error && (
-                        <div className="flex items-center gap-2 text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                        <div className="flex items-center gap-2 text-error bg-error/10 p-3 rounded-lg border border-error/20">
                             <AlertCircle className="h-5 w-5" />
                             <span className="text-sm">Nie udało się pobrać listy ról.</span>
                         </div>
@@ -80,7 +80,7 @@ export default function EditRoleModal({ isOpen, onClose, onSave, isSaving, curre
                                             value={role.code}
                                             checked={selectedRole === role.code}
                                             onChange={(e) => setSelectedRole(e.target.value)}
-                                            className="accent-secondary h-4 w-4"
+                                            className="accent-secondary h-4 w-4 cursor-pointer"
                                         />
                                         <span className={selectedRole === role.code ? 'text-foreground font-medium' : 'text-txtcolor-300'}>
                       {role.label}
@@ -91,11 +91,11 @@ export default function EditRoleModal({ isOpen, onClose, onSave, isSaving, curre
                         </div>
                     )}
                 </div>
-                
+
                 <div className="p-4 border-t border-border bg-secondarybg flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-inputbg transition-colors"
+                        className="px-4 py-2 rounded-lg text-sm font-medium text-txtcolor-300 hover:bg-inputbg transition-colors"
                     >
                         Anuluj
                     </button>
