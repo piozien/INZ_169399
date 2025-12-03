@@ -193,7 +193,7 @@ export default function CouncilPage() {
 
             {activeCouncils.length > 0 && (
                 <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <h2 className="text-sm font-semibold text-darkgray uppercase mb-4 tracking-wider flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-success uppercase mb-4 tracking-wider flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-success inline-block shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
                         Aktywne Kadencje
                     </h2>
