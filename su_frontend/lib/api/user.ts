@@ -1,4 +1,5 @@
 import { UserDto } from "@/types/user.types";
+import { apiFetch } from "./httpClient";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -13,3 +14,7 @@ export async function fetchCurrentUser(): Promise<UserDto> {
 
   return response.json();
 }
+
+export const fetchAllUsers = async (): Promise<UserDto[]> => {
+    return apiFetch<UserDto[]>("/users");
+};

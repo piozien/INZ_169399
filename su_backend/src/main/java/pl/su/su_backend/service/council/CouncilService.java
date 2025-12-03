@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.su.su_backend.dto.council.CouncilContextDto;
 import pl.su.su_backend.dto.council.CouncilMapper;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
@@ -41,7 +42,6 @@ public class CouncilService {
     private final CouncilMemberService councilMemberService;
     private final CouncilMapper councilMapper;
     private final RoleRepository roleRepository;
-
 
     public CouncilResponseDto createCouncil(CouncilRequestDto dto, String currentUserEmail) {
         log.info("Creating council: {} by user: {}", dto.getName(), currentUserEmail);
@@ -91,6 +91,41 @@ public class CouncilService {
     }
 
     @Transactional(readOnly = true)
+    public CouncilContextDto getUserContextInCouncil(UUID councilId, String userEmail) {
+        Users user = userService.getUserByEmailEntity(userEmail);
+
+        boolean isAdmin = user.getUserRoles().stream()
+                .anyMatch(ur -> RoleCode.ADMINISTRATOR.equals(ur.getRole().getRoleCode()));
+
+        Set<String> permissions = new HashSet<>();
+        String roleName = null;
+        boolean isMember = false;
+
+        if (isAdmin) {
+            permissions.add("ALL_ACCESS");
+            roleName = "ADMINISTRATOR";
+            isMember = true;
+        } else {
+            var memberOpt = councilMemberService.getMemberInCouncil(councilId, user.getId());
+            if (memberOpt.isPresent()) {
+                isMember = true;
+                RoleCode code = memberOpt.get().getRole();
+                roleName = code.name();
+
+                roleRepository.findByRoleCode(code).ifPresent(roleEntity -> {
+                    roleEntity.getPermissions().forEach(p -> permissions.add(p.getName()));
+                });
+            }
+        }
+
+        return CouncilContextDto.builder()
+                .isMember(isMember)
+                .role(roleName)
+                .permissions(permissions)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public CouncilResponseDto getCouncilById(UUID id, String currentUserEmail) {
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
@@ -125,6 +160,7 @@ public class CouncilService {
         if (!isAdmin && !hasGlobalAccess && !isMember) {
             throw ApiException.forbidden("Brak dostępu do tego samorządu");
         }
+
         return dto;
     }
 
@@ -134,7 +170,7 @@ public class CouncilService {
         Council council = councilRepository.findByJoinCode(joinCode)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o kodzie: " + joinCode));
 
-        if (Boolean.FALSE.equals(council.getIsActive())) {
+        if (!Boolean.TRUE.equals(council.getIsActive())) {
             throw ApiException.badRequest("Ten samorząd nie jest już aktywny.");
         }
 
@@ -144,7 +180,6 @@ public class CouncilService {
 
         return councilMapper.toResponseDto(council);
     }
-
 
     private String generateJoinCodeForCouncil(String academicYear) {
         String yearPart = academicYear.split("/")[0];

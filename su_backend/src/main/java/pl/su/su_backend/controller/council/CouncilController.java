@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import pl.su.su_backend.dto.council.CouncilContextDto;
 import pl.su.su_backend.dto.council.CouncilRequestDto;
 import pl.su.su_backend.dto.council.CouncilResponseDto;
 import pl.su.su_backend.dto.council.RoleOptionDto;
@@ -51,6 +52,7 @@ public class CouncilController {
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.getCouncilById(id, email));
     }
+
     @GetMapping("/roles")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<RoleOptionDto>> getAvailableRoles() {
@@ -64,6 +66,15 @@ public class CouncilController {
             @AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.joinCouncilByCode(joinCode, email));
+    }
+
+    @GetMapping("/{councilId}/my-context")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CouncilContextDto> getUserContextInCouncil(
+            @PathVariable UUID councilId,
+            @AuthenticationPrincipal Object principal) {
+        String email = getCurrentUserEmail(principal);
+        return ResponseEntity.ok(councilService.getUserContextInCouncil(councilId, email));
     }
 
     private String getCurrentUserEmail(Object principal) {
