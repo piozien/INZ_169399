@@ -31,21 +31,25 @@
 }
 
 @theme dark {
-  --color-background: #1a1208;
-  --color-foreground: #ffffff;
-  --color-secondarybg: rgb(255 255 255 / 0.05);
-  --color-primary: #edb78d;
-  --color-darkgray: #1a1a1a;
-  --color-secondary: #ff9d00;
-  --color-txtcolor-300: #bababa;
-  --color-inputbg: #372c1e;
-  --color-microsoftbg: #f0f9ff;
-  --color-focusering: #ff9d00;
+    --color-background: #1a1208;
+    --color-foreground: #ffffff;
+    --color-secondarybg: rgb(255 255 255 / 0.05);
+    --color-primary: #edb78d;
+    --color-darkgray: #1a1a1a;
+    --color-secondary: #ff9d00;
+    --color-txtcolor-300: #bababa;
+    --color-inputbg: #372c1e;
+    --color-microsoftbg: #f0f9ff;
+    --color-focusering: #ff9d00;
 
---color-success: #22c55e;
---color-error: #ef4444;
---color-info: #3b82f6;
---color-warning: #f59e0b;
---color-accent: #a855f7;
+    --color-success: #22c55e;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+    --color-warning: #f59e0b;
+    --color-accent: #a855f7;
+
+    --color-surface: #231910;
+    --color-purple: #a855f7;
+    --color-blue: #3b82f6;
 }
 

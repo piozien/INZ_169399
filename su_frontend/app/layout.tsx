@@ -10,29 +10,29 @@ import CookieConsent from '@/components/CookieConsent';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Samorząd Uczniowski',
-  description: 'Portal Samorządu Uczniowskiego',
+    title: 'Samorząd Uczniowski',
+    description: 'Portal Samorządu Uczniowskiego',
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="pl" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
-      <body className={`${inter.className} flex bg-background text-foreground`}>
+    return (
+        <html lang="pl" suppressHydrationWarning>
+        <head>
+            <ThemeScript />
+        </head>
+        <body className={`${inter.className} flex min-h-screen bg-background text-foreground`}>
         <Providers>
-          <ThemeProvider>
-            <ConditionalSidebar />
-            <main className="flex-1">{children}</main>
-            <CookieConsent />
-          </ThemeProvider>
+            <ThemeProvider>
+                <ConditionalSidebar />
+                <main className="flex-1 w-full">{children}</main>
+                <CookieConsent />
+            </ThemeProvider>
         </Providers>
-      </body>
-    </html>
-  );
+        </body>
+        </html>
+    );
 }

@@ -1,57 +1,69 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { fetchAllEvents } from '@/lib/api/events';
+import { Loader2, CalendarDays, Info } from 'lucide-react';
 import { EventResponseDto } from '@/types/event.types';
-import EventCard from '@/components/EventCard';
+import EventCard from '@/components/events/EventCard';
+import { useState } from 'react';
+import EventDetailsModal from '@/components/events/EventDetailsModal';
 
-async function getUpcomingEvents(): Promise<EventResponseDto[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-  const response = await fetch(`${apiUrl}/api/events/upcoming`);
+export default function DashboardEventsPage() {
+    const [selectedEvent, setSelectedEvent] = useState<EventResponseDto | null>(null);
+    const { data: events, isLoading, error } = useQuery<EventResponseDto[]>({
+        queryKey: ['events'],
+        queryFn: fetchAllEvents,
+    });
 
-  if (!response.ok) {
-    throw new Error('Nie udało się pobrać nadchodzących wydarzeń.');
-  }
-  return response.json();
-}
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-[50vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    }
 
-export default function EventsPage() {
-  const {
-    data: events,
-    isLoading,
-    isError,
-    error,
-  } = useQuery<EventResponseDto[], Error>({
-    queryKey: ['upcomingEvents'],
-    queryFn: getUpcomingEvents,
-  });
+    if (error) {
+        return <div className="text-center p-10 text-error">Nie udało się pobrać listy wydarzeń.</div>;
+    }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8">
-        Nadchodzące wydarzenia
-      </h1>
+    return (
+        <div className="p-6 space-y-8 max-w-7xl mx-auto">
 
-      {isLoading && (
-        <p className="text-center">Ładowanie wydarzeń...</p>
-      )}
+            <div className="flex justify-between items-center border-b border-secondarybg pb-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                        <CalendarDays className="text-secondary h-8 w-8" />
+                        Wszystkie Wydarzenia
+                    </h1>
+                    <p className="text-txtcolor-300 mt-1">Kalendarz szkolny i wydarzenia samorządów</p>
+                </div>
+            </div>
 
-      {isError && (
-        <p className="text-center text-error">
-          Wystąpił błąd: {error.message}
-        </p>
-      )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {events && events.length > 0 ? (
+                    events.map((event) => (
+                        <EventCard
+                            key={event.id}
+                            event={event}
+                            onClick={() => setSelectedEvent(event)}
+                        />
+                    ))
+                ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-txtcolor-300 bg-secondarybg/30 rounded-xl border border-dashed border-secondarybg">
+                        <Info className="h-12 w-12 mb-4 opacity-20" />
+                        <p>Brak wydarzeń.</p>
+                    </div>
+                )}
+            </div>
 
-      {events && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.length > 0 ? (
-            events.map((event) => <EventCard key={event.id} event={event} />)
-          ) : (
-            <p className="text-center md:col-span-2 lg:col-span-3">
-              Brak nadchodzących wydarzeń.
-            </p>
-          )}
+            {selectedEvent && (
+                <EventDetailsModal
+                    event={selectedEvent}
+                    onClose={() => setSelectedEvent(null)}
+                    actions={
+                        <div className="text-xs text-txtcolor-300 italic py-2">
+                            Podgląd ogólny
+                        </div>
+                    }
+                />
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }

@@ -1,6 +1,5 @@
 package pl.su.su_backend.service.event;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,18 +14,20 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CalendarService {
 
-    @Qualifier("graphRestClient")
     private final RestClient graphRestClient;
 
-    @Value("${app.microsoft.calendar.enabled}")
+    @Value("${app.microsoft.calendar.enabled:false}")
     private boolean calendarEnabled;
 
-    @Value("${app.microsoft.calendar.events-path.me}")
+    @Value("${app.microsoft.calendar.events-path.me:/me/events}")
     private String meEventsPath;
+
+    public CalendarService(@Qualifier("graphRestClient") RestClient graphRestClient) {
+        this.graphRestClient = graphRestClient;
+    }
 
     public String createCalendarEvent(String accessToken, Event event) {
         if (!calendarEnabled) return null;
@@ -106,6 +107,7 @@ public class CalendarService {
 
     private Map<String, Object> toGraphEvent(Event event) {
         ZoneId polishZone = ZoneId.of("Europe/Warsaw");
+
         ZonedDateTime start = event.getStartDate().atZone(polishZone);
         ZonedDateTime end = event.getEndDate().atZone(polishZone);
 
@@ -116,12 +118,12 @@ public class CalendarService {
                         "content", event.getDescription() == null ? "" : event.getDescription()
                 ),
                 "start", Map.of(
-                        "dateTime", start.toOffsetDateTime().toString(), // Format ISO-8601
-                        "timeZone", "UTC"
+                        "dateTime", start.toLocalDateTime().toString(),
+                        "timeZone", polishZone.getId()
                 ),
                 "end", Map.of(
-                        "dateTime", end.toOffsetDateTime().toString(),
-                        "timeZone", "UTC"
+                        "dateTime", end.toLocalDateTime().toString(),
+                        "timeZone", polishZone.getId()
                 ),
                 "location", Map.of(
                         "displayName", event.getLocation() == null ? "" : event.getLocation()
