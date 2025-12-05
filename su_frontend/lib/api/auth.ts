@@ -1,33 +1,32 @@
-import { LoginRequestDto } from "@/types/auth.types";
-import { UserDto } from "@/types/user.types";
+import { UserRequestDto } from "@/types/auth.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export async function login(payload: LoginRequestDto): Promise<UserDto> {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify(payload),
-  });
+export async function registerUser(payload: UserRequestDto): Promise<void> {
+    const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            ...payload,
+            authProvider: 'LOCAL',
+        }),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Nieprawidłowy email lub hasło");
-  }
-
-  const data = await response.json();
-  return data.user;
+    if (!response.ok) {
+        let errorMessage = 'Rejestracja nie powiodła się. Sprawdź dane i spróbuj ponownie.';
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+        } catch {
+            // ignore
+        }
+        throw new Error(errorMessage);
+    }
 }
 
-export async function logout(): Promise<void> {
-  await fetch(`${API_URL}/auth/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-}
 
 export async function requestPasswordReset(payload: {
   email: string;

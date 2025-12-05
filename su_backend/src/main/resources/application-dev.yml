@@ -86,7 +86,7 @@ app:
     graph:
       base-url: ${MS_GRAPH_BASE_URL:https://graph.microsoft.com/v1.0}
     calendar:
-      enabled: ${MS_CALENDAR_ENABLED:false}
+      enabled: ${MS_CALENDAR_ENABLED}
       use-shared-owner: ${MS_CALENDAR_USE_SHARED_OWNER:false}
       owner-user-id: ${MS_CALENDAR_OWNER_USER_ID:}
       events-path:
