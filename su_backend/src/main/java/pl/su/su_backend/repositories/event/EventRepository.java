@@ -13,12 +13,10 @@ import java.util.UUID;
 public interface EventRepository extends JpaRepository<Event, UUID> {
 
     List<Event> findByStartDateBetweenOrderByStartDateAsc(LocalDateTime startDate, LocalDateTime endDate);
-
     List<Event> findByStatusOrderByStartDateAsc(EventStatus status);
-
     List<Event> findByStatusOrderByCreatedAtDesc(EventStatus status);
-    
     List<Event> findByStatusAndEndDateGreaterThanOrderByStartDateAsc(EventStatus status, LocalDateTime endDate);
-    
     List<Event> findAllByOrderByStartDateAsc();
+
+    List<Event> findByCouncilIdOrderByStartDateDesc(UUID councilId);
 }

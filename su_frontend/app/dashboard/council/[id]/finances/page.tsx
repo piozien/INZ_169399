@@ -93,9 +93,9 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
         if (context?.permissions) {
             if (context.permissions.includes('ALL_ACCESS') || context.permissions.includes(perm)) return true;
         }
-        if (user?.roles.includes('ADMINISTRATOR')) return true;
+        return !!user?.roles.includes('ADMINISTRATOR');
 
-        return false;
+
     };
 
     const canEditTransactions = hasPermission('COUNCIL_TRANSACTION_EDIT') || hasPermission('COUNCIL_TRANSACTION_CREATE');

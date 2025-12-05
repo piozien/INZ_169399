@@ -62,8 +62,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
     if (isLoading) {
         return (
-            <aside className="hidden md:block w-64 flex-shrink-0 bg-secondarybg p-4 border-r border-border h-screen">
-                <div className="h-full animate-pulse rounded-md bg-secondarybg"></div>
+            <aside className="hidden md:block w-64 flex-shrink-0 bg-secondarybg border-r border-border h-screen sticky top-0">
+                <div className="h-full animate-pulse bg-secondarybg"></div>
             </aside>
         );
     }
@@ -136,12 +136,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
             <aside
                 className={`
-            fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-border bg-background p-4 transition-transform duration-300 ease-in-out
-            ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-            md:static md:translate-x-0
-        `}
+                fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out
+                ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+                
+                md:sticky md:top-0 md:h-screen md:translate-x-0 md:border-r md:border-border md:z-auto
+                `}
             >
-                <div className="flex items-center justify-between p-3 mb-2">
+                <div className="flex items-center justify-between p-4 mb-2 shrink-0">
                     <div className="flex items-center gap-3">
                         <SchoolRounded className="h-8 w-8 text-secondary" />
                         <span className="text-lg font-bold">SAMORZĄD</span>
@@ -151,26 +152,25 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     </button>
                 </div>
 
-                <div className="px-3 py-2 text-xs text-txtcolor-300">
+                <div className="px-4 py-2 text-xs text-txtcolor-300 shrink-0">
                     Zalogowany: <span className="font-medium text-foreground">{user.fullName}</span>
                 </div>
 
-                <div className="mt-2 flex flex-1 flex-col justify-between overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                    <div className="space-y-6">
+                <div className="mt-2 flex flex-1 flex-col justify-between overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="space-y-6 px-4">
                         <NavGroup links={mainLinks} />
                     </div>
-
-                    <div className="pt-4 mt-4 border-t border-border">
+                    <div className="pt-4 mt-4 border-t border-border shrink-0 p-4">
                         <NavGroup links={userLinks} />
 
                         <button
                             onClick={toggleTheme}
                             className="mt-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondarybg transition-colors"
                         >
-                <span className="flex items-center gap-3">
-                    <Sun className="h-5 w-5" />
-                    Zmień motyw
-                </span>
+                            <span className="flex items-center gap-3">
+                                <Sun className="h-5 w-5" />
+                                Zmień motyw
+                            </span>
                         </button>
 
                         <button

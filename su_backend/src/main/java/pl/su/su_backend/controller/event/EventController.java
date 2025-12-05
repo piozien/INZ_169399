@@ -33,7 +33,7 @@ public class EventController {
     private final AuthenticationService authenticationService;
 
     @PostMapping
-    @PreAuthorize("hasPermission(null, 'EVENT_CREATE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto dto,
                                                         @AuthenticationPrincipal Object principal,
                                                         @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
@@ -50,11 +50,10 @@ public class EventController {
     @PreAuthorize("hasPermission(null, 'EVENT_VIEW_DRAFTS')")
     public ResponseEntity<List<EventResponseDto>> getAllEvents(@AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
-        log.info("Fetching all approved events for user: {}", email);
+        log.info("Fetching all events (including drafts) for user: {}", email);
         List<EventResponseDto> events = eventService.getAllEvents(email);
         return ResponseEntity.ok(events);
     }
-
 
     @GetMapping("/upcoming")
     public ResponseEntity<List<EventResponseDto>> getUpcomingEvents() {
@@ -63,10 +62,19 @@ public class EventController {
         return ResponseEntity.ok(events);
     }
 
+    @GetMapping("/council/{councilId}")
+    @PreAuthorize("hasPermission(#councilId, 'Council', 'EVENT_VIEW_DRAFTS') or hasPermission(#councilId, 'Council', 'EVENT_VIEW')")
+    public ResponseEntity<List<EventResponseDto>> getCouncilEvents(
+            @PathVariable UUID councilId,
+            @AuthenticationPrincipal Object principal) {
+
+        return ResponseEntity.ok(eventService.getEventsByCouncilId(councilId));
+    }
+
     @GetMapping("/range")
     @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
     public ResponseEntity<List<EventResponseDto>> getEventsInDateRange(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                                           LocalDateTime startDate,
+                                                                       LocalDateTime startDate,
                                                                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                                                                        LocalDateTime endDate) {
         log.info("Fetching events in date range: {} to {}", startDate, endDate);

@@ -1,4 +1,4 @@
-import {ApiError} from "@/types/error.types";
+import { ApiError } from "@/types/error.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -36,15 +36,23 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
                 } else {
                     isRefreshing = false;
 
-                    if (typeof window !== 'undefined' && !endpoint.includes('/users/me')) {
-                        window.location.href = '/login';
+                    if (typeof window !== 'undefined') {
+                        const path = window.location.pathname;
+
+                        if (
+                            !endpoint.includes('/users/me') &&
+                            path !== '/' &&
+                            !path.startsWith('/upcoming')
+                        ) {
+                            window.location.href = '/login';
+                        }
                     }
 
-                    throw new Error("Session expired");
+                    throw new Error("Sesja wygasła");
                 }
             } catch (error) {
                 isRefreshing = false;
-                if (error instanceof Error && error.message === "Session expired") {
+                if (error instanceof Error && error.message === "Sesja wygasła") {
                     throw error;
                 }
             }
@@ -75,8 +83,6 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
         return {} as T;
     }
 
-
     const text = await response.text();
     return text ? JSON.parse(text) : ({} as T);
 }
-

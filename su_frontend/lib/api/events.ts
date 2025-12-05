@@ -1,53 +1,63 @@
-import { EventResponseDto } from '@/types/event.types';
-import { Event } from '@/types/event.types';
+import { apiFetch } from "./httpClient";
+import { EventRequestDto, EventResponseDto, ParticipantResponseDto } from "@/types/event.types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export async function fetchAllEvents(): Promise<Event[]> {
-  const response = await fetch(`${API_URL}/events`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch events');
-  }
-  return response.json();
-}
-
-export async function fetchUpcomingEvents(): Promise<Event[]> {
-    const response = await fetch(`${API_URL}/events/upcoming`, {
-        headers: {
-            'Content-Type': 'application/json',
-        },
+export const createEvent = async (data: EventRequestDto): Promise<EventResponseDto> => {
+    return apiFetch<EventResponseDto>("/events", {
+        method: "POST",
+        body: JSON.stringify(data),
     });
-    if (!response.ok) {
-        throw new Error('Failed to fetch upcoming events');
-    }
-    return response.json();
-}
+};
 
-export const fetchEventsByDateRange = async (
-  startDate: string,
-  endDate: string,
-): Promise<EventResponseDto[]> => {
-  const response = await fetch(
-    `${API_URL}/events/range?startDate=${startDate}&endDate=${endDate}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    },
-  );
+export const fetchAllEvents = async (): Promise<EventResponseDto[]> => {
+    return apiFetch<EventResponseDto[]>("/events");
+};
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('Failed to fetch events by date range:', errorBody);
-    throw new Error('Failed to fetch events by date range');
-  }
+export const fetchCouncilEvents = async (councilId: string): Promise<EventResponseDto[]> => {
+    return apiFetch<EventResponseDto[]>(`/events/council/${councilId}`);
+};
 
-  return response.json();
+export const fetchUpcomingEvents = async (): Promise<EventResponseDto[]> => {
+    return apiFetch<EventResponseDto[]>("/events/upcoming");
+};
+
+export const fetchEventById = async (eventId: string): Promise<EventResponseDto> => {
+    return apiFetch<EventResponseDto>(`/events/${eventId}`);
+};
+
+export const updateEvent = async (eventId: string, data: EventRequestDto): Promise<EventResponseDto> => {
+    return apiFetch<EventResponseDto>(`/events/${eventId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+};
+
+export const deleteEvent = async (eventId: string): Promise<void> => {
+    return apiFetch<void>(`/events/${eventId}`, {
+        method: "DELETE",
+    });
+};
+
+export const approveEvent = async (eventId: string): Promise<EventResponseDto> => {
+    return apiFetch<EventResponseDto>(`/events/${eventId}/approve`, {
+        method: "PUT",
+    });
+};
+
+export const rejectEvent = async (eventId: string): Promise<EventResponseDto> => {
+    return apiFetch<EventResponseDto>(`/events/${eventId}/reject`, {
+        method: "PUT",
+    });
+};
+
+
+export const joinEvent = async (eventId: string): Promise<ParticipantResponseDto> => {
+    return apiFetch<ParticipantResponseDto>(`/events/${eventId}/participants/join?role=PARTICIPANT&confirmed=true`, {
+        method: 'POST',
+    });
+};
+
+export const leaveEvent = async (eventId: string, userId: string): Promise<void> => {
+    return apiFetch<void>(`/events/${eventId}/participants/${userId}`, {
+        method: 'DELETE',
+    });
 };

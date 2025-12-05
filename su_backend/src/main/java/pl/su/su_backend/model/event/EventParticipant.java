@@ -49,7 +49,7 @@ public class EventParticipant {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	private EventParticipantRole role;
+	private EventParticipantRole role = EventParticipantRole.PARTICIPANT;
 
 	@Column(nullable = false)
 	@Builder.Default
@@ -59,7 +59,7 @@ public class EventParticipant {
 	private LocalDateTime assignedAt;
 
 	@PrePersist
-	public void onAssign() {
+	public void onCreate() {
 		if (assignedAt == null) {
 			assignedAt = LocalDateTime.now();
 		}
