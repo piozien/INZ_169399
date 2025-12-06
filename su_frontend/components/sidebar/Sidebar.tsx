@@ -9,7 +9,7 @@ import SettingsIcon from '@/components/icons/sidebar/SettingsIcon';
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
 import FinanceIcon from '@/components/icons/sidebar/FinanceIcon';
 import ListIcon from '@/components/icons/sidebar/ListIcon';
-import { LogOut, Sun, Landmark, X } from 'lucide-react';
+import { LogOut, Sun, Landmark, X, Inbox } from 'lucide-react';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import React, { useEffect } from "react";
@@ -48,11 +48,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 ? [
                     { href: `/dashboard/council/${activeCouncilId}/members`, label: 'Członkowie', icon: ListIcon },
                     { href: `/dashboard/council/${activeCouncilId}/events`, label: 'Wydarzenia', icon: CalendarDaysIcon },
+                    { href: `/dashboard/council/${activeCouncilId}/suggestions`, label: 'Sugestie', icon: Inbox },
                     { href: `/dashboard/council/${activeCouncilId}/finances`, label: 'Finanse', icon: FinanceIcon },
                 ]
                 : undefined,
         },
         { href: '/dashboard/events', label: 'Wydarzenia (Ogólne)', icon: CalendarDaysIcon },
+        { href: '/dashboard/suggestions', label: 'Skrzynka Sugestii', icon: Inbox },
     ];
 
     const userLinks: NavLink[] = [

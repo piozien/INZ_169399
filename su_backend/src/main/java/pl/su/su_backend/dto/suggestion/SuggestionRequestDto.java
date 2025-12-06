@@ -28,6 +28,8 @@ public class SuggestionRequestDto {
 	private Boolean isAnonymous;
 
 	private Set<String> tags;
+
+    private UUID councilId;
 }
 
 

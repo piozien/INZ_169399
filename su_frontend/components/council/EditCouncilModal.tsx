@@ -70,7 +70,7 @@ export default function EditCouncilModal({ isOpen, onClose, council }: Props) {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="np. Samorząd 2025/2026"
+                        placeholder="np. Samorząd ZSO nr. 1"
                         disabled={mutation.isPending}
                     />
 

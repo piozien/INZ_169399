@@ -92,7 +92,7 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
                             <AlignLeft className="w-4 h-4" />
                             Opis Wydarzenia
                         </div>
-                        <div className="prose prose-invert max-w-none text-txtcolor-300 leading-relaxed bg-secondarybg p-5 rounded-2xl border border-secondarybg">
+                        <div className="prose prose-invert max-w-none text-foregorund leading-relaxed bg-secondarybg p-5 rounded-2xl border border-secondarybg">
                             {event.description}
                         </div>
                     </div>

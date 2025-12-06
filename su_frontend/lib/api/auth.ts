@@ -27,6 +27,19 @@ export async function registerUser(payload: UserRequestDto): Promise<void> {
     }
 }
 
+export async function activateAccount(token: string): Promise<void> {
+    const response = await fetch(`${API_URL}/auth/activate?token=${token}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Link aktywacyjny jest nieprawidłowy lub wygasł.');
+    }
+}
 
 export async function requestPasswordReset(payload: {
   email: string;

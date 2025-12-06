@@ -201,7 +201,7 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
 
                 <div className="bg-secondarybg/30 p-6 rounded-xl border border-info/20 flex items-center justify-between shadow-sm">
                     <div>
-                        <span className="text-sm font-bold text-info uppercase tracking-wider">Start (Początek)</span>
+                        <span className="text-sm font-bold text-info uppercase tracking-wider">Początkowe saldo</span>
                         <span className="block text-2xl font-bold mt-1 text-info">{budget.initialAmount.toFixed(2)} PLN</span>
                     </div>
                     <div className="p-3 bg-info/10 rounded-full text-info"><Wallet className="h-6 w-6" /></div>
@@ -265,12 +265,12 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                                             {new Date(t.date).toLocaleDateString('pl-PL')}
                                         </td>
                                         <td className={`px-6 py-4 text-right font-mono font-bold whitespace-nowrap ${t.type === 'INCOME' ? 'text-success' : 'text-error'}`}>
-                                            {t.type === 'INCOME' ? '+' : ''}{t.amount.toFixed(2)}
+                                            {t.type === 'INCOME' ? '+' : '-'}{t.amount.toFixed(2)}
                                         </td>
 
                                         {canEditTransactions && (
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex justify-end gap-2 transition-opacity">
                                                     <button
                                                         onClick={() => setEditingTransaction(t)}
                                                         className="p-1.5 rounded-lg bg-background border border-border hover:border-primary text-txtcolor-300 hover:text-primary transition-colors"

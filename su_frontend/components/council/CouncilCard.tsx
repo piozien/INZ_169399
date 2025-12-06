@@ -50,7 +50,7 @@ export default function CouncilCard({ council, isActive = false }: CouncilCardPr
                     <div className="flex items-center gap-2">
                         <GraduationCap size={18} className="text-secondary" />
                         <span className="text-sm text-txtcolor-300">
-              Rok akademicki: {council.academicYear}
+              Rok szkolny: {council.academicYear}
             </span>
                     </div>
 

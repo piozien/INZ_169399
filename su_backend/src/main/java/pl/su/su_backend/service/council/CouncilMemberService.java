@@ -80,7 +80,7 @@ public class CouncilMemberService {
     @Transactional(readOnly = true)
     public List<CouncilMember> getCouncilMembers(UUID councilId, String actingUserEmail) {
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
-                .orElseThrow(() -> ApiException.notFound("User not found"));
+                .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje"));
 
         boolean hasPermission = permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_VIEW, councilId);
         boolean isMember = isMemberOfCouncil(actingUser.getId(), councilId);
@@ -136,11 +136,6 @@ public class CouncilMemberService {
     @Transactional(readOnly = true)
     public List<CouncilMember> getUserCouncilMemberships(UUID userId) {
         return councilMemberRepository.findByIdUserId(userId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<CouncilMember> getCouncilMembersInternal(UUID councilId) {
-        return councilMemberRepository.findByCouncilId(councilId);
     }
 
     @Transactional(readOnly = true)

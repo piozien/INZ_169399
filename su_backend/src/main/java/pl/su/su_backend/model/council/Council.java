@@ -42,6 +42,9 @@ public class Council {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "is_default", nullable = false)
+    private boolean isDefault = false;
+
     @Column(name = "join_code", nullable = false, unique = true)
     private String joinCode;
 

@@ -14,6 +14,7 @@ public interface SuggestionMapper {
 
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagsToStrings")
+    @Mapping(target = "councilId", source = "council.id")
     SuggestionResponseDto toResponse(Suggestion suggestion);
 
     @Mapping(target = "id", ignore = true)
@@ -22,6 +23,7 @@ public interface SuggestionMapper {
     @Mapping(target = "rejectionReason", ignore = true)
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "tags", ignore = true)
+    @Mapping(target = "council", ignore = true)
     Suggestion toEntity(SuggestionRequestDto dto);
 
     @Named("mapTagsToStrings")

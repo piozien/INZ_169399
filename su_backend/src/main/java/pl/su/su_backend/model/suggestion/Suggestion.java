@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.SuggestionStatus;
 import pl.su.su_backend.model.users.Users;
 
@@ -49,6 +50,10 @@ public class Suggestion {
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "council_id", nullable = false)
+    private Council council;
 
 	@OneToMany(mappedBy = "suggestion", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default

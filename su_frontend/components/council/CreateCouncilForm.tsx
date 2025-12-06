@@ -93,7 +93,7 @@ export default function CreateCouncilForm({ onCancel, onSuccess }: CreateCouncil
 
         <div>
           <label htmlFor="academicYear" className={labelClassName}>
-            Rok szkolny / akademicki
+            Rok szkolny
           </label>
           <input
             type="text"

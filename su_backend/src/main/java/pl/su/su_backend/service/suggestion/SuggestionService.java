@@ -1,23 +1,21 @@
 package pl.su.su_backend.service.suggestion;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.su.su_backend.dto.suggestion.SuggestionMapper;
 import pl.su.su_backend.dto.suggestion.SuggestionRequestDto;
 import pl.su.su_backend.dto.suggestion.SuggestionResponseDto;
 import pl.su.su_backend.exception.ApiException;
-import pl.su.su_backend.model.enums.ActionType;
+import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.SuggestionStatus;
 import pl.su.su_backend.model.suggestion.Suggestion;
 import pl.su.su_backend.model.users.Users;
+import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.suggestion.SuggestionRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
-import pl.su.su_backend.service.log.ActivityLogService;
-import pl.su.su_backend.service.user.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,157 +24,123 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class SuggestionService {
 
     private final SuggestionRepository suggestionRepository;
-    private final UserService userService;
     private final UsersRepository usersRepository;
-    private final ActivityLogService activityLogService;
+    private final CouncilRepository councilRepository;
     private final PermissionService permissionService;
     private final SuggestionMapper suggestionMapper;
 
     public SuggestionResponseDto createSuggestion(SuggestionRequestDto dto, UUID userId) {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
-        Users userEntity = userService.getUserByEmailEntity(user.getEmail());
+
+        Council council;
+
+        if (dto.getCouncilId() != null) {
+            council = councilRepository.findById(dto.getCouncilId())
+                    .orElseThrow(() -> ApiException.notFound("Nie znaleziono wskazanego samorządu"));
+        }
+        else {
+            council = councilRepository.findFirstByIsActiveTrueAndIsDefaultTrue()
+                    .orElseThrow(() -> ApiException.badRequest(
+                            "W systemie nie ma ustawionego domyślnego samorządu. " +
+                                    "Skontaktuj się z administratorem."
+                    ));
+        }
 
         Suggestion suggestion = suggestionMapper.toEntity(dto);
-        suggestion.setUser(userEntity);
+        suggestion.setUser(user);
+        suggestion.setCouncil(council);
         suggestion.setCreatedAt(LocalDateTime.now());
-        suggestion.setStatus(SuggestionStatus.PENDING);
 
-        Suggestion savedSuggestion = suggestionRepository.save(suggestion);
+        if (dto.getIsAnonymous() != null) suggestion.setIsAnonymous(dto.getIsAnonymous());
 
-        activityLogService.log(userId, ActionType.SUGGESTION_CREATE,
-                "Utworzono sugestię: " + dto.getTitle());
+        return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
+    }
 
-        return suggestionMapper.toResponse(savedSuggestion);
+    public SuggestionResponseDto approveSuggestion(UUID suggestionId, UUID approvedById) {
+        Suggestion suggestion = suggestionRepository.findById(suggestionId)
+                .orElseThrow(() -> ApiException.notFound("Sugestia nie istnieje"));
+
+        if (!permissionService.hasPermission(approvedById, PermissionCode.SUGGESTION_APPROVE, suggestion.getCouncil().getId())) {
+            throw ApiException.forbidden("Brak uprawnień do zatwierdzania sugestii w tym samorządzie.");
+        }
+
+        suggestion.setStatus(SuggestionStatus.APPROVED);
+        return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
+    }
+
+    public SuggestionResponseDto rejectSuggestion(UUID suggestionId, String reason, UUID rejectedById) {
+        Suggestion suggestion = suggestionRepository.findById(suggestionId)
+                .orElseThrow(() -> ApiException.notFound("Sugestia nie istnieje"));
+
+        if (!permissionService.hasPermission(rejectedById, PermissionCode.SUGGESTION_DELETE, suggestion.getCouncil().getId())) {
+            throw ApiException.forbidden("Brak uprawnień do odrzucania sugestii.");
+        }
+
+        suggestion.setStatus(SuggestionStatus.REJECTED);
+        suggestion.setRejectionReason(reason);
+        return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
+    }
+
+    public SuggestionResponseDto updateSuggestion(UUID suggestionId, SuggestionRequestDto dto, UUID userId) {
+        Suggestion suggestion = suggestionRepository.findById(suggestionId)
+                .orElseThrow(() -> ApiException.notFound("Sugestia nie istnieje"));
+
+        boolean isAuthor = suggestion.getUser().getId().equals(userId);
+        boolean isAdmin = permissionService.hasPermission(userId, PermissionCode.SUGGESTION_EDIT, suggestion.getCouncil().getId());
+
+        if (!isAuthor && !isAdmin) {
+            throw ApiException.forbidden("Brak uprawnień do edycji");
+        }
+
+        suggestion.setTitle(dto.getTitle());
+        suggestion.setDescription(dto.getDescription());
+        if (dto.getIsAnonymous() != null) suggestion.setIsAnonymous(dto.getIsAnonymous());
+
+        return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
+    }
+
+    public void deleteSuggestion(UUID suggestionId, UUID userId) {
+        Suggestion suggestion = suggestionRepository.findById(suggestionId)
+                .orElseThrow(() -> ApiException.notFound("Sugestia nie istnieje"));
+
+        boolean isAuthor = suggestion.getUser().getId().equals(userId);
+        boolean isAdmin = permissionService.hasPermission(userId, PermissionCode.SUGGESTION_DELETE, suggestion.getCouncil().getId());
+
+        if (!isAuthor && !isAdmin) {
+            throw ApiException.forbidden("Brak uprawnień do usunięcia");
+        }
+        suggestionRepository.delete(suggestion);
     }
 
     @Transactional(readOnly = true)
-    public List<SuggestionResponseDto> getAllSuggestions(String currentUserEmail) {
-        if (!permissionService.hasPermission(currentUserEmail, PermissionCode.SUGGESTION_VIEW)) {
-            throw ApiException.forbidden("Brak dostępu");
-        }
-
-        return suggestionRepository.findAllByOrderByCreatedAtDesc().stream()
+    public List<SuggestionResponseDto> getAllSuggestions() {
+        return suggestionRepository.findAll().stream()
+                .map(suggestionMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    @Transactional(readOnly = true)
+    public List<SuggestionResponseDto> getSuggestionsByCouncilId(UUID councilId) {
+        return suggestionRepository.findByCouncil_IdOrderByCreatedAtDesc(councilId).stream()
                 .map(suggestionMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<SuggestionResponseDto> getUserSuggestions(UUID userId) {
-        return suggestionRepository.findByUser_IdOrderByCreatedAtDesc(userId).stream()
+        return suggestionRepository.findByUser_Id(userId).stream()
                 .map(suggestionMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public SuggestionResponseDto getSuggestionById(UUID suggestionId, String currentUserEmail) {
+    public SuggestionResponseDto getSuggestionById(UUID suggestionId) {
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> ApiException.notFound("Nie znaleziono sugestii"));
-
-        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
-
-        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.SUGGESTION_VIEW)) {
-            throw ApiException.forbidden("Brak dostępu do podglądu sugestii");
-        }
-
-        SuggestionResponseDto dto = suggestionMapper.toResponse(suggestion);
-
-        if (Boolean.TRUE.equals(suggestion.getIsAnonymous())) {
-            boolean isAuthor = suggestion.getUser().getId().equals(currentUser.getId());
-            boolean canViewAnonymous = permissionService.hasPermission(currentUser.getId(), PermissionCode.SUGGESTION_VIEW_ANONYMOUS);
-
-            if (!isAuthor && !canViewAnonymous) {
-                dto.setUserId(null);
-            }
-        }
-
-        return dto;
-    }
-
-    public SuggestionResponseDto approveSuggestion(UUID suggestionId, UUID approvedById) {
-        if (!permissionService.hasPermission(approvedById, PermissionCode.SUGGESTION_APPROVE)) {
-            throw ApiException.forbidden("Brak uprawnień do zatwierdzania sugestii.");
-        }
-
-        Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> ApiException.notFound("Nie znaleziono sugestii"));
-
-        if (suggestion.getStatus() != SuggestionStatus.PENDING) {
-            throw ApiException.badRequest("Można zatwierdzać tylko oczekujące sugestie");
-        }
-
-        suggestion.setStatus(SuggestionStatus.APPROVED);
-        suggestion.setRejectionReason(null);
-
-        Suggestion saved = suggestionRepository.save(suggestion);
-        activityLogService.log(approvedById, ActionType.SUGGESTION_APPROVE, "Zatwierdzono: " + suggestion.getTitle());
-
-        return suggestionMapper.toResponse(saved);
-    }
-
-    public SuggestionResponseDto rejectSuggestion(UUID suggestionId, String reason, UUID rejectedById) {
-        if (!permissionService.hasPermission(rejectedById, PermissionCode.SUGGESTION_APPROVE)) {
-            throw ApiException.forbidden("Brak uprawnień do odrzucania");
-        }
-
-        Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> ApiException.notFound("Nie znaleziono sugestii"));
-
-        if (suggestion.getStatus() != SuggestionStatus.PENDING) {
-            throw ApiException.badRequest("Można odrzucać tylko oczekujące sugestie");
-        }
-
-        suggestion.setStatus(SuggestionStatus.REJECTED);
-        suggestion.setRejectionReason(reason);
-
-        Suggestion saved = suggestionRepository.save(suggestion);
-        activityLogService.log(rejectedById, ActionType.SUGGESTION_REJECT, "Odrzucono: " + suggestion.getTitle());
-
-        return suggestionMapper.toResponse(saved);
-    }
-
-    public SuggestionResponseDto updateSuggestion(UUID suggestionId, SuggestionRequestDto dto, UUID userId) {
-        Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> ApiException.notFound("Nie znaleziono sugestii"));
-
-        boolean isOwner = suggestion.getUser().getId().equals(userId);
-        boolean canEdit = permissionService.hasPermission(userId, PermissionCode.SUGGESTION_EDIT);
-
-        if (!isOwner && !canEdit) {
-            throw ApiException.forbidden("Brak uprawnień do edycji");
-        }
-
-        if (suggestion.getStatus() != SuggestionStatus.PENDING) {
-            throw ApiException.badRequest("Można edytować tylko oczekujące sugestie");
-        }
-
-        suggestion.setTitle(dto.getTitle());
-        suggestion.setDescription(dto.getDescription());
-        suggestion.setIsAnonymous(dto.getIsAnonymous());
-
-        Suggestion saved = suggestionRepository.save(suggestion);
-        activityLogService.log(userId, ActionType.SUGGESTION_UPDATE, "Zaktualizowano: " + dto.getTitle());
-
-        return suggestionMapper.toResponse(saved);
-    }
-
-    public void deleteSuggestion(UUID suggestionId, UUID userId) {
-        Suggestion suggestion = suggestionRepository.findById(suggestionId)
-                .orElseThrow(() -> ApiException.notFound("Nie znaleziono sugestii"));
-
-        boolean isOwner = suggestion.getUser().getId().equals(userId);
-        boolean canDelete = permissionService.hasPermission(userId, PermissionCode.SUGGESTION_DELETE);
-
-        if (!isOwner && !canDelete) {
-            throw ApiException.forbidden("Brak uprawnień do usunięcia");
-        }
-
-        suggestionRepository.delete(suggestion);
-        activityLogService.log(userId, ActionType.SUGGESTION_DELETE, "Usunięto sugestię: " + suggestion.getTitle());
+                .orElseThrow(() -> ApiException.notFound("Sugestia nie istnieje"));
+        return suggestionMapper.toResponse(suggestion);
     }
 }
