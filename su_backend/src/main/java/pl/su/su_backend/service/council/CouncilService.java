@@ -54,7 +54,7 @@ public class CouncilService {
         council = councilRepository.save(council);
 
         activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE,
-                "Created council: " + dto.getName() + " (" + joinCode + ")");
+                "Utworzono samorząd: " + dto.getName() + " (" + joinCode + ")");
 
         return councilMapper.toResponseDto(council);
     }
@@ -176,7 +176,7 @@ public class CouncilService {
 
         councilMemberService.joinCouncilAsBasicMember(council.getId(), currentUser.getId());
 
-        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Dołączył do rady: " + council.getName());
+        activityLogService.log(currentUser.getId(), ActionType.USER_UPDATED, "Dołączył do samorządu: " + council.getName());
 
         return councilMapper.toResponseDto(council);
     }

@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.event.EventRequestDto;
 import pl.su.su_backend.dto.event.EventResponseDto;
@@ -34,20 +33,15 @@ public class EventController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto dto,
-                                                        @AuthenticationPrincipal Object principal,
-                                                        @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
+    public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto dto, @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Creating event: {} by user: {}", dto.getTitle(), email);
-        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
-                ? authorizationHeader.substring(7)
-                : null;
-        EventResponseDto event = eventService.createEvent(dto, email, accessToken);
+        EventResponseDto event = eventService.createEvent(dto, email);
         return ResponseEntity.status(HttpStatus.CREATED).body(event);
     }
 
     @GetMapping
-    @PreAuthorize("hasPermission(null, 'EVENT_VIEW_DRAFTS')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<EventResponseDto>> getAllEvents(@AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Fetching all events (including drafts) for user: {}", email);
@@ -64,26 +58,23 @@ public class EventController {
 
     @GetMapping("/council/{councilId}")
     @PreAuthorize("hasPermission(#councilId, 'Council', 'EVENT_VIEW_DRAFTS') or hasPermission(#councilId, 'Council', 'EVENT_VIEW')")
-    public ResponseEntity<List<EventResponseDto>> getCouncilEvents(
-            @PathVariable UUID councilId,
-            @AuthenticationPrincipal Object principal) {
+    public ResponseEntity<List<EventResponseDto>> getCouncilEvents(@PathVariable UUID councilId) {
 
         return ResponseEntity.ok(eventService.getEventsByCouncilId(councilId));
     }
 
     @GetMapping("/range")
-    @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
-    public ResponseEntity<List<EventResponseDto>> getEventsInDateRange(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                                       LocalDateTime startDate,
-                                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                                       LocalDateTime endDate) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<EventResponseDto>> getEventsInDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         log.info("Fetching events in date range: {} to {}", startDate, endDate);
         List<EventResponseDto> events = eventService.getEventsInDateRange(startDate, endDate);
         return ResponseEntity.ok(events);
     }
 
     @GetMapping("/{eventId}")
-    @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EventResponseDto> getEventById(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Fetching event with ID: {} by user: {}", eventId, email);
@@ -92,33 +83,23 @@ public class EventController {
     }
 
     @PutMapping("/{eventId}")
-    @PreAuthorize("hasPermission(null, 'EVENT_EDIT')")
-    public ResponseEntity<EventResponseDto> updateEvent(@PathVariable UUID eventId,
-                                                        @Valid @RequestBody EventRequestDto dto,
-                                                        @AuthenticationPrincipal Object principal,
-                                                        @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<EventResponseDto> updateEvent(@PathVariable UUID eventId, @Valid @RequestBody EventRequestDto dto,
+                                                        @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Updating event: {} by user: {}", eventId, email);
         UUID updatedById = userService.getCurrentUserId(email);
-        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
-                ? authorizationHeader.substring(7)
-                : null;
-        EventResponseDto event = eventService.updateEvent(eventId, dto, updatedById, accessToken);
+        EventResponseDto event = eventService.updateEvent(eventId, dto, updatedById);
         return ResponseEntity.ok(event);
     }
 
     @DeleteMapping("/{eventId}")
-    @PreAuthorize("hasPermission(null, 'EVENT_DELETE')")
-    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId,
-                                            @AuthenticationPrincipal Object principal,
-                                            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Deleting event: {} by user: {}", eventId, email);
         UUID deletedById = userService.getCurrentUserId(email);
-        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
-                ? authorizationHeader.substring(7)
-                : null;
-        eventService.deleteEvent(eventId, deletedById, accessToken);
+        eventService.deleteEvent(eventId, deletedById);
         return ResponseEntity.noContent().build();
     }
 
@@ -136,7 +117,7 @@ public class EventController {
     }
 
     @DeleteMapping("/{eventId}/participants/{userId}")
-    @PreAuthorize("hasPermission(null, 'EVENT_DELETE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeParticipant(@PathVariable UUID eventId, @PathVariable UUID userId,
                                                   @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
@@ -147,7 +128,7 @@ public class EventController {
     }
 
     @GetMapping("/{eventId}/participants")
-    @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ParticipantResponseDto>> getEventParticipants(@PathVariable UUID eventId) {
         log.info("Fetching participants for event: {}", eventId);
         List<ParticipantResponseDto> participants = eventService.getEventParticipants(eventId);
@@ -155,13 +136,12 @@ public class EventController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasPermission(null, 'EVENT_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<EventResponseDto>> getUserEvents(@PathVariable UUID userId) {
         log.info("Fetching events for user: {}", userId);
         List<EventResponseDto> events = eventService.getUserEvents(userId);
         return ResponseEntity.ok(events);
     }
-
 
     @GetMapping("/pending")
     @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
@@ -172,7 +152,7 @@ public class EventController {
     }
 
     @PutMapping("/{eventId}/approve")
-    @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EventResponseDto> approveEvent(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Approving event {} by user {}", eventId, email);
@@ -182,7 +162,7 @@ public class EventController {
     }
 
     @PutMapping("/{eventId}/reject")
-    @PreAuthorize("hasPermission(null, 'EVENT_APPROVE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EventResponseDto> rejectEvent(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
         String email = authenticationService.getEmailFromPrincipal(principal);
         log.info("Rejecting event {} by user {}", eventId, email);

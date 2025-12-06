@@ -130,7 +130,7 @@ public class AuthenticationService {
             case UserDetails user -> user.getUsername();
             case String email -> email;
             case null -> null;
-            default -> throw new IllegalArgumentException("Unknown principal");
+            default -> throw new IllegalArgumentException("Nie rozpoznano Użytkownika");
         };
     }
 

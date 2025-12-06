@@ -42,29 +42,38 @@ public class SuggestionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SuggestionResponseDto>> getAllSuggestions(
             @AuthenticationPrincipal Object principal) {
 
         String email = getCurrentUserEmail(principal);
         log.info("Fetching all suggestions request by: {}", email);
-        return ResponseEntity.ok(suggestionService.getAllSuggestions(email));
+        return ResponseEntity.ok(suggestionService.getAllSuggestions());
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SuggestionResponseDto>> getUserSuggestions(@PathVariable UUID userId) {
         return ResponseEntity.ok(suggestionService.getUserSuggestions(userId));
     }
 
     @GetMapping("/{suggestionId}")
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SuggestionResponseDto> getSuggestionById(
             @PathVariable UUID suggestionId,
             @AuthenticationPrincipal Object principal) {
 
         String email = getCurrentUserEmail(principal);
-        return ResponseEntity.ok(suggestionService.getSuggestionById(suggestionId, email));
+        log.info("Fetching suggestions by id request by: {}", email);
+        return ResponseEntity.ok(suggestionService.getSuggestionById(suggestionId));
+    }
+    @GetMapping("/council/{councilId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<SuggestionResponseDto>> getSuggestionsByCouncilId(
+            @PathVariable UUID councilId,
+            @AuthenticationPrincipal Object principal) {
+
+        return ResponseEntity.ok(suggestionService.getSuggestionsByCouncilId(councilId));
     }
 
     @PutMapping("/{suggestionId}/approve")
@@ -80,7 +89,7 @@ public class SuggestionController {
     }
 
     @PutMapping("/{suggestionId}/reject")
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_DELETE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SuggestionResponseDto> rejectSuggestion(
             @PathVariable UUID suggestionId,
             @RequestParam String rejectionReason,
@@ -93,7 +102,7 @@ public class SuggestionController {
     }
 
     @PutMapping("/{suggestionId}")
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_EDIT')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SuggestionResponseDto> updateSuggestion(
             @PathVariable UUID suggestionId,
             @Valid @RequestBody SuggestionRequestDto dto,
@@ -106,7 +115,7 @@ public class SuggestionController {
     }
 
     @DeleteMapping("/{suggestionId}")
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_DELETE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteSuggestion(
             @PathVariable UUID suggestionId,
             @AuthenticationPrincipal Object principal) {

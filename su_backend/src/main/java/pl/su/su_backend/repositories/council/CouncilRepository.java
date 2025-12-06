@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface CouncilRepository extends JpaRepository<Council, UUID> {
     Optional<Council> findByJoinCode(String joinCode);
+    Optional<Council> findFirstByIsActiveTrueAndIsDefaultTrue();
+
 }

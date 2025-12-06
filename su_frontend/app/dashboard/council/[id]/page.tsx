@@ -65,7 +65,7 @@ export default function CouncilDetailPage({
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-txtcolor-300">
                 <h2 className="text-2xl font-bold mb-2">Nie znaleziono samorządu</h2>
-                <p>Sprawdź, czy masz odpowiednie uprawnienia.</p>
+                <p>Sprawdź, czy masz odpowiednie uprawnienia!</p>
             </div>
         );
     }
@@ -213,7 +213,7 @@ export default function CouncilDetailPage({
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-lg text-foreground">Budżet i Finanse</h3>
-                                    <p className="text-sm text-txtcolor-300">Zarządzaj wydatkami i zbiórkami.</p>
+                                    <p className="text-sm text-txtcolor-300">Zarządzaj wydatkami.</p>
                                 </div>
                             </div>
                         </Link>

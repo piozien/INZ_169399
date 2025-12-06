@@ -12,7 +12,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import pl.su.su_backend.dto.auth.LoginRequestDto;
 import pl.su.su_backend.dto.auth.LoginResponseDto;
 import pl.su.su_backend.dto.auth.MicrosoftLoginDto;
-import pl.su.su_backend.dto.auth.RefreshTokenRequestDto;
 import pl.su.su_backend.dto.auth.ResendActivationRequestDto;
 import pl.su.su_backend.dto.user.UserRequestDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
@@ -85,7 +84,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/activate")
+    @GetMapping("/activate")
     public ResponseEntity<Void> activate(@RequestParam("token") String token) {
         if (!jwtService.isActivationToken(token)) {
             throw ApiException.badRequest("Nieprawidłowy link aktywacyjny");

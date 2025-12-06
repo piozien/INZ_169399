@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GraduationCap, Pencil, UserPlus, Loader2 } from 'lucide-react';
+import { Pencil, UserPlus, Loader2 } from 'lucide-react';
 import { fetchUserCouncils, joinCouncilByCode } from '@/lib/api/council';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { CouncilResponseDto } from '@/types/council.types';
 import CouncilCard from '@/components/council/CouncilCard';
 import CreateCouncilForm from '@/components/council/CreateCouncilForm';
 import { ApiError } from '@/types/error.types';
+import SchoolRounded from "@/components/icons/SchoolRounded";
 
 type Tab = 'create' | 'join' | null;
 
@@ -77,7 +78,7 @@ export default function CouncilPage() {
             <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-foreground">
                 <div className="flex flex-col items-center text-center mb-12">
                     <div className="flex items-center gap-3 mb-6">
-                        <GraduationCap className="text-secondary h-10 w-10" />
+                        <SchoolRounded className="text-secondary h-10 w-10" />
                         <h1 className="text-xl font-bold uppercase tracking-wide">
                             Samorząd
                         </h1>
@@ -187,7 +188,7 @@ export default function CouncilPage() {
     return (
         <div className="container mx-auto px-4 py-8 pb-24">
             <h1 className="text-3xl font-bold mb-8 text-foreground flex items-center gap-3">
-                <GraduationCap className="text-secondary" />
+                <SchoolRounded className="text-secondary" />
                 Twoje Samorządy
             </h1>
 

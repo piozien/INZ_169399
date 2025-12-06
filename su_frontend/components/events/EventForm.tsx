@@ -61,7 +61,6 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
             endDate: finalEndDateTime,
             councilId: councilId
         };
-        console.log("Dane backend: ", payload);
 
         onSubmit(payload);
     };
@@ -81,7 +80,7 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="np. Apel z okazji ..."
+                        placeholder="np. Apel z okazji Dnia Nauczyciela"
                         disabled={isSubmitting}
                     />
 
