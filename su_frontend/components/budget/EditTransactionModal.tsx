@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Save, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, Save, Loader2, TrendingUp, TrendingDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { updateTransaction } from '@/lib/api/budget';
 import { CouncilTransactionRequestDto, CouncilTransactionResponseDto } from '@/types/budget.types';
 import FormField from '@/components/FormField';
@@ -12,23 +12,6 @@ interface Props {
     onClose: () => void;
     transaction: CouncilTransactionResponseDto;
 }
-
-const splitIsoDateTime = (isoString: string) => {
-    const dateObj = new Date(isoString);
-
-    const pad = (num: number) => num.toString().padStart(2, '0');
-
-    const year = dateObj.getFullYear();
-    const month = pad(dateObj.getMonth() + 1);
-    const day = pad(dateObj.getDate());
-    const datePart = `${year}-${month}-${day}`;
-
-    const hours = pad(dateObj.getHours());
-    const minutes = pad(dateObj.getMinutes());
-    const timePart = `${hours}:${minutes}`;
-
-    return { datePart, timePart };
-};
 
 export default function EditTransactionModal({ isOpen, onClose, transaction }: Props) {
     const queryClient = useQueryClient();
@@ -41,12 +24,13 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }: P
 
     useEffect(() => {
         if (isOpen && transaction) {
-            const { datePart, timePart } = splitIsoDateTime(transaction.date);
+            const [datePart, timePart] = transaction.date.split('T');
+
             setDescription(transaction.description);
             setAmount(transaction.amount.toString());
             setType(transaction.type);
             setDate(datePart);
-            setTime(timePart);
+            setTime(timePart.slice(0, 5));
         }
     }, [isOpen, transaction]);
 
@@ -58,6 +42,12 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }: P
         },
         onError: (err) => alert(err instanceof Error ? err.message : 'Błąd edycji'),
     });
+
+    const handleAmountChange = (delta: number) => {
+        const currentVal = parseFloat(amount) || 0;
+        const newVal = Math.max(0, currentVal + delta);
+        setAmount(newVal.toFixed(2));
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -76,7 +66,7 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }: P
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-background border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 
                 <div className="flex justify-between items-center p-4 border-b border-border bg-secondarybg">
                     <h3 className="font-bold text-lg text-foreground">Edytuj Transakcję</h3>
@@ -122,15 +112,43 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }: P
                         disabled={mutation.isPending}
                     />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="sm:col-span-1">
-                            <FormField
-                                id="amount_edit" label="KWOTA" type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
-                                disabled={mutation.isPending}
-                            />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                            <div className="space-y-1">
+                                <label htmlFor="amount_edit" className="block text-xs font-bold text-txtcolor-300 uppercase tracking-wider">
+                                    KWOTA
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="amount_edit"
+                                        type="number"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        disabled={mutation.isPending}
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        className="w-full bg-inputbg text-foreground border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-50 text-center"
+                                    />
+                                    <div className="absolute right-1 top-1 bottom-1 flex flex-col justify-center gap-0.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAmountChange(1)}
+                                            className="p-0.5 hover:bg-white/10 rounded text-txtcolor-300 hover:text-primary transition-colors h-1/2 flex items-center"
+                                            tabIndex={-1}
+                                        >
+                                            <ChevronUp className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAmountChange(-1)}
+                                            className="p-0.5 hover:bg-white/10 rounded text-txtcolor-300 hover:text-error transition-colors h-1/2 flex items-center"
+                                            tabIndex={-1}
+                                        >
+                                            <ChevronDown className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div className="sm:col-span-1">
                             <FormField

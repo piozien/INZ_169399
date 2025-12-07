@@ -38,19 +38,39 @@ public class CouncilController {
     }
 
     @GetMapping
-    @PreAuthorize("hasPermission(null, 'COUNCIL_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<CouncilResponseDto>> getCouncils(@AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.getCouncils(email));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasPermission(null, 'COUNCIL_VIEW')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CouncilResponseDto> getCouncilById(
             @PathVariable UUID id,
             @AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
         return ResponseEntity.ok(councilService.getCouncilById(id, email));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CouncilResponseDto> updateCouncil(
+            @PathVariable UUID id,
+            @RequestBody CouncilRequestDto dto,
+            @AuthenticationPrincipal Object principal) {
+        String email = getCurrentUserEmail(principal);
+        return ResponseEntity.ok(councilService.updateCouncil(id, dto, email));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteCouncil(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Object principal) {
+        String email = getCurrentUserEmail(principal);
+        councilService.deleteCouncil(id, email);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/roles")

@@ -17,6 +17,13 @@ export const createSuggestion = async (data: CreateSuggestionPayload): Promise<S
     });
 };
 
+export const updateSuggestion = async (id: string, data: Partial<CreateSuggestionPayload>): Promise<SuggestionDto> => {
+    return apiFetch<SuggestionDto>(`/suggestions/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+};
+
 export const approveSuggestion = async (id: string): Promise<SuggestionDto> => {
     return apiFetch<SuggestionDto>(`/suggestions/${id}/approve`, {
         method: "PUT",
@@ -31,7 +38,7 @@ export const rejectSuggestion = async (id: string, reason: string): Promise<Sugg
 };
 
 export const deleteSuggestion = async (id: string): Promise<void> => {
-    return apiFetch<void>(`$/suggestions/${id}`, {
+    return apiFetch<void>(`/suggestions/${id}`, {
         method: "DELETE",
     });
 };

@@ -29,6 +29,34 @@
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(53%) sepia(93%) saturate(1510%) hue-rotate(1deg) brightness(103%) contrast(106%);
+
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    opacity: 0.8;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
 
 @theme dark {
     --color-background: #1a1208;
@@ -47,9 +75,9 @@
     --color-info: #3b82f6;
     --color-warning: #f59e0b;
     --color-accent: #a855f7;
+    --color-zinc: #a8a1a1;
 
     --color-surface: #231910;
     --color-purple: #a855f7;
     --color-blue: #3b82f6;
 }
-

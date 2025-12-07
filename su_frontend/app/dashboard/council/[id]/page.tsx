@@ -14,7 +14,8 @@ import {
     ArrowRight,
     PiggyBank,
     PartyPopper,
-    Settings
+    Settings,
+    Lightbulb
 } from 'lucide-react';
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import Link from 'next/link';
@@ -84,12 +85,12 @@ export default function CouncilDetailPage({
                             <h1 className="text-3xl font-bold text-foreground">{council.name}</h1>
                             <span
                                 className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                                    council.isActive
+                                    council.active
                                         ? 'bg-success/10 text-success border-success/20'
                                         : 'bg-error/10 text-error border-error/20'
                                 }`}
                             >
-                                {council.isActive ? 'Aktywny' : 'Archiwalny'}
+                                {council.active ? 'Aktywny' : 'Archiwalny'}
                             </span>
                         </div>
                         <p className="text-txtcolor-300 mt-1 flex items-center gap-2">
@@ -185,12 +186,12 @@ export default function CouncilDetailPage({
 
             <div>
                 <h2 className="text-xl font-semibold mb-4 text-foreground">Szybkie akcje</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                    {hasPermission('COUNCIL_VIEW') && (
+                    {hasPermission('EVENT_VIEW') && (
                         <Link href={`/dashboard/council/${id}/events`} className="group">
                             <div
-                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4">
+                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4 h-full">
                                 <div
                                     className="p-3 bg-accent/10 rounded-lg text-accent group-hover:scale-110 transition-transform">
                                     <PartyPopper className="h-6 w-6"/>
@@ -203,10 +204,39 @@ export default function CouncilDetailPage({
                         </Link>
                     )}
 
+                    {hasPermission('SUGGESTION_VIEW') && (
+                        <Link href={`/dashboard/council/${id}/suggestions`} className="group">
+                            <div
+                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4 h-full">
+                                <div
+                                    className="p-3 bg-warning/10 rounded-lg text-warning group-hover:scale-110 transition-transform">
+                                    <Lightbulb className="h-6 w-6"/>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-foreground">Sugestie</h3>
+                                    <p className="text-sm text-txtcolor-300">Przeglądaj pomysły uczniów.</p>
+                                </div>
+                            </div>
+                        </Link>
+                    )}
+
+                    {!hasPermission('SUGGESTION_VIEW') && (
+                        <div
+                            className="p-6 bg-secondarybg/50 rounded-xl border border-border flex items-center gap-4 opacity-50 cursor-not-allowed h-full">
+                            <div className="p-3 bg-darkgray rounded-lg text-darkgray">
+                                <Lightbulb className="h-6 w-6"/>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-foreground">Sugestie (Brak dostępu)</h3>
+                                <p className="text-sm text-txtcolor-300">Dostęp tylko dla uprawnionych.</p>
+                            </div>
+                        </div>
+                    )}
+
                     {hasPermission('COUNCIL_BUDGET_VIEW') && (
                         <Link href={`/dashboard/council/${id}/finances`} className="group">
                             <div
-                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4">
+                                className="p-6 bg-secondarybg rounded-xl border border-border hover:border-secondary hover:bg-secondary/5 transition-all flex items-center gap-4 h-full">
                                 <div
                                     className="p-3 bg-success/10 rounded-lg text-success group-hover:scale-110 transition-transform">
                                     <PiggyBank className="h-6 w-6"/>
@@ -221,7 +251,7 @@ export default function CouncilDetailPage({
 
                     {!hasPermission('COUNCIL_BUDGET_VIEW') && (
                         <div
-                            className="p-6 bg-secondarybg/50 rounded-xl border border-border flex items-center gap-4 opacity-50 cursor-not-allowed">
+                            className="p-6 bg-secondarybg/50 rounded-xl border border-border flex items-center gap-4 opacity-50 cursor-not-allowed h-full">
                             <div className="p-3 bg-darkgray rounded-lg text-darkgray">
                                 <PiggyBank className="h-6 w-6"/>
                             </div>

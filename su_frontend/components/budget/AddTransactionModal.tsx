@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Loader2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { X, Plus, Loader2, TrendingUp, TrendingDown, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
 import { addTransaction } from '@/lib/api/budget';
 import { CouncilTransactionRequestDto } from '@/types/budget.types';
 import FormField from '@/components/FormField';
@@ -49,6 +49,13 @@ export default function AddTransactionModal({ isOpen, onClose, budgetId, current
         onError: (err) => alert(err instanceof Error ? err.message : 'Błąd dodawania transakcji'),
     });
 
+    const handleAmountChange = (delta: number) => {
+        const currentVal = parseFloat(amount) || 0;
+        const newVal = Math.max(0, currentVal + delta);
+        setAmount(newVal.toFixed(2));
+        setShowDebitWarning(false);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!amount || !description || !date || !time) return;
@@ -73,7 +80,7 @@ export default function AddTransactionModal({ isOpen, onClose, budgetId, current
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-background border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 
                 <div className="flex justify-between items-center p-4 border-b border-border bg-secondarybg">
                     <h3 className="font-bold text-lg text-foreground">Dodaj Transakcję</h3>
@@ -124,15 +131,43 @@ export default function AddTransactionModal({ isOpen, onClose, budgetId, current
                         disabled={mutation.isPending}
                     />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="sm:col-span-1">
-                            <FormField
-                                id="amount" label="KWOTA (PLN)" type="number"
-                                value={amount}
-                                onChange={(e) => { setAmount(e.target.value); setShowDebitWarning(false); }}
-                                placeholder="0.00"
-                                disabled={mutation.isPending}
-                            />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                            <div className="space-y-1">
+                                <label htmlFor="amount" className="block text-xs font-bold text-txtcolor-300 uppercase tracking-wider">
+                                    KWOTA (PLN)
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="amount"
+                                        type="number"
+                                        value={amount}
+                                        onChange={(e) => { setAmount(e.target.value); setShowDebitWarning(false); }}
+                                        disabled={mutation.isPending}
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        className="w-full bg-inputbg text-foreground border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-50 text-center"
+                                    />
+                                    <div className="absolute right-1 top-1 bottom-1 flex flex-col justify-center gap-0.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAmountChange(1)}
+                                            className="p-0.5 hover:bg-white/10 rounded text-txtcolor-300 hover:text-primary transition-colors h-1/2 flex items-center"
+                                            tabIndex={-1}
+                                        >
+                                            <ChevronUp className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAmountChange(-1)}
+                                            className="p-0.5 hover:bg-white/10 rounded text-txtcolor-300 hover:text-error transition-colors h-1/2 flex items-center"
+                                            tabIndex={-1}
+                                        >
+                                            <ChevronDown className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div className="sm:col-span-1">
                             <FormField

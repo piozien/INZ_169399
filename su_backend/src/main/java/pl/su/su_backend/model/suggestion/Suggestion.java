@@ -39,7 +39,7 @@ public class Suggestion {
 	private String description;
 
 	@Column(name = "is_anonymous")
-	private Boolean isAnonymous;
+	private boolean anonymous;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)

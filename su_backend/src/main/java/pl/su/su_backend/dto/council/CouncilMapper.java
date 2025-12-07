@@ -9,7 +9,8 @@ public interface CouncilMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "isActive", constant = "true")
+    @Mapping(target = "active", source = "active")
+    @Mapping(target = "defaultCouncil", source = "defaultCouncil")
     @Mapping(target = "joinCode", ignore = true)
     @Mapping(target = "members", ignore = true)
     Council toEntity(CouncilRequestDto dto);

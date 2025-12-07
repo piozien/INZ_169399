@@ -2,22 +2,21 @@ export type SuggestionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface SuggestionDto {
     id: string;
-    userId: string;
-    councilId: string;
     title: string;
     description: string;
-    isAnonymous: boolean;
+    anonymous: boolean;
     status: SuggestionStatus;
     rejectionReason?: string;
     createdAt: string; // ISO Date string
-    upvotes: number;
-    downvotes: number;
+    userId: string;
+    fullName?: string;
     tags: string[];
 }
 
 export interface CreateSuggestionPayload {
     title: string;
+    userId: string;
     description: string;
-    isAnonymous: boolean;
+    anonymous: boolean;
     tags: string[];
 }

@@ -42,6 +42,35 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
         }
     }, [initialData]);
 
+    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newStartDate = e.target.value;
+        setStartDate(newStartDate);
+
+        setEndDate(newStartDate);
+    };
+
+    const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newStartTime = e.target.value;
+        setStartTime(newStartTime);
+
+        if (!newStartTime) return;
+        try {
+            const [hours, minutes] = newStartTime.split(':').map(Number);
+
+            const date = new Date();
+            date.setHours(hours);
+            date.setMinutes(minutes);
+
+            date.setHours(date.getHours() + 1);
+
+            const nextHour = date.getHours().toString().padStart(2, '0');
+            const sameMinutes = date.getMinutes().toString().padStart(2, '0');
+
+            setEndTime(`${nextHour}:${sameMinutes}`);
+        } catch (error) {
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -115,14 +144,14 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                                 type="date"
                                 required
                                 value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
+                                onChange={handleStartDateChange}
                                 className="flex-1 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-primary outline-none transition-all"
                             />
                             <input
                                 type="time"
                                 required
                                 value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
+                                onChange={handleStartTimeChange}
                                 className="w-36 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-primary outline-none transition-all"
                             />
                         </div>

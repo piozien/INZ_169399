@@ -26,4 +26,7 @@ public class CouncilRequestDto {
 
     @NotNull(message = "Wymagana jest data zakończenia")
     private LocalDate endDate;
+
+    private boolean active;
+    private boolean defaultCouncil;
 }

@@ -11,6 +11,7 @@ import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.SuggestionStatus;
 import pl.su.su_backend.model.suggestion.Suggestion;
+import pl.su.su_backend.model.suggestion.SuggestionTag;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.suggestion.SuggestionRepository;
@@ -42,12 +43,10 @@ public class SuggestionService {
         if (dto.getCouncilId() != null) {
             council = councilRepository.findById(dto.getCouncilId())
                     .orElseThrow(() -> ApiException.notFound("Nie znaleziono wskazanego samorządu"));
-        }
-        else {
-            council = councilRepository.findFirstByIsActiveTrueAndIsDefaultTrue()
+        } else {
+            council = councilRepository.findFirstByActiveTrueAndDefaultCouncilTrue()
                     .orElseThrow(() -> ApiException.badRequest(
-                            "W systemie nie ma ustawionego domyślnego samorządu. " +
-                                    "Skontaktuj się z administratorem."
+                            "W systemie nie ma ustawionego domyślnego samorządu."
                     ));
         }
 
@@ -56,9 +55,27 @@ public class SuggestionService {
         suggestion.setCouncil(council);
         suggestion.setCreatedAt(LocalDateTime.now());
 
-        if (dto.getIsAnonymous() != null) suggestion.setIsAnonymous(dto.getIsAnonymous());
+        if (suggestion.getStatus() == null) {
+            suggestion.setStatus(SuggestionStatus.PENDING);
+        }
 
-        return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
+        suggestion.setAnonymous(dto.isAnonymous());
+
+        Suggestion savedSuggestion = suggestionRepository.save(suggestion);
+
+        if (dto.getTags() != null && !dto.getTags().isEmpty()) {
+            for (String tagString : dto.getTags()) {
+                SuggestionTag newTag = new SuggestionTag();
+                SuggestionTag.Id tagId = new SuggestionTag.Id(savedSuggestion.getId(), tagString);
+                newTag.setId(tagId);
+                newTag.setSuggestion(savedSuggestion);
+
+                savedSuggestion.getTags().add(newTag);
+            }
+            savedSuggestion = suggestionRepository.save(savedSuggestion);
+        }
+
+        return suggestionMapper.toResponse(savedSuggestion);
     }
 
     public SuggestionResponseDto approveSuggestion(UUID suggestionId, UUID approvedById) {
@@ -99,7 +116,20 @@ public class SuggestionService {
 
         suggestion.setTitle(dto.getTitle());
         suggestion.setDescription(dto.getDescription());
-        if (dto.getIsAnonymous() != null) suggestion.setIsAnonymous(dto.getIsAnonymous());
+        suggestion.setAnonymous(dto.isAnonymous());
+
+        if (dto.getTags() != null) {
+            suggestion.getTags().clear();
+
+            for (String tagString : dto.getTags()) {
+                SuggestionTag newTag = new SuggestionTag();
+                SuggestionTag.Id tagId = new SuggestionTag.Id(suggestion.getId(), tagString);
+                newTag.setId(tagId);
+                newTag.setSuggestion(suggestion);
+
+                suggestion.getTags().add(newTag);
+            }
+        }
 
         return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
     }
@@ -123,6 +153,7 @@ public class SuggestionService {
                 .map(suggestionMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
     @Transactional(readOnly = true)
     public List<SuggestionResponseDto> getSuggestionsByCouncilId(UUID councilId) {
         return suggestionRepository.findByCouncil_IdOrderByCreatedAtDesc(councilId).stream()

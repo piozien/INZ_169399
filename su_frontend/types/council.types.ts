@@ -24,7 +24,8 @@ export interface CouncilResponseDto {
     academicYear: string;
     startDate: string; // ISO String
     endDate: string;   // ISO String
-    isActive: boolean;
+    active: boolean;
+    defaultCouncil: boolean;
     joinCode: string;
     createdAt: string;
     members?: CouncilMemberDto[];
@@ -34,6 +35,8 @@ export interface CouncilResponseDto {
 export interface CouncilRequestDto {
     name: string;
     academicYear: string;
-    startDate: string; // YYYY-MM-DD
-    endDate: string;   // YYYY-MM-DD
+    startDate: string;
+    endDate: string;
+    active?: boolean;
+    defaultCouncil?: boolean;
 }

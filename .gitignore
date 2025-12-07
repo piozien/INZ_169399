@@ -197,3 +197,5 @@ su_backend/src/main/resources/db/migration/
 *.sql
 
 su_frontend/.idea/
+
+su_backend/src/main/resources/application-dev.yml
