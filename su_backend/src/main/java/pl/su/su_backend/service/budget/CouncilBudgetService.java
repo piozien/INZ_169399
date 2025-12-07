@@ -11,6 +11,7 @@ import pl.su.su_backend.model.budget.CouncilTransaction;
 import pl.su.su_backend.model.council.Council;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.enums.TransactionType;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.budget.CouncilBudgetRepository;
@@ -51,8 +52,15 @@ public class CouncilBudgetService {
         }
         Council council = councilRepository.findById(councilId).orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu"));
         String year = dto.getYear() != null ? dto.getYear() : String.valueOf(LocalDateTime.now().getYear());
+
+        boolean isAdmin = user.getUserRoles().stream().anyMatch(u -> RoleCode.ADMINISTRATOR.equals(u.getRole().
+                getRoleCode()));
+
         if (councilBudgetRepository.findByCouncil_IdAndYear(councilId, year).isPresent()) {
             throw ApiException.conflict("Budżet na rok " + year + " już istnieje");
+        }
+        if(!isAdmin && !council.isActive()){
+            throw ApiException.conflict("Samorząd nie jest aktywny. Nie można stworzyć budżetu!");
         }
         CouncilBudget budget = CouncilBudget.builder().council(council).year(year).initialAmount(dto.getInitialAmount()).balance(dto.getInitialAmount()).createdBy(user).createdAt(LocalDateTime.now()).build();
         CouncilBudget saved = councilBudgetRepository.save(budget);
@@ -110,7 +118,16 @@ public class CouncilBudgetService {
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_CREATE, budget.getCouncil().getId())) {
             throw ApiException.forbidden("Brak uprawnień");
         }
+        if(!budget.getCouncil().isActive()){
+            throw ApiException.conflict("Samorząd nie jest aktywny. Nie można dodać transakcji!");
+        }
+
         CouncilTransaction transaction = transactionMapper.toEntity(dto, budget, user);
+
+        if (transaction.getAmount() != null) {
+            transaction.setAmount(transaction.getAmount().abs());
+        }
+
         councilTransactionRepository.save(transaction);
         updateBalance(budget);
         activityLogService.log(user.getId(), ActionType.TRANSACTION_CREATE, "Dodano transakcję");
@@ -120,9 +137,17 @@ public class CouncilBudgetService {
     public CouncilTransactionResponseDto updateTransaction(UUID transactionId, CouncilTransactionRequestDto dto, String currentUserEmail) {
         Users user = userService.getUserByEmailEntity(currentUserEmail);
         CouncilTransaction transaction = councilTransactionRepository.findById(transactionId).orElseThrow(() -> ApiException.notFound("Transakcja nie istnieje"));
+
+        if (transaction.getAmount() != null) {
+            transaction.setAmount(transaction.getAmount().abs());
+        }
+
         CouncilBudget budget = transaction.getBudget();
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_EDIT, budget.getCouncil().getId())) {
             throw ApiException.forbidden("Brak uprawnień");
+        }
+        if(!budget.getCouncil().isActive()){
+            throw ApiException.conflict("Samorząd nie jest aktywny. Nie można edytować transakcji!");
         }
         transaction.setDescription(dto.getDescription());
         transaction.setAmount(dto.getAmount());
@@ -138,8 +163,14 @@ public class CouncilBudgetService {
         Users user = userService.getUserByEmailEntity(currentUserEmail);
         CouncilTransaction transaction = councilTransactionRepository.findById(transactionId).orElseThrow(() -> ApiException.notFound("Transakcja nie istnieje"));
         CouncilBudget budget = transaction.getBudget();
+        boolean isAdmin = user.getUserRoles().stream().anyMatch(u -> RoleCode.ADMINISTRATOR.equals(u.getRole().
+                getRoleCode()));
+
         if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_DELETE, budget.getCouncil().getId())) {
             throw ApiException.forbidden("Brak uprawnień");
+        }
+        if(!isAdmin && !budget.getCouncil().isActive()){
+            throw ApiException.conflict("Samorząd nie jest aktywny. Nie można usunać transakcji!");
         }
         councilTransactionRepository.delete(transaction);
         updateBalance(budget);

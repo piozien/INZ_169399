@@ -47,16 +47,85 @@ public class CouncilService {
         log.info("Creating council: {} by user: {}", dto.getName(), currentUserEmail);
         Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
 
+        if (!permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_CREATE)) {
+            boolean isAdmin = currentUser.getUserRoles().stream()
+                    .anyMatch(ur -> RoleCode.ADMINISTRATOR.equals(ur.getRole().getRoleCode()));
+            if (!isAdmin) {
+                throw ApiException.forbidden("Brak uprawnień do tworzenia samorządów.");
+            }
+        }
+
         Council council = councilMapper.toEntity(dto);
         String joinCode = generateJoinCodeForCouncil(dto.getAcademicYear());
         council.setJoinCode(joinCode);
 
+        if (council.isDefaultCouncil()) {
+            disablePreviousDefault(null);
+            council.setActive(true);
+        }
+
         council = councilRepository.save(council);
-
-        activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE,
-                "Utworzono samorząd: " + dto.getName() + " (" + joinCode + ")");
-
+        activityLogService.log(currentUser.getId(), ActionType.COUNCIL_CREATE, "Utworzono samorząd: " + dto.getName());
         return councilMapper.toResponseDto(council);
+    }
+
+    public CouncilResponseDto updateCouncil(UUID councilId, CouncilRequestDto dto, String currentUserEmail) {
+        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
+        Council council = councilRepository.findById(councilId)
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu"));
+
+        boolean isAdmin = currentUser.getUserRoles().stream()
+                .anyMatch(ur -> RoleCode.ADMINISTRATOR.equals(ur.getRole().getRoleCode()));
+        boolean hasLocalPerm = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_EDIT, councilId);
+
+        if (!isAdmin && !hasLocalPerm) {
+            throw ApiException.forbidden("Brak uprawnień do edycji tego samorządu.");
+        }
+
+        if (dto.isDefaultCouncil()) {
+            disablePreviousDefault(councilId);
+
+            council.setDefaultCouncil(true);
+            council.setActive(true);
+        } else {
+            council.setDefaultCouncil(false);
+        }
+
+        if (!dto.isDefaultCouncil()) {
+            council.setActive(dto.isActive());
+            if (!council.isActive()) {
+                council.setDefaultCouncil(false);
+            }
+        }
+
+        if (dto.getName() != null) council.setName(dto.getName());
+        if (dto.getAcademicYear() != null) council.setAcademicYear(dto.getAcademicYear());
+        if (dto.getStartDate() != null) council.setStartDate(dto.getStartDate());
+        if (dto.getEndDate() != null) council.setEndDate(dto.getEndDate());
+
+        Council saved = councilRepository.save(council);
+        activityLogService.log(currentUser.getId(), ActionType.COUNCIL_UPDATE, "Zaktualizowano samorząd: " + saved.getName());
+
+        return councilMapper.toResponseDto(saved);
+    }
+
+
+    public void deleteCouncil(UUID councilId, String currentUserEmail) {
+        Users currentUser = userService.getUserByEmailEntity(currentUserEmail);
+        Council council = councilRepository.findById(councilId)
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu"));
+
+        boolean isAdmin = currentUser.getUserRoles().stream()
+                .anyMatch(ur -> RoleCode.ADMINISTRATOR.equals(ur.getRole().getRoleCode()));
+
+        boolean hasDeletePerm = permissionService.hasPermission(currentUser.getId(), PermissionCode.COUNCIL_DELETE);
+
+        if (!isAdmin && !hasDeletePerm) {
+            throw ApiException.forbidden("Tylko Administrator może usunąć samorząd.");
+        }
+
+        councilRepository.delete(council);
+        activityLogService.log(currentUser.getId(), ActionType.COUNCIL_DELETE, "Usunięto samorząd: " + council.getName());
     }
 
     @Transactional(readOnly = true)
@@ -170,7 +239,7 @@ public class CouncilService {
         Council council = councilRepository.findByJoinCode(joinCode)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono samorządu o kodzie: " + joinCode));
 
-        if (!Boolean.TRUE.equals(council.getIsActive())) {
+        if (!council.isActive()) {
             throw ApiException.badRequest("Ten samorząd nie jest już aktywny.");
         }
 
@@ -190,5 +259,15 @@ public class CouncilService {
             code = prefix + String.format("%04d", randomNumber);
         } while (councilRepository.findByJoinCode(code).isPresent());
         return code;
+    }
+
+    private void disablePreviousDefault(UUID currentCouncilId) {
+        councilRepository.findFirstByActiveTrueAndDefaultCouncilTrue()
+                .ifPresent(currentDefault -> {
+                    if (!currentDefault.getId().equals(currentCouncilId)) {
+                        currentDefault.setDefaultCouncil(false);
+                        councilRepository.save(currentDefault);
+                    }
+                });
     }
 }

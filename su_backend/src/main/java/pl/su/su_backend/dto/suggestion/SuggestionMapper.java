@@ -15,6 +15,7 @@ public interface SuggestionMapper {
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagsToStrings")
     @Mapping(target = "councilId", source = "council.id")
+    @Mapping(target = "fullName", source = ".", qualifiedByName = "mapFullName")
     SuggestionResponseDto toResponse(Suggestion suggestion);
 
     @Mapping(target = "id", ignore = true)
@@ -32,5 +33,13 @@ public interface SuggestionMapper {
         return tags.stream()
                 .map(tag -> tag.getId().getTag())
                 .collect(Collectors.toSet());
+    }
+
+    @Named("mapFullName")
+    default String mapFullName(Suggestion suggestion) {
+        if (suggestion.isAnonymous() || suggestion.getUser() == null) {
+            return null;
+        }
+        return suggestion.getUser().getFullName();
     }
 }

@@ -8,13 +8,13 @@ import {
     deleteTransaction,
     deleteBudget
 } from '@/lib/api/budget';
-import { fetchCouncilContext } from '@/lib/api/council';
+import { fetchCouncilContext, fetchCouncilById } from '@/lib/api/council';
 import { CouncilBudgetResponseDto, CouncilTransactionResponseDto } from '@/types/budget.types';
-import { CouncilContextDto } from '@/types/council.types';
+import { CouncilContextDto, CouncilResponseDto } from '@/types/council.types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import {
-    Loader2, PiggyBank, TrendingUp, TrendingDown,
-    FileDown, Plus, AlertCircle, Edit, Trash2, Wallet, Settings
+    Loader2, PiggyBank,
+    FileDown, Plus, AlertCircle, Edit, Trash2, Wallet, Settings, Lock, TrendingUp, TrendingDown
 } from 'lucide-react';
 import BudgetChart from '@/components/budget/BudgetChart';
 import AddTransactionModal from '@/components/budget/AddTransactionModal';
@@ -33,6 +33,10 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
     const [isEditBudgetModalOpen, setIsEditBudgetModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<CouncilTransactionResponseDto | null>(null);
 
+    const { data: council, isLoading: councilLoading } = useQuery<CouncilResponseDto>({
+        queryKey: ['council', councilId],
+        queryFn: () => fetchCouncilById(councilId),
+    });
 
     const { data: budget, isLoading: budgetLoading } = useQuery<CouncilBudgetResponseDto>({
         queryKey: ['budget', councilId],
@@ -51,6 +55,11 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
         queryFn: () => fetchCouncilContext(councilId),
     });
 
+    const isCouncilActive = council?.active ?? false;
+    const isAdmin = user?.roles?.includes('ADMINISTRATOR') || false;
+
+    const isLocked = !isCouncilActive && !isAdmin;
+
     const deleteTransMutation = useMutation({
         mutationFn: deleteTransaction,
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budget'] }),
@@ -65,12 +74,14 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
 
 
     const handleDeleteTransaction = (id: string) => {
+        if (isLocked) return alert("Samorząd jest archiwalny. Nie można usuwać transakcji.");
         if (confirm("Czy na pewno chcesz usunąć tę transakcję? Saldo zostanie przeliczone.")) {
             deleteTransMutation.mutate(id);
         }
     };
 
     const handleDeleteBudget = () => {
+        if (isLocked) return alert("Samorząd jest archiwalny. Nie można usunąć budżetu.");
         if (budget?.id && confirm("UWAGA! Czy na pewno chcesz usunąć CAŁY ROK BUDŻETOWY? Wszystkie transakcje zostaną utracone bezpowrotnie!")) {
             deleteBudgetMutation.mutate(budget.id);
         }
@@ -85,17 +96,16 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
         }
     };
 
-
     const hasPermission = (perm: string) => {
+        if (isAdmin) return true;
+
         if (budget?.myPermissions) {
             if (budget.myPermissions.includes('ALL_ACCESS') || budget.myPermissions.includes(perm)) return true;
         }
         if (context?.permissions) {
             if (context.permissions.includes('ALL_ACCESS') || context.permissions.includes(perm)) return true;
         }
-        return !!user?.roles.includes('ADMINISTRATOR');
-
-
+        return false;
     };
 
     const canEditTransactions = hasPermission('COUNCIL_TRANSACTION_EDIT') || hasPermission('COUNCIL_TRANSACTION_CREATE');
@@ -104,7 +114,7 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
     const canDeleteBudget = hasPermission('COUNCIL_BUDGET_DELETE');
     const canCreateBudget = hasPermission('COUNCIL_BUDGET_CREATE');
 
-    if (budgetLoading) return <div className="flex justify-center h-[50vh] items-center"><Loader2 className="animate-spin text-primary h-8 w-8"/></div>;
+    if (budgetLoading || councilLoading) return <div className="flex justify-center h-[50vh] items-center"><Loader2 className="animate-spin text-primary h-8 w-8"/></div>;
 
     if (!budget) {
         return (
@@ -114,19 +124,36 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                 </div>
                 <div className="text-center max-w-md">
                     <h2 className="text-2xl font-bold text-foreground mb-2">Rok budżetowy zamknięty</h2>
-                    <p className="mb-6">Ten samorząd nie ma jeszcze otwartego roku budżetowego.</p>
 
-                    {canCreateBudget ? (
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-primary text-darkgray font-bold px-8 py-3 rounded-xl hover:opacity-90 transition-transform hover:scale-105 shadow-lg"
-                        >
-                            Otwórz Rok Budżetowy
-                        </button>
+                    {isLocked ? (
+                        <div className="flex flex-col items-center gap-2 mt-4">
+                            <span className="text-error bg-error/10 px-4 py-2 rounded-lg border border-error/20 flex items-center gap-2">
+                                <Lock className="w-4 h-4" /> Samorząd jest archiwalny
+                            </span>
+                            <p className="text-sm text-txtcolor-300">Nie można utworzyć budżetu dla nieaktywnego samorządu.</p>
+                        </div>
                     ) : (
-                        <p className="text-sm text-error bg-error/10 px-4 py-2 rounded-lg inline-block border border-error/20">
-                            Brak uprawnień do otwierania budżetu.
-                        </p>
+                        <>
+                            <p className="mb-6">Ten samorząd nie ma jeszcze otwartego roku budżetowego.</p>
+                            {!isCouncilActive && isAdmin && (
+                                <p className="text-xs text-warning mb-2 bg-warning/10 px-2 py-1 rounded border border-warning/20">
+                                    Tryb Administratora: Edycja archiwum
+                                </p>
+                            )}
+
+                            {canCreateBudget ? (
+                                <button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="bg-primary text-darkgray font-bold px-8 py-3 rounded-xl hover:opacity-90 transition-transform hover:scale-105 shadow-lg"
+                                >
+                                    Otwórz Rok Budżetowy
+                                </button>
+                            ) : (
+                                <p className="text-sm text-error bg-error/10 px-4 py-2 rounded-lg inline-block border border-error/20">
+                                    Brak uprawnień do otwierania budżetu.
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
                 <CreateBudgetModal
@@ -144,11 +171,17 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <PiggyBank className="text-success h-8 w-8" /> Finanse Samorządu
+                        {!isCouncilActive && (
+                            <span className="text-xs bg-error/10 text-error border border-error/20 px-2 py-1 rounded-md flex items-center gap-1">
+                                <Lock className="w-3 h-3" /> ARCHIWUM
+                            </span>
+                        )}
                     </h1>
                     <p className="text-txtcolor-300 mt-1">
                         Rok budżetowy: <span className="text-foreground font-mono font-bold ml-1 px-2 py-0.5 bg-secondarybg rounded-md">{budget.year}</span>
                     </p>
                 </div>
+
                 <div className="flex gap-3 flex-wrap items-center">
                     <button onClick={() => handleDownload('pdf')} className="flex items-center gap-2 px-4 py-2 bg-secondarybg border border-border hover:bg-inputbg rounded-lg text-sm transition-colors text-foreground" title="Pobierz PDF">
                         <FileDown className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
@@ -161,9 +194,10 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
 
                     {canEditBudget && (
                         <button
-                            onClick={() => setIsEditBudgetModalOpen(true)}
-                            className="p-2 bg-secondarybg border border-border hover:border-secondary hover:text-secondary rounded-lg transition-colors text-txtcolor-300"
-                            title="Ustawienia Budżetu"
+                            onClick={() => !isLocked && setIsEditBudgetModalOpen(true)}
+                            disabled={isLocked}
+                            className={`p-2 bg-secondarybg border border-border rounded-lg transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:border-secondary hover:text-secondary text-txtcolor-300'}`}
+                            title={isLocked ? "Edycja zablokowana" : "Ustawienia Budżetu"}
                         >
                             <Settings className="h-5 w-5" />
                         </button>
@@ -172,8 +206,9 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                     {canDeleteBudget && (
                         <button
                             onClick={handleDeleteBudget}
-                            className="p-2 bg-secondarybg border border-border hover:border-error hover:bg-error/10 hover:text-error rounded-lg transition-colors text-txtcolor-300"
-                            title="Usuń CAŁY Budżet"
+                            disabled={isLocked}
+                            className={`p-2 bg-secondarybg border border-border rounded-lg transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:border-error hover:bg-error/10 hover:text-error text-txtcolor-300'}`}
+                            title={isLocked ? "Usuwanie zablokowane" : "Usuń CAŁY Budżet"}
                         >
                             <Trash2 className="h-5 w-5" />
                         </button>
@@ -182,9 +217,17 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                     {canEditTransactions && (
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="flex items-center gap-2 bg-primary text-darkgray font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-md ml-2"
+                            disabled={isLocked}
+                            className={`flex items-center gap-2 font-bold px-4 py-2 rounded-lg transition-all shadow-md ml-2
+                                ${isLocked
+                                ? 'bg-inputbg text-txtcolor-300 cursor-not-allowed opacity-60 border border-border'
+                                : 'bg-primary text-darkgray hover:opacity-90'
+                            }`}
                         >
-                            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Dodaj transakcję</span>
+                            {isLocked ? <Lock className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                            <span className="hidden sm:inline">
+                                {isLocked ? 'Zablokowane' : 'Dodaj transakcję'}
+                            </span>
                         </button>
                     )}
                 </div>
@@ -194,8 +237,8 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                 <div className="bg-secondarybg p-6 rounded-xl border border-border flex flex-col relative overflow-hidden shadow-sm xl:col-span-1">
                     <span className="text-sm font-bold text-txtcolor-300 uppercase z-10 tracking-wider">Aktualne Saldo</span>
                     <span className={`text-3xl font-bold mt-2 z-10 ${budget.balance >= 0 ? 'text-foreground' : 'text-error'}`}>
-                {budget.balance.toFixed(2)} PLN
-            </span>
+                        {budget.balance.toFixed(2)} PLN
+                    </span>
                     <PiggyBank className="absolute -bottom-4 -right-4 h-24 w-24 text-foreground opacity-5 z-0" />
                 </div>
 
@@ -235,8 +278,8 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                             <AlertCircle className="h-4 w-4 text-primary" /> Historia operacji
                         </h3>
                         <span className="text-xs font-mono bg-background/50 px-2 py-1 rounded text-txtcolor-300 border border-border">
-                      Liczba wpisów: {transactions?.length || 0}
-                  </span>
+                            Liczba wpisów: {transactions?.length || 0}
+                        </span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto scrollbar-thin p-0">
@@ -254,7 +297,7 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                                     <th className="px-6 py-3 font-semibold tracking-wider bg-secondarybg">Opis</th>
                                     <th className="px-6 py-3 font-semibold tracking-wider hidden sm:table-cell bg-secondarybg">Data</th>
                                     <th className="px-6 py-3 text-right font-semibold tracking-wider bg-secondarybg">Kwota</th>
-                                    {canEditTransactions && <th className="px-6 py-3 w-20 bg-secondarybg text-center">Akcje</th>}
+                                    {canEditTransactions && !isLocked && <th className="px-6 py-3 w-20 bg-secondarybg text-center">Akcje</th>}
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
@@ -267,8 +310,7 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                                         <td className={`px-6 py-4 text-right font-mono font-bold whitespace-nowrap ${t.type === 'INCOME' ? 'text-success' : 'text-error'}`}>
                                             {t.type === 'INCOME' ? '+' : '-'}{t.amount.toFixed(2)}
                                         </td>
-
-                                        {canEditTransactions && (
+                                        {canEditTransactions && !isLocked && (
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 transition-opacity">
                                                     <button
@@ -299,7 +341,6 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                     </div>
                 </div>
             </div>
-
 
             {budget && (
                 <AddTransactionModal

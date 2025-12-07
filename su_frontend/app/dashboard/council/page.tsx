@@ -179,10 +179,10 @@ export default function CouncilPage() {
         );
     }
 
-    const activeCouncils = councils?.filter((c) => c.isActive) || [];
+    const activeCouncils = councils?.filter((c) => c.active) || [];
 
     const archiveCouncils = councils
-        ?.filter((c) => !c.isActive)
+        ?.filter((c) => !c.active)
         .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()) || [];
 
     return (

@@ -16,6 +16,8 @@ public enum ActionType {
     USER_UPDATED,
 
     COUNCIL_CREATE,
+    COUNCIL_DELETE,
+    COUNCIL_UPDATE,
 
     // EVENTS
     EVENT_CREATE,

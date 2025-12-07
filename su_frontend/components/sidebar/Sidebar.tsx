@@ -47,14 +47,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             subLinks: activeCouncilId
                 ? [
                     { href: `/dashboard/council/${activeCouncilId}/members`, label: 'Członkowie', icon: ListIcon },
-                    { href: `/dashboard/council/${activeCouncilId}/events`, label: 'Wydarzenia', icon: CalendarDaysIcon },
-                    { href: `/dashboard/council/${activeCouncilId}/suggestions`, label: 'Sugestie', icon: Inbox },
+                    { href: `/dashboard/council/${activeCouncilId}/events`, label: 'Wydarzenia (SU)', icon: CalendarDaysIcon },
+                    { href: `/dashboard/council/${activeCouncilId}/suggestions`, label: 'Sugestie (SU)', icon: Inbox },
                     { href: `/dashboard/council/${activeCouncilId}/finances`, label: 'Finanse', icon: FinanceIcon },
                 ]
                 : undefined,
         },
-        { href: '/dashboard/events', label: 'Wydarzenia (Ogólne)', icon: CalendarDaysIcon },
-        { href: '/dashboard/suggestions', label: 'Skrzynka Sugestii', icon: Inbox },
+        { href: '/dashboard/events', label: 'Wydarzenia', icon: CalendarDaysIcon },
+        { href: '/dashboard/suggestions', label: 'Sugestie', icon: Inbox },
     ];
 
     const userLinks: NavLink[] = [

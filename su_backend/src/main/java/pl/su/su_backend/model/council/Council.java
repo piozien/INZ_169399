@@ -39,11 +39,10 @@ public class Council {
     private LocalDate endDate;
 
     @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
+    private boolean active = true;
 
     @Column(name = "is_default", nullable = false)
-    private boolean isDefault = false;
+    private boolean defaultCouncil = false;
 
     @Column(name = "join_code", nullable = false, unique = true)
     private String joinCode;

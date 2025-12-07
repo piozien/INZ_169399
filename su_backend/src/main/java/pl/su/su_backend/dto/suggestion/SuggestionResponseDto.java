@@ -17,10 +17,11 @@ import java.util.UUID;
 public class SuggestionResponseDto {
 	private UUID id;
 	private UUID userId;
+    private String fullName;
     private UUID councilId;
 	private String title;
 	private String description;
-	private Boolean isAnonymous;
+	private boolean anonymous;
 	private SuggestionStatus status;
 	private String rejectionReason;
 	private LocalDateTime createdAt;
