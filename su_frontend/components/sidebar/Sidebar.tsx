@@ -9,7 +9,7 @@ import SettingsIcon from '@/components/icons/sidebar/SettingsIcon';
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
 import FinanceIcon from '@/components/icons/sidebar/FinanceIcon';
 import ListIcon from '@/components/icons/sidebar/ListIcon';
-import { LogOut, Sun, Landmark, X, Inbox } from 'lucide-react';
+import { LogOut, Sun, Moon, Landmark, X, Inbox } from 'lucide-react';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import React, { useEffect } from "react";
@@ -28,7 +28,7 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     const pathname = usePathname();
-    const { toggleTheme } = useTheme();
+    const { theme, toggleTheme } = useTheme();
     const { user, isLoading, logout } = useAuth();
 
     useEffect(() => {
@@ -170,8 +170,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                             className="mt-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondarybg transition-colors"
                         >
                             <span className="flex items-center gap-3">
-                                <Sun className="h-5 w-5" />
-                                Zmień motyw
+                                {theme === 'dark' ? (
+                                    <Sun className="h-5 w-5" />
+                                ) : (
+                                    <Moon className="h-5 w-5" />
+                                )}
+                                <span>{theme === 'dark' ? 'Jasny motyw' : 'Ciemny motyw'}</span>
                             </span>
                         </button>
 

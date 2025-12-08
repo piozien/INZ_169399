@@ -1,9 +1,9 @@
 'use client';
 
-import {use, useState} from 'react';
-import {useQuery} from '@tanstack/react-query';
-import {fetchCouncilById} from '@/lib/api/council';
-import {CouncilResponseDto} from '@/types/council.types';
+import { use, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchCouncilById, leaveCouncil } from '@/lib/api/council';
+import { CouncilResponseDto } from '@/types/council.types';
 import {
     Loader2,
     CalendarDays,
@@ -15,10 +15,13 @@ import {
     PiggyBank,
     PartyPopper,
     Settings,
-    Lightbulb
+    Lightbulb,
+    LogOut
 } from 'lucide-react';
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import EditCouncilModal from '@/components/council/EditCouncilModal';
 
 export default function CouncilDetailPage({
@@ -26,7 +29,11 @@ export default function CouncilDetailPage({
                                           }: {
     params: Promise<{ id: string }>;
 }) {
-    const {id} = use(params);
+    const { id } = use(params);
+    const router = useRouter();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+
     const [copied, setCopied] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -39,6 +46,26 @@ export default function CouncilDetailPage({
         queryFn: () => fetchCouncilById(id),
         retry: 1,
     });
+
+    const leaveMutation = useMutation({
+        mutationFn: () => {
+            if (!user?.id) throw new Error("Brak użytkownika");
+            return leaveCouncil(id, user.id);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+            router.push('/dashboard');
+        },
+        onError: (err) => {
+            alert("Nie udało się opuścić samorządu. " + (err instanceof Error ? err.message : ""));
+        }
+    });
+
+    const handleLeave = () => {
+        if (confirm(`Czy na pewno chcesz opuścić samorząd "${council?.name}"? Ta operacja jest nieodwracalna.`)) {
+            leaveMutation.mutate();
+        }
+    };
 
     const hasPermission = (perm: string) => {
         if (!council?.myPermissions) return false;
@@ -74,8 +101,7 @@ export default function CouncilDetailPage({
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto">
 
-            <div
-                className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
                 <div className="flex items-center gap-4">
                     <div className="p-4 bg-secondarybg rounded-2xl border border-border">
                         <SchoolRounded className="h-10 w-10 text-secondary"/>
@@ -100,15 +126,27 @@ export default function CouncilDetailPage({
                     </div>
                 </div>
 
-                {hasPermission('COUNCIL_EDIT') && (
+                <div className="flex flex-wrap gap-2">
                     <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-secondarybg border border-border hover:border-secondary rounded-lg text-sm font-medium transition-colors text-foreground"
+                        onClick={handleLeave}
+                        disabled={leaveMutation.isPending}
+                        className="flex items-center gap-2 px-4 py-2 bg-error/10 text-error border border-error/20 hover:bg-error hover:text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        title="Opuść samorząd"
                     >
-                        <Settings className="h-4 w-4"/>
-                        Ustawienia
+                        {leaveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <LogOut className="h-4 w-4"/>}
+                        <span className="hidden sm:inline">Opuść</span>
                     </button>
-                )}
+
+                    {hasPermission('COUNCIL_EDIT') && (
+                        <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-secondarybg border border-border hover:border-secondary rounded-lg text-sm font-medium transition-colors text-foreground"
+                        >
+                            <Settings className="h-4 w-4"/>
+                            <span className="hidden sm:inline">Ustawienia</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

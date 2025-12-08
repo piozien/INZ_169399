@@ -56,6 +56,12 @@ export const updateMemberRole = async (councilId: string, userId: string, roleCo
         method: 'PUT',
     });
 };
+export const leaveCouncil = async (councilId: string, userId: string): Promise<void> => {
+    return apiFetch<void>(`/councils/${councilId}/members/${userId}`, {
+        method: 'DELETE',
+    });
+};
+
 
 export const removeMemberFromCouncil = async (councilId: string, userId: string): Promise<void> => {
     return apiFetch<void>(`/councils/${councilId}/members/${userId}`, {

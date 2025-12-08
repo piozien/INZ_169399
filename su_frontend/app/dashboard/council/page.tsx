@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pencil, UserPlus, Loader2 } from 'lucide-react';
+import { Pencil, UserPlus, Loader2, Plus, X } from 'lucide-react';
 import { fetchUserCouncils, joinCouncilByCode } from '@/lib/api/council';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { CouncilResponseDto } from '@/types/council.types';
@@ -180,17 +180,28 @@ export default function CouncilPage() {
     }
 
     const activeCouncils = councils?.filter((c) => c.active) || [];
-
     const archiveCouncils = councils
         ?.filter((c) => !c.active)
         .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()) || [];
 
     return (
         <div className="container mx-auto px-4 py-8 pb-24">
-            <h1 className="text-3xl font-bold mb-8 text-foreground flex items-center gap-3">
-                <SchoolRounded className="text-secondary" />
-                Twoje Samorządy
-            </h1>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                    <SchoolRounded className="text-secondary" />
+                    Twoje Samorządy
+                </h1>
+
+                {hasCreatePermission && (
+                    <button
+                        onClick={() => setActiveTab('create')}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-darkgray hover:bg-secondary rounded-lg font-bold shadow-md hover:shadow-lg transition-all"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Stwórz Samorząd
+                    </button>
+                )}
+            </div>
 
             {activeCouncils.length > 0 && (
                 <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -229,6 +240,29 @@ export default function CouncilPage() {
                                 isActive={false}
                             />
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'create' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-lg bg-secondarybg border border-border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 p-6 relative">
+                        <button
+                            onClick={() => setActiveTab(null)}
+                            className="absolute top-4 right-4 text-txtcolor-300 hover:text-foreground transition-colors"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+
+                        <h2 className="text-xl font-bold mb-6 text-center text-foreground">Stwórz nową kadencję</h2>
+
+                        <CreateCouncilForm
+                            onCancel={() => setActiveTab(null)}
+                            onSuccess={() => {
+                                setActiveTab(null);
+                                queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+                            }}
+                        />
                     </div>
                 </div>
             )}
