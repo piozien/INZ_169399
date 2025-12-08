@@ -70,7 +70,7 @@ public class CouncilMemberController {
     }
 
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasPermission(null, 'COUNCIL_MEMBER_MANAGE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeMemberFromCouncil(
             @PathVariable UUID councilId,
             @PathVariable UUID userId,

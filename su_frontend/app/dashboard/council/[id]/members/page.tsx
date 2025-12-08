@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchCouncilMembers,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/api/council';
 import { CouncilMemberDto, CouncilContextDto } from '@/types/council.types';
 import { useRouter } from 'next/navigation';
-import { Loader2, User, Plus, ShieldAlert } from 'lucide-react';
+import { Loader2, User, Plus, ShieldAlert, ArrowLeft } from 'lucide-react';
 import MemberCard from '@/components/council/MemberCard';
 import EditRoleModal from '@/components/council/EditRoleModal';
 import AddMemberModal from '@/components/council/AddMemberModal';
@@ -34,6 +34,30 @@ export default function CouncilMembersPage({ params }: { params: Promise<{ id: s
         queryKey: ['councilContext', councilId],
         queryFn: () => fetchCouncilContext(councilId),
     });
+
+    const sortedMembers = useMemo(() => {
+        if (!members) return [];
+
+        const getRolePriority = (roleString: string) => {
+            const role = roleString.toUpperCase();
+            if (role.includes('OPIEKUN')) return 1;
+            if (role.includes('ZASTĘPCA') || role.includes('ZASTEPCA')) return 3;
+            if (role.includes('PRZEWODNICZ')) return 2;
+            if (role.includes('SKARBNIK')) return 4;
+            if (role.includes('BYŁY') || role.includes('BYLY')) return 6;
+            if (role.includes('CZŁONEK') || role.includes('CZLONEK')) return 5;
+            return 99;
+        };
+
+        return [...members].sort((a, b) => {
+            const priorityA = getRolePriority(a.role);
+            const priorityB = getRolePriority(b.role);
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
+            return a.userFullName.localeCompare(b.userFullName);
+        });
+    }, [members]);
 
     const canManage = context?.permissions?.includes('COUNCIL_MEMBER_MANAGE') ||
         context?.permissions?.includes('ALL_ACCESS') || false;
@@ -103,12 +127,22 @@ export default function CouncilMembersPage({ params }: { params: Promise<{ id: s
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">Członkowie Samorządu</h1>
-                    <p className="text-txtcolor-300 mt-1">
-                        Lista osób należących do bieżącej kadencji ({members?.length || 0})
-                    </p>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => router.push(`/dashboard/council/${councilId}`)}
+                        className="p-2 -ml-2 rounded-xl text-txtcolor-300 hover:text-foreground hover:bg-secondarybg transition-colors"
+                        title="Powrót do samorządu"
+                    >
+                        <ArrowLeft className="h-6 w-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">Członkowie Samorządu</h1>
+                        <p className="text-txtcolor-300 mt-1">
+                            Lista osób należących do bieżącej kadencji ({sortedMembers.length || 0})
+                        </p>
+                    </div>
                 </div>
+
                 {canManage && (
                     <button
                         onClick={() => setIsAddModalOpen(true)}
@@ -120,7 +154,7 @@ export default function CouncilMembersPage({ params }: { params: Promise<{ id: s
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {members?.map((member) => (
+                {sortedMembers.map((member) => (
                     <MemberCard
                         key={member.userId}
                         member={member}
@@ -132,7 +166,7 @@ export default function CouncilMembersPage({ params }: { params: Promise<{ id: s
                 ))}
             </div>
 
-            {members?.length === 0 && (
+            {sortedMembers.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-txtcolor-300 border-2 border-dashed border-border rounded-xl">
                     <User className="h-12 w-12 mb-4 opacity-20" />
                     <p>Brak członków w tym samorządzie.</p>

@@ -44,7 +44,6 @@ public enum PermissionCode {
 
     // Suggestion Management
     SUGGESTION_VIEW("suggestion.view", "View suggestions"),
-    SUGGESTION_VIEW_ANONYMOUS("suggestion.view_anonymous", "View anonymous suggestion authors"),
     SUGGESTION_CREATE("suggestion.create", "Create suggestions"),
     SUGGESTION_EDIT("suggestion.edit", "Edit suggestions"),
     SUGGESTION_DELETE("suggestion.delete", "Delete suggestions"),

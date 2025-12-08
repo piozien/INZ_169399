@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchCouncilEvents, deleteEvent, approveEvent, rejectEvent } from "@/lib/api/events";
 import { EventResponseDto } from "@/types/event.types";
@@ -17,11 +17,13 @@ import {
     Filter,
     CheckCircle,
     XCircle,
-    Loader2
+    Loader2,
+    ArrowLeft
 } from "lucide-react";
 
 export default function CouncilEventsPage() {
     const params = useParams();
+    const router = useRouter();
     const councilId = Array.isArray(params.id) ? params.id[0] : params.id;
 
     const [events, setEvents] = useState<EventResponseDto[]>([]);
@@ -70,7 +72,7 @@ export default function CouncilEventsPage() {
             setProcessingId(null);
         }
     };
-    
+
     const { activeEvents, archiveEvents } = useMemo(() => {
         const now = new Date();
 
@@ -109,7 +111,16 @@ export default function CouncilEventsPage() {
     return (
         <div className="p-6 space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 className="text-2xl font-bold text-foregorund">Zarządzanie Wydarzeniami</h1>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => router.push(`/dashboard/council/${councilId}`)}
+                        className="p-2 -ml-2 rounded-xl text-txtcolor-300 hover:text-foreground hover:bg-secondarybg transition-colors"
+                        title="Powrót do samorządu"
+                    >
+                        <ArrowLeft className="h-6 w-6" />
+                    </button>
+                    <h1 className="text-2xl font-bold text-foreground">Zarządzanie Wydarzeniami</h1>
+                </div>
 
                 <Link
                     href={`/dashboard/council/${councilId}/events/create`}
@@ -119,7 +130,7 @@ export default function CouncilEventsPage() {
                     Stwórz wydarzenie
                 </Link>
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-4 bg-secondarybg p-4 rounded-xl border border-secondarybg">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-txtcolor-300 w-4 h-4" />
@@ -128,7 +139,7 @@ export default function CouncilEventsPage() {
                         placeholder="Szukaj po nazwie..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-inputbg border border-secondarybg text-foregorund focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-txtcolor-300"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-inputbg border border-secondarybg text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-txtcolor-300"
                     />
                 </div>
 
@@ -137,7 +148,7 @@ export default function CouncilEventsPage() {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full pl-10 pr-8 py-2 rounded-lg bg-inputbg border border-secondarybg text-foregorund focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                        className="w-full pl-10 pr-8 py-2 rounded-lg bg-inputbg border border-secondarybg text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
                     >
                         <option value="ALL">Wszystkie</option>
                         <option value="DRAFT">Szkic</option>
@@ -148,7 +159,7 @@ export default function CouncilEventsPage() {
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-txtcolor-300 w-4 h-4 pointer-events-none" />
                 </div>
             </div>
-            
+
             <div>
                 <h2 className="text-lg font-semibold text-txtcolor-300 mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
                     Aktualne i Nadchodzące
@@ -173,7 +184,7 @@ export default function CouncilEventsPage() {
                     )}
                 </div>
             </div>
-            
+
             <div className="border-t border-secondarybg pt-4">
                 <button
                     onClick={() => setIsArchiveOpen(!isArchiveOpen)}

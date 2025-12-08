@@ -100,7 +100,12 @@ public class CouncilMemberService {
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
 
-        if (!permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE, councilId)) {
+        boolean isSelf = actingUser.getId().equals(userId);
+        boolean hasPermissionManage = permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE
+                , councilId);
+
+
+        if (!isSelf && !hasPermissionManage) {
             throw ApiException.forbidden("Brak uprawnień do usuwania członków");
         }
 

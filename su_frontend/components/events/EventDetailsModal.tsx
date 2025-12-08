@@ -19,6 +19,21 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
     const startDate = new Date(event.startDate);
     const endDate = new Date(event.endDate);
 
+    const getParticipantsLabel = (count: number) => {
+        if (count === 1) {
+            return "1 osoba zapisała się";
+        }
+
+        const units = count % 10;
+        const teens = count % 100;
+
+        if (units >= 2 && units <= 4 && (teens < 10 || teens >= 20)) {
+            return `${count} osoby zapisały się`;
+        }
+
+        return `${count} osób zapisało się`;
+    };
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200"
@@ -81,7 +96,7 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
                             <div>
                                 <p className="text-xs text-txtcolor-300 font-bold uppercase tracking-wide">Uczestnicy</p>
                                 <p className="text-foreground font-semibold mt-0.5">
-                                    {event.participants?.length || 0} osób zapisało się na to wydarzenie
+                                    {getParticipantsLabel(event.participants?.length || 0)} na to wydarzenie
                                 </p>
                             </div>
                         </div>
