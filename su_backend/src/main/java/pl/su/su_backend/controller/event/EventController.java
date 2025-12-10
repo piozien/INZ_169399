@@ -170,4 +170,14 @@ public class EventController {
         EventResponseDto event = eventService.rejectEvent(eventId, rejectedById);
         return ResponseEntity.ok(event);
     }
+
+    @PutMapping("/{eventId}/pending")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<EventResponseDto> pendingEvent(@PathVariable UUID eventId, @AuthenticationPrincipal Object principal) {
+        String email = authenticationService.getEmailFromPrincipal(principal);
+        log.info("Change event {}  status tu PENDING by user {}", eventId, email);
+        UUID changeById = userService.getCurrentUserId(email);
+        EventResponseDto event = eventService.pendingEvent(eventId, changeById);
+        return ResponseEntity.ok(event);
+    }
 }

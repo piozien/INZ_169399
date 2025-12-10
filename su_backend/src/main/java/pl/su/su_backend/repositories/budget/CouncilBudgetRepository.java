@@ -14,4 +14,6 @@ public interface CouncilBudgetRepository extends JpaRepository<CouncilBudget, UU
     List<CouncilBudget> findByCouncil_IdOrderByYearDesc(UUID councilId);
     
     Optional<CouncilBudget> findByCouncil_IdAndYear(UUID councilId, String year);
+
+    Optional<CouncilBudget> findByCouncilId(UUID id);
 }

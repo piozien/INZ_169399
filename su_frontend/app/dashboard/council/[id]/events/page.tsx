@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchCouncilEvents, deleteEvent, approveEvent, rejectEvent } from "@/lib/api/events";
+import { fetchCouncilEvents, deleteEvent, approveEvent, rejectEvent, resetToPending } from "@/lib/api/events";
 import { EventResponseDto } from "@/types/event.types";
 import EventCard from "@/components/events/EventCard";
 import EventDetailsModal from "@/components/events/EventDetailsModal";
@@ -18,7 +18,9 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
-    ArrowLeft
+    ArrowLeft,
+    Send,
+    RotateCcw
 } from "lucide-react";
 
 export default function CouncilEventsPage() {
@@ -51,19 +53,23 @@ export default function CouncilEventsPage() {
         }
     }
 
-    const handleDecision = async (eventId: string, decision: 'APPROVE' | 'REJECT') => {
+    const handleDecision = async (eventId: string, decision: 'APPROVE' | 'REJECT' | 'PENDING') => {
         setProcessingId(eventId);
         try {
             let updatedEvent: EventResponseDto;
 
             if (decision === 'APPROVE') {
                 updatedEvent = await approveEvent(eventId);
-            } else {
+            } else if (decision === 'REJECT') {
                 updatedEvent = await rejectEvent(eventId);
+            } else {
+                updatedEvent = await resetToPending(eventId);
             }
 
             setEvents(prev => prev.map(e => e.id === eventId ? updatedEvent : e));
-            setSelectedEvent(null);
+            if (selectedEvent && selectedEvent.id === eventId) {
+                setSelectedEvent(updatedEvent);
+            }
 
         } catch (error) {
             console.error(error);
@@ -152,8 +158,8 @@ export default function CouncilEventsPage() {
                     >
                         <option value="ALL">Wszystkie</option>
                         <option value="DRAFT">Szkic</option>
-                        <option value="APPROVED">Zatwierdzone</option>
                         <option value="PENDING">Oczekujące</option>
+                        <option value="APPROVED">Zatwierdzone</option>
                         <option value="REJECTED">Odrzucone</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-txtcolor-300 w-4 h-4 pointer-events-none" />
@@ -217,7 +223,7 @@ export default function CouncilEventsPage() {
                     onClose={() => setSelectedEvent(null)}
                     actions={
                         <>
-                            {selectedEvent.status !== 'APPROVED' && selectedEvent.status !== 'REJECTED' && (
+                            {selectedEvent.status === 'PENDING' && (
                                 <>
                                     <button
                                         onClick={() => handleDecision(selectedEvent.id, 'REJECT')}
@@ -230,16 +236,38 @@ export default function CouncilEventsPage() {
                                     <button
                                         onClick={() => handleDecision(selectedEvent.id, 'APPROVE')}
                                         disabled={processingId === selectedEvent.id}
-                                        className="px-5 py-2 rounded-xl bg-success text-darkgrey hover:bg-success/90 border border-success/50 transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-success/20"
+                                        className="px-5 py-2 rounded-xl bg-success text-darkgray hover:bg-success/90 border border-success/50 transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-success/20"
                                     >
                                         {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <CheckCircle className="w-4 h-4" />}
                                         Zatwierdź
                                     </button>
                                 </>
                             )}
-                            {(selectedEvent.status !== 'APPROVED' && selectedEvent.status !== 'REJECTED') && (
-                                <div className="w-px h-8 bg-secondarybg mx-1" />
+
+                            {selectedEvent.status === 'DRAFT' && (
+                                <button
+                                    onClick={() => handleDecision(selectedEvent.id, 'PENDING')}
+                                    disabled={processingId === selectedEvent.id}
+                                    className="px-5 py-2 rounded-xl bg-primary text-darkgray hover:bg-secondary  transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50 shadow-lg hover:shadow-lg"
+                                >
+                                    {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <Send className="w-4 h-4" />}
+                                    Wyślij do akceptacji
+                                </button>
                             )}
+
+                            {(selectedEvent.status === 'APPROVED' || selectedEvent.status === 'REJECTED') && (
+                                <button
+                                    onClick={() => handleDecision(selectedEvent.id, 'PENDING')}
+                                    disabled={processingId === selectedEvent.id}
+                                    className="px-4 py-2 rounded-xl border border-txtcolor-300 text-txtcolor-300 hover:text-foreground hover:bg-secondarybg transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50"
+                                    title="Cofnij status do oczekujących"
+                                >
+                                    {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <RotateCcw className="w-4 h-4" />}
+                                    Przywróć
+                                </button>
+                            )}
+
+                            <div className="w-px h-8 bg-secondarybg mx-1" />
 
                             <button
                                 onClick={() => handleDelete(selectedEvent.id)}

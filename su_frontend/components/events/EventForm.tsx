@@ -121,7 +121,7 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                             type="text"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            placeholder="       np. Hol Główny (użyj spacji na początku dla ikony)"
+                            placeholder="       np. Hol Główny"
                             disabled={isSubmitting}
                         />
                     </div>

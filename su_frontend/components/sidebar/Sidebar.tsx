@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import HomeIcon from '@/components/icons/sidebar/HomeIcon';
 import ProfileIcon from '@/components/icons/sidebar/ProfileIcon';
-import SettingsIcon from '@/components/icons/sidebar/SettingsIcon';
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
 import FinanceIcon from '@/components/icons/sidebar/FinanceIcon';
 import ListIcon from '@/components/icons/sidebar/ListIcon';
@@ -58,7 +57,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     ];
 
     const userLinks: NavLink[] = [
-        { href: '/dashboard/settings', label: 'Ustawienia', icon: SettingsIcon },
         { href: '/dashboard/profile', label: 'Twoje Konto', icon: ProfileIcon },
     ];
 

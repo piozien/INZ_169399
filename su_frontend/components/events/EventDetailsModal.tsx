@@ -1,6 +1,6 @@
 "use client";
 
-import { X, MapPin, Users, Clock, AlignLeft } from 'lucide-react';
+import { X, MapPin, Users, Clock, AlignLeft, AlertCircle, CheckCircle2, FileText, Ban } from 'lucide-react';
 import { EventResponseDto } from '@/types/event.types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -34,25 +34,59 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
         return `${count} osób zapisało się`;
     };
 
+    const getStatusBadge = () => {
+        switch (event.status) {
+            case 'APPROVED':
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/20 text-success text-xs font-bold uppercase tracking-wider border border-success/30">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Zatwierdzone
+                    </span>
+                );
+            case 'PENDING':
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-warning/20 text-warning text-xs font-bold uppercase tracking-wider border border-warning/30">
+                        <AlertCircle className="w-3.5 h-3.5" /> Oczekuje
+                    </span>
+                );
+            case 'REJECTED':
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error/20 text-error text-xs font-bold uppercase tracking-wider border border-error/30">
+                        <Ban className="w-3.5 h-3.5" /> Odrzucone
+                    </span>
+                );
+            case 'DRAFT':
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-txtcolor-300/20 text-txtcolor-300 text-xs font-bold uppercase tracking-wider border border-txtcolor-300/30">
+                        <FileText className="w-3.5 h-3.5" /> Szkic
+                    </span>
+                );
+        }
+    };
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200"
             onClick={handleBackdropClick}
         >
             <div className="bg-background border border-secondarybg w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200">
-                
+
                 <div className="relative shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-background to-background" />
 
                     <div className="relative p-6 pt-8 pr-12">
-                         <span className="inline-block px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold uppercase tracking-wider mb-3 border border-secondary/20">
-                            {format(startDate, 'd MMMM yyyy', { locale: pl })}
-                        </span>
-                        <h2 className="text-3xl md:text-4xl font-black text-foreground leading-tight drop-shadow-lg">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                             <span className="inline-block px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold uppercase tracking-wider border border-secondary/20">
+                                {format(startDate, 'd MMMM yyyy', { locale: pl })}
+                            </span>
+                            {getStatusBadge()}
+                        </div>
+
+                        <h2 className="text-3xl md:text-4xl font-black text-foreground leading-tight drop-shadow-lg break-words">
                             {event.title}
                         </h2>
                     </div>
-                    
+
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 bg-inputbg text-txtcolor-300 hover:text-foreground hover:bg-secondarybg rounded-full transition-all z-10 border border-transparent hover:border-secondary/20"
@@ -121,7 +155,7 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
                     >
                         Anuluj / Zamknij
                     </button>
-                    <div className="w-full sm:w-auto flex justify-end gap-3">
+                    <div className="w-full sm:w-auto flex flex-wrap justify-end gap-3">
                         {actions}
                     </div>
                 </div>

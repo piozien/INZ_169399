@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import pl.su.su_backend.dto.user.ChangePasswordRequestDto;
 import pl.su.su_backend.dto.user.UserRequestDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
 import pl.su.su_backend.model.enums.RoleCode;
@@ -73,6 +74,21 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(userId, request, email));
     }
 
+    @PatchMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequestDto request,
+            @AuthenticationPrincipal Object principal) {
+
+        String email = getCurrentUserEmail(principal);
+        UUID userId = userService.getCurrentUserId(email);
+
+        log.info("Password change request for user: {}", email);
+        userService.changePassword(userId, request);
+
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasPermission(null, 'USER_EDIT')")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID userId,
@@ -125,6 +141,6 @@ public class UserController {
         if (principal instanceof String email) {
             return email;
         }
-        throw new IllegalStateException("Unknown principal type: " + principal.getClass());
+        throw new IllegalStateException("Nieznany typ użytkownika: " + principal.getClass());
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import pl.su.su_backend.dto.user.UserMapper;
 import pl.su.su_backend.dto.user.UserRequestDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
+import pl.su.su_backend.dto.user.ChangePasswordRequestDto;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
@@ -138,6 +139,29 @@ public class UserService {
         return savedUser;
     }
 
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequestDto request) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
+
+        if (user.getAuthProvider() != AuthProvider.LOCAL) {
+            throw ApiException.badRequest("Nie można zmienić hasła dla konta logowanego przez " + user.getAuthProvider());
+        }
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw ApiException.badRequest("Stare hasło jest nieprawidłowe.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw ApiException.badRequest("Nowe hasło musi być inne niż stare.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        usersRepository.save(user);
+
+        activityLogService.log(user.getId(), ActionType.UPDATE_PROFILE, "Użytkownik zmienił hasło.");
+    }
+
     @Transactional(readOnly = true)
     public UserResponseDto getUserById(UUID userId) {
         Users user = usersRepository.findById(userId)
@@ -209,7 +233,7 @@ public class UserService {
         user.setStatus(StatusEnum.BLOCKED); // Soft delete
         usersRepository.save(user);
 
-        activityLogService.log(userId, ActionType.SOFT_DELETE, "User blocked");
+        activityLogService.log(userId, ActionType.SOFT_DELETE, "Użytkownik został zablokowany");
     }
 
     @Transactional
