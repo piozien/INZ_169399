@@ -23,8 +23,8 @@ import pl.su.su_backend.repositories.event.EventRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
-import pl.su.su_backend.service.user.UserService;
 import pl.su.su_backend.service.user.MailService;
+import pl.su.su_backend.service.user.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -174,7 +174,7 @@ public class EventService {
                     event
             );
         } catch (Exception ex) {
-            log.warn("Nie udało się wysłać maila z zaproszeniem: {}", ex.getMessage());
+            log.warn("The invitation email could not be sent: {}", ex.getMessage());
         }
     }
 
@@ -202,6 +202,20 @@ public class EventService {
         event.setStatus(EventStatus.REJECTED);
         Event updated = eventRepository.save(event);
         activityLogService.log(rejectedById, ActionType.EVENT_REJECT, "Odrzucono wydarzenie: " + event.getTitle());
+        return eventMapper.toResponse(updated);
+    }
+
+    @Transactional
+    public EventResponseDto pendingEvent(UUID eventId, UUID userId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> ApiException.notFound("Nie znaleziono wydarzenia"));
+        UUID councilId = event.getCouncil() != null ? event.getCouncil().getId() : null;
+
+        if (!permissionService.hasPermission(userId, PermissionCode.EVENT_EDIT, councilId)) {
+            throw ApiException.forbidden("Brak uprawnień do zatwierdzenia");
+        }
+        event.setStatus(EventStatus.PENDING);
+        Event updated = eventRepository.save(event);
+        activityLogService.log(userId, ActionType.EVENT_EDIT, "Ustawiono wydarzenie: " + event.getTitle() + " jako oczekujące");
         return eventMapper.toResponse(updated);
     }
 
@@ -266,7 +280,9 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> getEventsInDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        if (startDate.isAfter(endDate)) { throw ApiException.badRequest("Data rozpoczęcia musi być przed datą zakończenia"); }
+        if (startDate.isAfter(endDate)) {
+            throw ApiException.badRequest("Data rozpoczęcia musi być przed datą zakończenia");
+        }
         return eventRepository.findByStartDateBetweenOrderByStartDateAsc(startDate, endDate).stream().map(eventMapper::toResponse).collect(Collectors.toList());
     }
 }

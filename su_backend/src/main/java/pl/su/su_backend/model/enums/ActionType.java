@@ -25,6 +25,7 @@ public enum ActionType {
     EVENT_LEAVE,
     EVENT_APPROVE,
     EVENT_REJECT,
+    EVENT_EDIT,
 
 
     // SUGGESTIONS

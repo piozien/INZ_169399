@@ -49,6 +49,12 @@ export const rejectEvent = async (eventId: string): Promise<EventResponseDto> =>
     });
 };
 
+export const resetToPending = async (eventId: string): Promise<EventResponseDto> => {
+    return apiFetch<EventResponseDto>(`/events/${eventId}/pending`, {
+        method: "PUT",
+    });
+};
+
 
 export const joinEvent = async (eventId: string): Promise<ParticipantResponseDto> => {
     return apiFetch<ParticipantResponseDto>(`/events/${eventId}/participants/join?role=PARTICIPANT&confirmed=true`, {

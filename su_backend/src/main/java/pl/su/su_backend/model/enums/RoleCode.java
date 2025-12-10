@@ -9,10 +9,10 @@ public enum RoleCode {
     ZASTEPCA_DYREKTORA("Zastępca Dyrektora", RoleCategory.SCHOOL_MANAGEMENT),
 
     // Teachers
-    OPIEKUN_SU("Opiekun SU", RoleCategory.TEACHERS),
     NAUCZYCIEL("Nauczyciel", RoleCategory.TEACHERS),
 
     // SU
+    OPIEKUN_SU("Opiekun SU", RoleCategory.SU),
     PRZEWODNICZACY_SU("Przewodniczący SU", RoleCategory.SU),
     ZASTEPCA_SU("Zastępca SU", RoleCategory.SU),
     SKARBNIK_SU("Skarbnik SU", RoleCategory.SU),

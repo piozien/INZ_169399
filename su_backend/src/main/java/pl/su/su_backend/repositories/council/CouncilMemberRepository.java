@@ -15,4 +15,6 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Co
     List<CouncilMember> findByIdUserId(UUID userId);
 
     Optional<CouncilMember> findByCouncilIdAndUserId(UUID targetCouncilId, UUID userId);
+
+    List<CouncilMember> findAllByUserId(UUID userId);
 }

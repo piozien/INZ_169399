@@ -19,4 +19,6 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findAllByOrderByStartDateAsc();
 
     List<Event> findByCouncilIdOrderByStartDateDesc(UUID councilId);
+
+    long countByCouncilIdAndStatusAndStartDateAfter(UUID councilId, EventStatus status, LocalDateTime startDateAfter);
 }

@@ -108,8 +108,7 @@ public class CouncilBudgetService {
         boolean isMember = councilMemberService.isMemberOfCouncil(user.getId(), councilId);
         if (!hasPerm && !isMember) throw ApiException.forbidden("Brak dostępu do budżetu");
 
-        CouncilBudgetResponseDto dto = budgetMapper.toResponse(budget);
-        return dto;
+        return budgetMapper.toResponse(budget);
     }
 
     public CouncilTransactionResponseDto addTransaction(UUID budgetId, CouncilTransactionRequestDto dto, String currentUserEmail) {

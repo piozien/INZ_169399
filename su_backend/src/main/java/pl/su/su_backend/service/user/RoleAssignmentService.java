@@ -58,7 +58,7 @@ public class RoleAssignmentService {
         }
 
         if (userRoleRepository.existsByUser_IdAndRole_Id(target.getId(), role.getId())) {
-            log.info("Użytkownik {} posiada już rolę {}", target.getEmail(), roleCode);
+            log.info("User {} already has the role {}", target.getEmail(), roleCode);
             return;
         }
 
@@ -97,7 +97,7 @@ public class RoleAssignmentService {
         UserRole.Id id = new UserRole.Id(target.getId(), role.getId());
 
         if (!userRoleRepository.existsById(id)) {
-            log.info("Użytkownik {} nie posiada roli {}", target.getEmail(), roleCode);
+            log.info("User {} does not have a role {}", target.getEmail(), roleCode);
             return;
         }
 
