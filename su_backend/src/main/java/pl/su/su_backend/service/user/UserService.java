@@ -179,7 +179,6 @@ public class UserService {
         }
 
         return usersRepository.findAll().stream()
-                .filter(user -> !user.isBlocked())
                 .map(userMapper::toResponseDto)
                 .collect(Collectors.toList());
     }

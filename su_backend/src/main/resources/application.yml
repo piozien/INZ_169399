@@ -24,12 +24,6 @@ spring:
     baseline-version: 0
     validate-on-migrate: true
 
-  devtools:
-    restart:
-      enabled: true
-    livereload:
-      enabled: true
-
   security:
     oauth2:
       client:
