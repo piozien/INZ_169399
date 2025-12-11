@@ -11,67 +11,64 @@ interface CouncilCardProps {
     isActive?: boolean;
 }
 
+const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'd MMMM yyyy', { locale: pl });
+};
+
 export default function CouncilCard({ council, isActive = false }: CouncilCardProps) {
-
-    const formatDate = (dateString: string) => {
-        return format(new Date(dateString), 'd MMMM yyyy', { locale: pl });
-    };
-
     return (
         <Link href={`/dashboard/council/${council.id}`} className="block h-full">
-            <div
-                className="bg-secondarybg rounded-lg p-6 flex flex-col h-full shadow-lg hover:ring-2 hover:ring-secondary transition-all duration-300 ease-in-out cursor-pointer"
-            >
-                <div className="flex items-start justify-between mb-2">
-                    <h2 className="text-2xl font-bold text-primary mr-4">{council.name}</h2>
+            <div className="bg-secondarybg hover:ring-secondary group flex h-full cursor-pointer flex-col rounded-lg p-6 shadow-lg transition-all duration-300 ease-in-out hover:ring-2">
+                <div className="mb-2 flex items-start justify-between">
+                    <h2 className="text-primary group-hover:text-secondary mr-4 text-2xl font-bold transition-colors">
+                        {council.name}
+                    </h2>
 
-                    <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className="flex shrink-0 flex-col items-end gap-2">
                         {council.defaultCouncil && (
-                            <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-semibold border border-secondary/20">
+                            <span className="bg-secondary/10 text-secondary border-secondary/20 inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold">
                                 <ShieldCheck size={12} /> Domyślny
                             </span>
                         )}
 
-                        {isActive && (
-                            <span className="inline-block bg-success/10 text-success px-3 py-1 rounded-full text-xs font-semibold">
-                                Aktywny
-                            </span>
-                        )}
-
-                        {!isActive && (
-                            <span className="inline-block bg-txtcolor-300/10 text-txtcolor-300 px-3 py-1 rounded-full text-xs font-semibold">
-                                Nieaktywny
-                            </span>
-                        )}
+                        <span
+                            className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                                isActive
+                                    ? 'bg-success/10 text-success'
+                                    : 'bg-txtcolor-300/10 text-txtcolor-300'
+                            }`}
+                        >
+                            {isActive ? 'Aktywny' : 'Nieaktywny'}
+                        </span>
                     </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-border space-y-3">
-
+                <div className="border-border mt-auto space-y-3 border-t pt-4">
                     <div className="flex items-center gap-2">
                         <Calendar size={18} className="text-secondary" />
-                        <span className="text-sm text-txtcolor-300">
+                        <span className="text-txtcolor-300 text-sm">
                             {formatDate(council.startDate)} - {formatDate(council.endDate)}
                         </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <GraduationCap size={18} className="text-secondary" />
-                        <span className="text-sm text-txtcolor-300">
+                        <span className="text-txtcolor-300 text-sm">
                             Rok szkolny: {council.academicYear}
                         </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Users size={18} className="text-secondary" />
-                        <span className="text-sm text-txtcolor-300">
-                            {council.members?.length || 0} {council.members?.length === 1 ? 'członek' : 'członków'}
+                        <span className="text-txtcolor-300 text-sm">
+                            {council.members?.length || 0}{' '}
+                            {council.members?.length === 1 ? 'członek' : 'członków'}
                         </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Key size={18} className="text-secondary" />
-                        <span className="text-sm text-txtcolor-300 font-mono">
+                        <span className="text-txtcolor-300 font-mono text-sm tracking-wider">
                             {council.joinCode}
                         </span>
                     </div>

@@ -13,16 +13,19 @@ const loadFont = async (url: string): Promise<string> => {
     });
 };
 
-export const generateBudgetPdf = async (budget: CouncilBudgetResponseDto, transactions: CouncilTransactionResponseDto[]) => {
+export const generateBudgetPdf = async (
+    budget: CouncilBudgetResponseDto,
+    transactions: CouncilTransactionResponseDto[]
+) => {
     const doc = new jsPDF();
 
     try {
         const fontBase64 = await loadFont('/fonts/Roboto-Regular.ttf');
-        doc.addFileToVFS("CustomFont.ttf", fontBase64);
-        doc.addFont("CustomFont.ttf", "CustomFont", "normal");
-        doc.setFont("CustomFont");
+        doc.addFileToVFS('CustomFont.ttf', fontBase64);
+        doc.addFont('CustomFont.ttf', 'CustomFont', 'normal');
+        doc.setFont('CustomFont');
     } catch (e) {
-        console.error("Nie udało się załadować polskiej czcionki, używam domyślnej.", e);
+        console.error('Nie udało się załadować polskiej czcionki, używam domyślnej.', e);
     }
 
     const formatCurrency = (val: number | undefined) =>
@@ -42,7 +45,9 @@ export const generateBudgetPdf = async (budget: CouncilBudgetResponseDto, transa
 
     doc.setFontSize(10);
     doc.text(`Rok: ${budget.year}`, margin, yPos);
-    doc.text(`Data: ${new Date().toLocaleDateString('pl-PL')}`, pageWidth - margin, yPos, { align: 'right' });
+    doc.text(`Data: ${new Date().toLocaleDateString('pl-PL')}`, pageWidth - margin, yPos, {
+        align: 'right',
+    });
     yPos += 10;
 
     doc.setDrawColor(200);
@@ -56,11 +61,11 @@ export const generateBudgetPdf = async (budget: CouncilBudgetResponseDto, transa
     doc.text(`Wydatki: ${formatCurrency(budget.totalExpenses)}`, margin, yPos);
     yPos += 15;
 
-    const tableData = transactions.map(t => [
+    const tableData = transactions.map((t) => [
         new Date(t.date).toLocaleDateString('pl-PL'),
         t.description,
         t.type === 'INCOME' ? 'Wpływ' : 'Wydatek',
-        formatCurrency(t.amount)
+        formatCurrency(t.amount),
     ]);
 
     autoTable(doc, {
@@ -69,7 +74,7 @@ export const generateBudgetPdf = async (budget: CouncilBudgetResponseDto, transa
         body: tableData,
         styles: {
             font: 'CustomFont',
-            fontSize: 9
+            fontSize: 9,
         },
         headStyles: { fillColor: [255, 157, 0] },
     });
@@ -77,7 +82,10 @@ export const generateBudgetPdf = async (budget: CouncilBudgetResponseDto, transa
     doc.save(`Raport_${budget.year}.pdf`);
 };
 
-export const generateBudgetExcel = async (budget: CouncilBudgetResponseDto, transactions: CouncilTransactionResponseDto[]) => {
+export const generateBudgetExcel = async (
+    budget: CouncilBudgetResponseDto,
+    transactions: CouncilTransactionResponseDto[]
+) => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Transakcje');
 
@@ -88,18 +96,22 @@ export const generateBudgetExcel = async (budget: CouncilBudgetResponseDto, tran
         { header: 'Kwota', key: 'amount', width: 20, style: { numFmt: '#,##0.00 "PLN"' } },
     ];
 
-    transactions.forEach(t => {
+    transactions.forEach((t) => {
         const row = sheet.addRow({
             date: new Date(t.date).toLocaleDateString('pl-PL'),
             description: t.description,
             type: t.type === 'INCOME' ? 'Wpływ' : 'Wydatek',
-            amount: t.amount
+            amount: t.amount,
         });
-        row.getCell('amount').font = { color: { argb: t.type === 'INCOME' ? 'FF008000' : 'FFFF0000' } };
+        row.getCell('amount').font = {
+            color: { argb: t.type === 'INCOME' ? 'FF008000' : 'FFFF0000' },
+        };
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
 
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

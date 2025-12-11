@@ -23,7 +23,7 @@ export interface CouncilResponseDto {
     name: string;
     academicYear: string;
     startDate: string; // ISO String
-    endDate: string;   // ISO String
+    endDate: string; // ISO String
     active: boolean;
     defaultCouncil: boolean;
     joinCode: string;

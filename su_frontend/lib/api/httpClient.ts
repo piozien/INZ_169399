@@ -1,11 +1,10 @@
-import { ApiError } from "@/types/error.types";
+import { ApiError } from '@/types/error.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 let isRefreshing = false;
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-
     const headers = new Headers(options.headers);
 
     if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
@@ -27,7 +26,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
             try {
                 const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
                     method: 'POST',
-                    credentials: 'include'
+                    credentials: 'include',
                 });
 
                 if (refreshRes.ok) {
@@ -48,11 +47,11 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
                         }
                     }
 
-                    throw new Error("Sesja wygasła");
+                    throw new Error('Sesja wygasła');
                 }
             } catch (error) {
                 isRefreshing = false;
-                if (error instanceof Error && error.message === "Sesja wygasła") {
+                if (error instanceof Error && error.message === 'Sesja wygasła') {
                     throw error;
                 }
             }
@@ -68,7 +67,8 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
         }
 
         //  ProblemDetail (Spring Boot 3)
-        const message = errorData.detail || errorData.message || errorData.title || 'Wystąpił błąd serwera';
+        const message =
+            errorData.detail || errorData.message || errorData.title || 'Wystąpił błąd serwera';
 
         throw new ApiError(message, response.status, errorData);
     }
@@ -78,8 +78,8 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
         return {} as T;
     }
 
-    const contentLength = response.headers.get("Content-Length");
-    if (contentLength === "0") {
+    const contentLength = response.headers.get('Content-Length');
+    if (contentLength === '0') {
         return {} as T;
     }
 

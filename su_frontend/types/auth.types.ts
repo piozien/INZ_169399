@@ -1,10 +1,7 @@
-import { UserDto } from "./user.types";
-
 export interface UserRequestDto {
-    fullName: string,
-    email: string,
-    password: string,
-
+    fullName: string;
+    email: string;
+    password: string;
 }
 export interface LoginRequestDto {
     email: string;
@@ -14,5 +11,3 @@ export interface LoginRequestDto {
 export interface MicrosoftLoginRequest {
     token: string;
 }
-
-export type LoginResponse = UserDto;

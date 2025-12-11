@@ -26,7 +26,7 @@ export interface CouncilTransactionResponseDto {
     type: TransactionType;
     amount: number;
     description: string;
-    date: string; // ISO Date
+    date: string;
     addedById: string;
 }
 
@@ -35,36 +35,5 @@ export interface CouncilTransactionRequestDto {
     type: TransactionType;
     amount: number;
     description: string;
-    date: string; // ISO Date (YYYY-MM-DDTHH:mm:ss)
-}
-
-export interface CategorySummaryDto {
-    category: string;
-    totalAmount: number;
-    transactionCount: number;
-    percentage: number;
-}
-
-export interface TransactionSummaryDto {
-    description: string;
-    amount: number;
-    type: TransactionType;
-    category: string;
-    transactionDate: string;
-    createdBy: string;
-}
-
-export interface BudgetReportDto {
-    budgetName: string;
-    budgetType: string;
-    initialAmount: number;
-    totalIncome: number;
-    totalExpenses: number;
-    currentBalance: number;
-    reportDate: string;
-    fromDate: string;
-    toDate: string;
-    transactions: TransactionSummaryDto[];
-    incomeByCategory: CategorySummaryDto[];
-    expensesByCategory: CategorySummaryDto[];
+    date: string;
 }

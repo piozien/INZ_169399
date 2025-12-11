@@ -25,21 +25,21 @@ export default function MicrosoftCallbackPage() {
                     router.push('/dashboard');
                 })
                 .catch((err) => {
-                    console.error("MS Login Error:", err);
+                    console.error('MS Login Error:', err);
                     router.push('/login?error=microsoft_failed');
                 });
         } else {
             const error = params.get('error');
             if (error) {
-                console.error("Azure error:", error);
+                console.error('Azure error:', error);
                 router.push('/login?error=microsoft_denied');
             }
         }
     }, [loginWithMicrosoft, router]);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
-            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <div className="bg-background text-foreground flex min-h-screen flex-col items-center justify-center">
+            <Loader2 className="text-primary mb-4 h-10 w-10 animate-spin" />
             <p className="text-txtcolor-300">Logowanie przez Microsoft...</p>
         </div>
     );

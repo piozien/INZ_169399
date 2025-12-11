@@ -6,42 +6,37 @@ import Sidebar from './Sidebar';
 import PublicSidebar from './PublicSidebar';
 import { Menu } from 'lucide-react';
 
+const MobileMenuButton = ({ onClick }: { onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="bg-secondarybg border-border text-foreground hover:bg-inputbg fixed top-4 left-4 z-40 rounded-lg border p-2 shadow-lg transition-colors md:hidden"
+        aria-label="Otwórz menu"
+    >
+        <Menu className="h-6 w-6" />
+    </button>
+);
+
 const ConditionalSidebar = () => {
     const pathname = usePathname();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-    const MobileMenuButton = () => (
-        <button
-            onClick={() => setIsMobileOpen(true)}
-            className="fixed top-4 left-4 z-40 p-2 bg-secondarybg border border-border rounded-lg text-foreground md:hidden hover:bg-inputbg transition-colors shadow-lg"
-            aria-label="Otwórz menu"
-        >
-            <Menu className="h-6 w-6" />
-        </button>
-    );
+    const isDashboard = pathname?.startsWith('/dashboard');
+    const isPublic = ['/upcoming'].includes(pathname);
 
-    if (pathname.startsWith('/dashboard')) {
+    if (isDashboard) {
         return (
             <>
-                <MobileMenuButton />
-                <Sidebar
-                    isOpen={isMobileOpen}
-                    onClose={() => setIsMobileOpen(false)}
-                />
+                <MobileMenuButton onClick={() => setIsMobileOpen(true)} />
+                <Sidebar isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} />
             </>
         );
     }
 
-    const publicSidebarRoutes = ['/upcoming'];
-
-    if (publicSidebarRoutes.includes(pathname)) {
+    if (isPublic) {
         return (
             <>
-                <MobileMenuButton />
-                <PublicSidebar
-                    isOpen={isMobileOpen}
-                    onClose={() => setIsMobileOpen(false)}
-                />
+                <MobileMenuButton onClick={() => setIsMobileOpen(true)} />
+                <PublicSidebar isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} />
             </>
         );
     }

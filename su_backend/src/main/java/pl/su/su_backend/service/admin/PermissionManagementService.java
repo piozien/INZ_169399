@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
+import pl.su.su_backend.model.enums.RoleCategory;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.permissions.Permission;
 import pl.su.su_backend.model.roles.Role;
@@ -26,6 +27,13 @@ public class PermissionManagementService {
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
     private final ActivityLogService activityLogService;
+
+
+    public List<RoleCode> getAvailableGlobalRoles() {
+        return Arrays.stream(RoleCode.values())
+                .filter(role -> role.getCategory() != RoleCategory.SU)
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<String> getRolePermissions(RoleCode roleCode) {

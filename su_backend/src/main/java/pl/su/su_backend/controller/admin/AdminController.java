@@ -25,6 +25,12 @@ public class AdminController {
     private final PermissionManagementService permissionManagementService;
     private final UserService userService;
 
+    @GetMapping("/roles")
+    @PreAuthorize("hasPermission(null, 'ROLE_MANAGE')")
+    public ResponseEntity<List<RoleCode>> getGlobalRoles() {
+        return ResponseEntity.ok(permissionManagementService.getAvailableGlobalRoles());
+    }
+
     @GetMapping("/permissions/matrix")
     @PreAuthorize("hasPermission(null, 'ROLE_MANAGE')")
     public ResponseEntity<Map<RoleCode, List<String>>> getPermissionMatrix() {

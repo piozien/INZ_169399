@@ -1,7 +1,7 @@
 export enum StatusEnum {
     PENDING = 'PENDING',
     CONFIRMED = 'CONFIRMED',
-    BLOCKED = 'BLOCKED'
+    BLOCKED = 'BLOCKED',
 }
 
 export interface UserDto {

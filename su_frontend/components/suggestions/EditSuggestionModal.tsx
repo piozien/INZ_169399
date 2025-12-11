@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { X, Save, Lightbulb, Lock, Loader2 } from "lucide-react";
-import { SuggestionDto, CreateSuggestionPayload } from "@/types/suggestions.types";
-import { useAuth } from "@/lib/contexts/AuthContext";
+import { X, Save, Lightbulb, Lock, Loader2 } from 'lucide-react';
+import { SuggestionDto, CreateSuggestionPayload } from '@/types/suggestions.types';
+import { useEditSuggestionForm } from '@/hooks/suggestions/useEditSuggestionForm';
 
 interface Props {
     isOpen: boolean;
@@ -13,77 +12,44 @@ interface Props {
 }
 
 export default function EditSuggestionModal({ isOpen, onClose, suggestion, onSubmit }: Props) {
-    const { user } = useAuth();
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [isAnonymous, setIsAnonymous] = useState(false);
-    const [tagsInput, setTagsInput] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const TITLE_MAX_LENGTH = 100;
-    const DESC_MAX_LENGTH = 1000;
-
-    useEffect(() => {
-        if (isOpen && suggestion) {
-            setTitle(suggestion.title);
-            setDescription(suggestion.description);
-            setIsAnonymous(suggestion.anonymous);
-            setTagsInput((suggestion.tags || []).join(", "));
-        }
-    }, [isOpen, suggestion]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title || !description) return;
-
-        if (!user?.id) {
-            alert("Błąd: Nie rozpoznano użytkownika.");
-            return;
-        }
-
-        if(title.length > TITLE_MAX_LENGTH) return alert(`Tytuł jest za długi (max ${TITLE_MAX_LENGTH} znaków).`);
-        if(description.length > DESC_MAX_LENGTH) return alert(`Opis jest za długi (max ${DESC_MAX_LENGTH} znaków).`);
-
-        setIsSubmitting(true);
-        try {
-            const tags = tagsInput.split(",").map(t => t.trim()).filter(t => t.length > 0);
-
-            await onSubmit(suggestion.id, {
-                title,
-                description,
-                anonymous: isAnonymous,
-                tags,
-                userId: user.id
-            });
-            onClose();
-        } catch (error) {
-            const msg = error instanceof Error ? error.message : "Błąd podczas edycji sugestii.";
-            alert(`Nie udało się zapisać zmian: ${msg}`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    const {
+        title,
+        setTitle,
+        description,
+        setDescription,
+        isAnonymous,
+        setIsAnonymous,
+        tagsInput,
+        setTagsInput,
+        isSubmitting,
+        handleSubmit,
+        TITLE_MAX_LENGTH,
+        DESC_MAX_LENGTH,
+    } = useEditSuggestionForm(suggestion, isOpen, onClose, onSubmit);
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-background border border-secondarybg w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-
-                <div className="bg-surface p-4 border-b border-secondarybg flex justify-between items-center">
-                    <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5 text-secondary" /> Edytuj Sugestię
+        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-background border-secondarybg animate-in zoom-in-95 w-full max-w-lg overflow-hidden rounded-2xl border shadow-2xl">
+                <div className="bg-surface border-secondarybg flex items-center justify-between border-b p-4">
+                    <h2 className="text-foreground flex items-center gap-2 text-lg font-bold">
+                        <Lightbulb className="text-secondary h-5 w-5" /> Edytuj Sugestię
                     </h2>
                     <button onClick={onClose} className="text-txtcolor-300 hover:text-foreground">
-                        <X className="w-5 h-5" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5 p-6">
                     <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold text-txtcolor-300 uppercase tracking-wider">Tytuł</label>
-                            <span className={`text-[10px] ${title.length > TITLE_MAX_LENGTH ? 'text-error' : 'text-txtcolor-300'}`}>
+                        <div className="flex items-center justify-between">
+                            <label className="text-txtcolor-300 text-xs font-bold tracking-wider uppercase">
+                                Tytuł
+                            </label>
+                            <span
+                                className={`text-[10px] ${title.length > TITLE_MAX_LENGTH ? 'text-error' : 'text-txtcolor-300'}`}
+                            >
                                 {title.length}/{TITLE_MAX_LENGTH}
                             </span>
                         </div>
@@ -92,15 +58,19 @@ export default function EditSuggestionModal({ isOpen, onClose, suggestion, onSub
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             maxLength={TITLE_MAX_LENGTH}
-                            className="w-full bg-inputbg border border-secondarybg rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-secondary transition-colors"
+                            className="bg-inputbg border-secondarybg text-foreground focus:border-secondary w-full rounded-lg border px-4 py-3 transition-colors focus:outline-none"
                             required
                         />
                     </div>
 
                     <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold text-txtcolor-300 uppercase tracking-wider">Opis</label>
-                            <span className={`text-[10px] ${description.length > DESC_MAX_LENGTH ? 'text-error' : 'text-txtcolor-300'}`}>
+                        <div className="flex items-center justify-between">
+                            <label className="text-txtcolor-300 text-xs font-bold tracking-wider uppercase">
+                                Opis
+                            </label>
+                            <span
+                                className={`text-[10px] ${description.length > DESC_MAX_LENGTH ? 'text-error' : 'text-txtcolor-300'}`}
+                            >
                                 {description.length}/{DESC_MAX_LENGTH}
                             </span>
                         </div>
@@ -108,28 +78,41 @@ export default function EditSuggestionModal({ isOpen, onClose, suggestion, onSub
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             maxLength={DESC_MAX_LENGTH}
-                            className="w-full h-32 bg-inputbg border border-secondarybg rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-secondary transition-colors resize-none"
+                            className="bg-inputbg border-secondarybg text-foreground focus:border-secondary h-32 w-full resize-none rounded-lg border px-4 py-3 transition-colors focus:outline-none"
                             required
                         />
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-txtcolor-300 uppercase tracking-wider">Tagi (po przecinku)</label>
+                        <label className="text-txtcolor-300 text-xs font-bold tracking-wider uppercase">
+                            Tagi (po przecinku)
+                        </label>
                         <input
                             type="text"
                             value={tagsInput}
                             onChange={(e) => setTagsInput(e.target.value)}
-                            className="w-full bg-inputbg border border-secondarybg rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-secondary transition-colors"
+                            className="bg-inputbg border-secondarybg text-foreground focus:border-secondary w-full rounded-lg border px-4 py-3 transition-colors focus:outline-none"
                         />
                     </div>
 
-                    <div className="flex items-center gap-3 bg-surface p-3 rounded-lg border border-secondarybg/50 cursor-pointer" onClick={() => setIsAnonymous(!isAnonymous)}>
-                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isAnonymous ? 'bg-secondary' : 'bg-darkgray'}`}>
-                            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${isAnonymous ? 'translate-x-4' : ''}`} />
+                    <div
+                        className="bg-surface border-secondarybg/50 flex cursor-pointer items-center gap-3 rounded-lg border p-3"
+                        onClick={() => setIsAnonymous(!isAnonymous)}
+                    >
+                        <div
+                            className={`h-6 w-10 rounded-full p-1 transition-colors ${isAnonymous ? 'bg-secondary' : 'bg-darkgray'}`}
+                        >
+                            <div
+                                className={`h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${isAnonymous ? 'translate-x-4' : ''}`}
+                            />
                         </div>
                         <div className="flex items-center gap-2">
-                            <Lock className={`w-4 h-4 ${isAnonymous ? 'text-secondary' : 'text-txtcolor-300'}`} />
-                            <span className={`text-sm font-medium ${isAnonymous ? 'text-foreground' : 'text-txtcolor-300'}`}>
+                            <Lock
+                                className={`h-4 w-4 ${isAnonymous ? 'text-secondary' : 'text-txtcolor-300'}`}
+                            />
+                            <span
+                                className={`text-sm font-medium ${isAnonymous ? 'text-foreground' : 'text-txtcolor-300'}`}
+                            >
                                 Anonimowo
                             </span>
                         </div>
@@ -138,9 +121,15 @@ export default function EditSuggestionModal({ isOpen, onClose, suggestion, onSub
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-primary text-darkgray hover:bg-secondary font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                        className="bg-primary text-darkgray hover:bg-secondary flex w-full items-center justify-center gap-2 rounded-xl py-3 font-bold transition-all"
                     >
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Save className="w-4 h-4" /> Zapisz Zmiany</>}
+                        {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <>
+                                <Save className="h-4 w-4" /> Zapisz Zmiany
+                            </>
+                        )}
                     </button>
                 </form>
             </div>
