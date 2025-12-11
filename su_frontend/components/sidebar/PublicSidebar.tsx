@@ -104,7 +104,7 @@ export default function PublicSidebar({ isOpen, onClose }: SidebarProps) {
                             className="text-foreground hover:bg-secondarybg flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
                         >
                             <UserPlus className="h-5 w-5" />
-                            <span>Dołącz</span>
+                            <span>Zarejestruj się</span>
                         </Link>
                     </div>
                 </div>

@@ -1,4 +1,87 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+@theme {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-secondarybg: var(--color-secondarybg);
+
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-darkgray: var(--color-darkgray);
+
+    --color-txtcolor-300: var(--color-txtcolor-300);
+    --color-inputbg: var(--color-inputbg);
+    --color-microsoftbg: var(--color-microsoftbg);
+    --color-focusering: var(--color-focusering);
+
+    --color-surface: var(--color-surface);
+
+    --color-success: var(--color-success);
+    --color-error: var(--color-error);
+    --color-info: var(--color-info);
+    --color-warning: var(--color-warning);
+    --color-accent: var(--color-accent);
+    --color-zinc: var(--color-zinc);
+    --color-purple: var(--color-purple);
+    --color-blue: var(--color-blue);
+}
+
+:root {
+    --color-background: #e0e0e0;
+    --color-surface: #ebebeb;
+
+    --color-primary: #c2410c;
+    --color-secondary: #d97706;
+    --color-focusering: #c2410c;
+
+    --color-txtcolor-300: #1a1a1a;
+
+    --color-darkgray: #f8fafc;
+
+    --color-foreground: #000000;
+
+    --color-secondarybg: #FBF9F5;
+
+    --color-zinc: #171717;
+
+    --color-inputbg: #d6d6d6;
+
+    --color-microsoftbg: #d97706;
+
+    --color-success: #15803d;
+    --color-error: #b91c1c;
+    --color-info: #1d4ed8;
+    --color-warning: #9a3412;
+
+    --color-accent: #7e22ce;
+    --color-purple: #7e22ce;
+    --color-blue: #1d4ed8;
+}
+
+.dark {
+    --color-background: #1a1208;
+    --color-foreground: #ffffff;
+    --color-secondarybg: rgb(255 255 255 / 0.05);
+    --color-surface: #231910;
+
+    --color-primary: #edb78d;
+    --color-darkgray: #1a1a1a;
+    --color-secondary: #ff9d00;
+
+    --color-txtcolor-300: #bababa;
+    --color-inputbg: #372c1e;
+    --color-microsoftbg: #f0f9ff;
+    --color-focusering: #ff9d00;
+
+    --color-success: #22c55e;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+    --color-warning: #f59e0b;
+    --color-accent: #a855f7;
+    --color-zinc: #a8a1a1;
+    --color-purple: #a855f7;
+    --color-blue: #3b82f6;
+}
 
 * {
     scrollbar-width: thin;
@@ -29,55 +112,34 @@
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
     cursor: pointer;
     filter: invert(53%) sepia(93%) saturate(1510%) hue-rotate(1deg) brightness(103%) contrast(106%);
-
     width: 20px;
     height: 20px;
     margin-right: 8px;
     opacity: 0.8;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="time"]::-webkit-calendar-picker-indicator:hover,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+input[type='date']::-webkit-calendar-picker-indicator:hover,
+input[type='time']::-webkit-calendar-picker-indicator:hover,
+input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
     transform: scale(1.2);
 }
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-input[type="number"] {
+input[type='number'] {
     -moz-appearance: textfield;
-}
-
-@theme dark {
-    --color-background: #1a1208;
-    --color-foreground: #ffffff;
-    --color-secondarybg: rgb(255 255 255 / 0.05);
-    --color-primary: #edb78d;
-    --color-darkgray: #1a1a1a;
-    --color-secondary: #ff9d00;
-    --color-txtcolor-300: #bababa;
-    --color-inputbg: #372c1e;
-    --color-microsoftbg: #f0f9ff;
-    --color-focusering: #ff9d00;
-
-    --color-success: #22c55e;
-    --color-error: #ef4444;
-    --color-info: #3b82f6;
-    --color-warning: #f59e0b;
-    --color-accent: #a855f7;
-    --color-zinc: #a8a1a1;
-
-    --color-surface: #231910;
-    --color-purple: #a855f7;
-    --color-blue: #3b82f6;
 }
