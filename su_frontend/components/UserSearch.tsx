@@ -1,10 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Search, User, Loader2, X } from 'lucide-react';
-import { fetchAllUsers } from '@/lib/api/user';
-import { UserDto } from '@/types/user.types';
+import { useUserSearch } from '@/hooks/useUserSearch';
 
 interface Props {
     onSelect: (userId: string) => void;
@@ -12,64 +9,38 @@ interface Props {
 }
 
 export default function UserSearch({ onSelect, disabled }: Props) {
-    const [query, setQuery] = useState('');
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<UserDto | null>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
-
-    const { data: users, isLoading } = useQuery({
-        queryKey: ['users_search'],
-        queryFn: fetchAllUsers,
-        staleTime: 1000 * 60 * 5, //5 min
-    });
-
-    const filteredUsers = users?.filter((user) => {
-        if (!query) return false;
-        const search = query.toLowerCase();
-        return (
-            user.fullName?.toLowerCase().includes(search) ||
-            user.email?.toLowerCase().includes(search)
-        );
-    });
-
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const handleSelect = (user: UserDto) => {
-        setSelectedUser(user);
-        onSelect(user.id);
-        setIsOpen(false);
-        setQuery('');
-    };
-
-    const clearSelection = () => {
-        setSelectedUser(null);
-        onSelect('');
-    };
+    const {
+        query,
+        setQuery,
+        isOpen,
+        setIsOpen,
+        selectedUser,
+        filteredUsers,
+        isLoading,
+        wrapperRef,
+        handleSelect,
+        clearSelection,
+    } = useUserSearch(onSelect);
 
     if (selectedUser) {
         return (
-            <div className="flex items-center justify-between p-3 bg-inputbg border border-secondary/50 rounded-lg animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-inputbg border-secondary/50 animate-in fade-in zoom-in-95 flex items-center justify-between rounded-lg border p-3 duration-200">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <div className="bg-primary/20 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
                         <User className="h-5 w-5" />
                     </div>
                     <div className="overflow-hidden">
-                        <p className="text-sm font-bold text-foreground truncate">{selectedUser.fullName}</p>
-                        <p className="text-xs text-txtcolor-300 truncate">{selectedUser.email}</p>
+                        <p className="text-foreground truncate text-sm font-bold">
+                            {selectedUser.fullName}
+                        </p>
+                        <p className="text-txtcolor-300 truncate text-xs">{selectedUser.email}</p>
                     </div>
                 </div>
                 <button
                     onClick={clearSelection}
                     disabled={disabled}
-                    className="p-2 text-txtcolor-300 hover:text-error hover:bg-error/10 rounded-full transition-all"
+                    className="text-txtcolor-300 hover:text-error hover:bg-error/10 rounded-full p-2 transition-all"
+                    type="button"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -79,11 +50,11 @@ export default function UserSearch({ onSelect, disabled }: Props) {
 
     return (
         <div ref={wrapperRef} className="relative w-full">
-            <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-txtcolor-300 group-focus-within:text-primary transition-colors" />
+            <div className="group relative">
+                <Search className="text-txtcolor-300 group-focus-within:text-primary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transition-colors" />
                 <input
                     type="text"
-                    className="w-full bg-inputbg text-foreground rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary placeholder-txtcolor-300/50 border border-border transition-all"
+                    className="bg-inputbg text-foreground focus:ring-secondary placeholder-txtcolor-300/50 border-border w-full rounded-lg border py-3 pr-4 pl-10 transition-all focus:ring-2 focus:outline-none"
                     placeholder="Wpisz imię, nazwisko lub email..."
                     value={query}
                     onChange={(e) => {
@@ -94,34 +65,39 @@ export default function UserSearch({ onSelect, disabled }: Props) {
                     disabled={disabled}
                 />
                 {isLoading && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                        <Loader2 className="text-primary h-4 w-4 animate-spin" />
                     </div>
                 )}
             </div>
 
             {isOpen && query && (
-                <div className="absolute z-[100] w-full mt-2 bg-secondarybg border border-border rounded-lg shadow-2xl overflow-hidden backdrop-blur-sm">
-                    {filteredUsers && filteredUsers.length > 0 ? (
-                        <div className="max-h-60 overflow-y-auto">
+                <div className="bg-secondarybg border-border animate-in slide-in-from-top-2 absolute z-[100] mt-2 w-full overflow-hidden rounded-lg border shadow-2xl backdrop-blur-sm">
+                    {filteredUsers.length > 0 ? (
+                        <div className="custom-scrollbar max-h-60 overflow-y-auto">
                             {filteredUsers.map((user) => (
                                 <button
                                     key={user.id}
                                     onClick={() => handleSelect(user)}
-                                    className="w-full flex items-center gap-3 p-3 hover:bg-primary/10 text-left transition-colors border-b border-border/50 last:border-0"
+                                    className="hover:bg-primary/10 border-border/50 group flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-0"
+                                    type="button"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-inputbg flex items-center justify-center text-txtcolor-300 shrink-0">
+                                    <div className="bg-inputbg text-txtcolor-300 group-hover:bg-primary/20 group-hover:text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors">
                                         <User className="h-4 w-4" />
                                     </div>
                                     <div className="overflow-hidden">
-                                        <p className="text-sm font-medium text-foreground truncate">{user.fullName}</p>
-                                        <p className="text-xs text-txtcolor-300 truncate">{user.email}</p>
+                                        <p className="text-foreground truncate text-sm font-medium">
+                                            {user.fullName}
+                                        </p>
+                                        <p className="text-txtcolor-300 truncate text-xs">
+                                            {user.email}
+                                        </p>
                                     </div>
                                 </button>
                             ))}
                         </div>
                     ) : (
-                        <div className="p-4 text-center text-sm text-txtcolor-300">
+                        <div className="text-txtcolor-300 p-4 text-center text-sm">
                             Nie znaleziono użytkownika "{query}"
                         </div>
                     )}

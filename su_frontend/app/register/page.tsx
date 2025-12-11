@@ -54,20 +54,17 @@ function RegistrationForm() {
     };
 
     return (
-        <main className="min-h-screen flex items-center justify-center p-3">
-            <div className="w-full text-center max-w-[404px] rounded-[11.83px] px-3 py-7 flex flex-col justify-center items-center bg-secondarybg">
-                <div className="flex items-center flex-col">
+        <main className="flex min-h-screen items-center justify-center p-3">
+            <div className="bg-secondarybg flex w-full max-w-[404px] flex-col items-center justify-center rounded-[11.83px] px-3 py-7 text-center">
+                <div className="flex flex-col items-center">
                     <SchoolRounded />
-                    <h1 className="text-[23.42px] font-semibold mt-4">Zarejestruj się</h1>
-                    <p className="mt-3 text-sm max-w-[350px] text-txtcolor-300">
+                    <h1 className="mt-4 text-[23.42px] font-semibold">Zarejestruj się</h1>
+                    <p className="text-txtcolor-300 mt-3 max-w-[350px] text-sm">
                         Utwórz nowe konto w portalu samorządu szkolnego.
                     </p>
                 </div>
 
-                <form
-                    onSubmit={handleRegister}
-                    className="w-10/12 mt-8 flex flex-col gap-4"
-                >
+                <form onSubmit={handleRegister} className="mt-8 flex w-10/12 flex-col gap-4">
                     <FormField
                         id="fullName"
                         label="IMIĘ I NAZWISKO:"
@@ -113,11 +110,9 @@ function RegistrationForm() {
                     <button
                         type="submit"
                         disabled={registrationMutation.isPending}
-                        className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center"
+                        className="bg-primary text-darkgray hover:bg-secondary mt-4 flex max-h-[38px] w-full cursor-pointer items-center justify-center rounded-[53px] px-3 py-4 font-semibold transition-colors"
                     >
-                        {registrationMutation.isPending
-                            ? 'Rejestrowanie...'
-                            : 'Zarejestruj się'}
+                        {registrationMutation.isPending ? 'Rejestrowanie...' : 'Zarejestruj się'}
                     </button>
                 </form>
 

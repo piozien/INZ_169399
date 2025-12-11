@@ -11,172 +11,146 @@ import FormField from '@/components/FormField';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { ApiError } from '@/types/error.types';
 import { LoginRequestDto } from '@/types/auth.types';
+import { getMicrosoftAuthUrl } from '@/lib/api/auth';
 
 function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { login } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isPending, setIsPending] = useState(false);
 
-  const registered = searchParams.get('registered') === 'true';
-  const successMessage = registered
-    ? 'Rejestracja zakończona pomyślnie! Na podany adres email wysłano link aktywacyjny.'
-    : null;
+    const registered = searchParams.get('registered') === 'true';
+    const successMessage = registered
+        ? 'Rejestracja zakończona pomyślnie! Na podany adres email wysłano link aktywacyjny.'
+        : null;
 
-  const handleEmailLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsPending(true);
+    const handleEmailLogin = async (e: FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsPending(true);
 
-    const payload: LoginRequestDto = { email, password };
+        try {
+            await login({ email, password });
+            router.push('/dashboard');
+        } catch (err) {
+            if (err instanceof ApiError || err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Wystąpił nieznany błąd podczas logowania');
+            }
+        } finally {
+            setIsPending(false);
+        }
+    };
 
-    try {
-      await login(payload);
-      router.push('/dashboard');
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Wystąpił nieznany błąd podczas logowania');
-      }
-    } finally {
-      setIsPending(false);
-    }
-  };
+    const handleMicrosoftLogin = () => {
+        window.location.href = getMicrosoftAuthUrl();
+    };
 
-  const handleMicrosoftLogin = () => {
-    const tenantId = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID;
-    const clientId = process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/callback/microsoft`;
+    return (
+        <main className="flex min-h-screen items-center justify-center p-3">
+            <div className="bg-secondarybg flex w-full max-w-[404px] flex-col items-center justify-center rounded-[11.83px] px-3 py-10 text-center">
+                <div className="flex flex-col items-center">
+                    <SchoolRounded />
+                    <h1 className="mt-4 text-[23.42px] font-semibold">Zaloguj się</h1>
+                    <p className="text-txtcolor-300 mt-3 max-w-[350px] text-sm">
+                        Użyj swojego adresu email i hasła, aby zalogować się do portalu samorządu.
+                    </p>
+                </div>
 
-    const azureUrl =
-      `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
-      `client_id=${clientId}` +
-      `&response_type=token` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=openid profile email user.read` +
-      `&response_mode=fragment` +
-      `&nonce=${Math.floor(Math.random() * 1000000)}`;
+                <form onSubmit={handleEmailLogin} className="mt-8 flex w-10/12 flex-col gap-5">
+                    <FormField
+                        id="email"
+                        label="ADRES E-MAIL:"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="jan@kowalski.pl"
+                        disabled={isPending}
+                    />
 
-    window.location.href = azureUrl;
-  };
+                    <FormField
+                        id="password"
+                        label="Hasło:"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Twoje hasło"
+                        disabled={isPending}
+                    />
 
-  return (
-    <main className="min-h-screen flex items-center justify-center p-3">
-      <div className="w-full text-center max-w-[404px] rounded-[11.83px] px-3 py-10 flex flex-col justify-center items-center bg-secondarybg">
-        <div className="flex items-center flex-col">
-          <SchoolRounded />
-          <h1 className="text-[23.42px] font-semibold mt-4">Zaloguj się</h1>
-          <p className="mt-3 text-sm max-w-[350px] text-txtcolor-300">
-            Użyj swojego adresu email i hasła, aby zalogować się do portalu
-            samorządu szkolnego.
-          </p>
-        </div>
+                    {error && <p className="text-error text-sm">{error}</p>}
+                    {successMessage && <p className="text-success text-sm">{successMessage}</p>}
 
-        <form
-          onSubmit={handleEmailLogin}
-          className="w-10/12 mt-8 flex flex-col gap-5"
-        >
-          <FormField
-            id="email"
-            label="ADRES E-MAIL:"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="jan@kowalski.pl"
-            disabled={isPending}
-          />
+                    <button
+                        type="submit"
+                        disabled={isPending}
+                        className="bg-primary text-darkgray hover:bg-secondary mt-4 flex max-h-[38px] w-full cursor-pointer items-center justify-center rounded-[53px] px-3 py-4 font-semibold transition-colors disabled:opacity-50"
+                    >
+                        {isPending ? 'Logowanie...' : 'Zaloguj się'}
+                    </button>
 
-          <FormField
-            id="password"
-            label="Hasło:"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Twoje hasło"
-            disabled={isPending}
-          />
+                    <div className="text-center text-sm">
+                        <Link
+                            href="/forgot-password"
+                            className="text-secondary font-medium hover:underline"
+                        >
+                            Zapomniałeś hasła?
+                        </Link>
+                    </div>
+                </form>
 
-          {error && <p className="text-error text-sm">{error}</p>}
-          {successMessage && (
-            <p className="text-success text-sm">{successMessage}</p>
-          )}
+                <div className="mt-8 flex w-10/12 flex-col items-center gap-5">
+                    <div className="flex w-full items-center gap-4">
+                        <div className="border-txtcolor-300 flex-1 border-b" />
+                        <p className="text-text-muted text-sm">lub</p>
+                        <div className="border-txtcolor-300 flex-1 border-b" />
+                    </div>
 
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-primary text-darkgray font-semibold hover:bg-secondary cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPending ? 'Logowanie...' : 'Zaloguj się'}
-          </button>
-          <div className="text-center text-sm">
-            <Link
-              href="/forgot-password"
-              className="text-secondary font-medium hover:underline"
-            >
-              Zapomniałeś hasła?
-            </Link>
-          </div>
-        </form>
+                    <button
+                        type="button"
+                        onClick={handleMicrosoftLogin}
+                        disabled={isPending}
+                        className="bg-microsoftbg text-darkgray mt-4 flex max-h-[38px] w-full cursor-pointer items-center justify-center gap-3 rounded-[53px] px-3 py-4 font-semibold transition-opacity hover:opacity-90"
+                    >
+                        <MicrosoftIcon />
+                        <span>Zaloguj się przez Microsoft</span>
+                    </button>
+                </div>
 
-        <div className="w-10/12 mt-8 flex flex-col gap-5 items-center">
-          <div className="w-full flex items-center gap-4">
-            <div className="flex-1 border-b border-txtcolor-300" />
-            <p className="text-sm text-text-muted">lub</p>
-            <div className="flex-1 border-b border-txtcolor-300" />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleMicrosoftLogin}
-            disabled={isPending}
-            className="w-full max-h-[38px] py-4 px-3 rounded-[53px] mt-4 bg-microsoftbg cursor-pointer text-darkgray font-semibold flex items-center justify-center gap-3 hover:opacity-90 transition-opacity"
-          >
-            <MicrosoftIcon />
-            <span>Zaloguj się przez Microsoft</span>
-          </button>
-        </div>
-
-        <div className="mt-auto pt-4 text-sm">
-          <p>
-            Nie masz konta?{' '}
-            <Link
-              href="/register"
-              className="text-secondary font-medium hover:underline"
-            >
-              Zarejestruj się
-            </Link>
-          </p>
-          <p className="mt-2">
-            <Link
-              href="/"
-              className="text-secondary font-medium hover:underline"
-            >
-              Wróć do strony głównej
-            </Link>
-          </p>
-        </div>
-      </div>
-    </main>
-  );
+                <div className="mt-auto pt-4 text-sm">
+                    <p>
+                        Nie masz konta?{' '}
+                        <Link
+                            href="/register"
+                            className="text-secondary font-medium hover:underline"
+                        >
+                            Zarejestruj się
+                        </Link>
+                    </p>
+                    <p className="mt-2">
+                        <Link href="/" className="text-secondary font-medium hover:underline">
+                            Wróć do strony głównej
+                        </Link>
+                    </p>
+                </div>
+            </div>
+        </main>
+    );
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen flex items-center justify-center">
-          <h1>Ładowanie...</h1>
-        </main>
-      }
-    >
-      <LoginForm />
-    </Suspense>
-  );
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-screen items-center justify-center">Ładowanie...</div>
+            }
+        >
+            <LoginForm />
+        </Suspense>
+    );
 }

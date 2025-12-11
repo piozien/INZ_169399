@@ -15,24 +15,24 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+    children,
+}: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
         <html lang="pl" suppressHydrationWarning>
-        <head>
-            <ThemeScript />
-        </head>
-        <body className={`${inter.className} flex min-h-screen bg-background text-foreground`}>
-        <Providers>
-            <ThemeProvider>
-                <ConditionalSidebar />
-                <main className="flex-1 w-full">{children}</main>
-                <CookieConsent />
-            </ThemeProvider>
-        </Providers>
-        </body>
+            <head>
+                <ThemeScript />
+            </head>
+            <body className={`${inter.className} bg-background text-foreground flex min-h-screen`}>
+                <Providers>
+                    <ThemeProvider>
+                        <ConditionalSidebar />
+                        <main className="w-full flex-1">{children}</main>
+                        <CookieConsent />
+                    </ThemeProvider>
+                </Providers>
+            </body>
         </html>
     );
 }

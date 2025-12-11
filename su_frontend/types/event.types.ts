@@ -1,10 +1,10 @@
 export type EventStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-export type EventParticipantRole = 'ORGANIZER' | 'PARTICIPANT' | 'GUEST';
+export type EventParticipantRole = 'ORGANIZER' | 'PARTICIPANT';
 
 export interface ParticipantResponseDto {
     eventId: string;
     userId: string;
-    userFullName?: string
+    userFullName?: string;
     role: EventParticipantRole;
     confirmed: boolean;
     assignedAt: string;
@@ -14,8 +14,8 @@ export interface EventResponseDto {
     id: string;
     title: string;
     description: string;
-    startDate: string; // ISO String: "2025-09-01T09:00:00"
-    endDate: string;   // ISO String
+    startDate: string;
+    endDate: string;
     location: string;
     createdById: string;
     councilId?: string;
@@ -27,8 +27,8 @@ export interface EventResponseDto {
 export interface EventRequestDto {
     title: string;
     description: string;
-    startDate: string; //"YYYY-MM-DDTHH:mm:ss"
-    endDate: string;   //"YYYY-MM-DDTHH:mm:ss"
+    startDate: string;
+    endDate: string;
     location?: string;
     councilId?: string;
 }

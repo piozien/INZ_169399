@@ -13,7 +13,7 @@ export interface DashboardSummaryDto {
 export interface MembershipDto {
     councilId: string;
     councilName: string;
-    userRole:  string;
+    userRole: string;
     active: boolean;
     startDate: string;
     endDate: string;
@@ -22,7 +22,8 @@ export interface MembershipDto {
 export interface UserEventDto {
     eventId: string;
     title: string;
-    date: string;
+    startDate: string;
+    endDate: string;
 }
 
 export interface UserProfileDataDto {

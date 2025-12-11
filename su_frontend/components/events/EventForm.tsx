@@ -1,106 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Save, Loader2, MapPin, AlignLeft, CalendarClock } from 'lucide-react';
-import { EventRequestDto, EventResponseDto } from "@/types/event.types";
+import { EventRequestDto, EventResponseDto } from '@/types/event.types';
 import FormField from '@/components/FormField';
+import { useEventFormState } from '@/hooks/council/events/useEventFormState';
 
 interface EventFormProps {
     councilId: string;
     initialData?: EventResponseDto | null;
-    onSubmit: (data: EventRequestDto) => Promise<void>;
+    onSubmit: (data: EventRequestDto) => void;
     isSubmitting: boolean;
 }
 
-export default function EventForm({ councilId, initialData, onSubmit, isSubmitting }: EventFormProps) {
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [location, setLocation] = useState('');
-
-    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [startTime, setStartTime] = useState(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [endTime, setEndTime] = useState(new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
-
-    useEffect(() => {
-        if (initialData) {
-            setTitle(initialData.title);
-            setDescription(initialData.description);
-            setLocation(initialData.location || '');
-
-            if (initialData.startDate) {
-                const [datePart, timePart] = initialData.startDate.split('T');
-                setStartDate(datePart);
-                setStartTime(timePart ? timePart.substring(0, 5) : '08:00');
-            }
-
-            if (initialData.endDate) {
-                const [datePart, timePart] = initialData.endDate.split('T');
-                setEndDate(datePart);
-                setEndTime(timePart ? timePart.substring(0, 5) : '16:00');
-            }
-        }
-    }, [initialData]);
-
-    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newStartDate = e.target.value;
-        setStartDate(newStartDate);
-
-        setEndDate(newStartDate);
-    };
-
-    const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newStartTime = e.target.value;
-        setStartTime(newStartTime);
-
-        if (!newStartTime) return;
-        try {
-            const [hours, minutes] = newStartTime.split(':').map(Number);
-
-            const date = new Date();
-            date.setHours(hours);
-            date.setMinutes(minutes);
-
-            date.setHours(date.getHours() + 1);
-
-            const nextHour = date.getHours().toString().padStart(2, '0');
-            const sameMinutes = date.getMinutes().toString().padStart(2, '0');
-
-            setEndTime(`${nextHour}:${sameMinutes}`);
-        } catch (error) {
-        }
-    };
+export default function EventForm({
+    councilId,
+    initialData,
+    onSubmit,
+    isSubmitting,
+}: EventFormProps) {
+    const {
+        title,
+        setTitle,
+        description,
+        setDescription,
+        location,
+        setLocation,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        setEndDate,
+        setEndTime,
+        handleStartDateChange,
+        handleStartTimeChange,
+        getPayload,
+    } = useEventFormState(initialData);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const payload = getPayload(councilId);
 
-        const finalStartDateTime = `${startDate}T${startTime}:00`;
-        const finalEndDateTime = `${endDate}T${endTime}:00`;
-
-        if (finalStartDateTime > finalEndDateTime) {
-            alert("Data zakończenia musi być późniejsza niż data rozpoczęcia.");
-            return;
+        if (payload) {
+            onSubmit(payload);
         }
-
-        const payload: EventRequestDto = {
-            title,
-            description,
-            location,
-            startDate: finalStartDateTime,
-            endDate: finalEndDateTime,
-            councilId: councilId
-        };
-
-        onSubmit(payload);
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
-
-            <div className="bg-secondarybg rounded-xl border border-primary/10 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <AlignLeft className="w-5 h-5 text-secondary" />
-                    Informacje podstawowe
+            <div className="bg-secondarybg border-primary/10 rounded-xl border p-6 shadow-sm">
+                <h3 className="text-foreground mb-4 flex items-center gap-2 text-lg font-semibold">
+                    <AlignLeft className="text-secondary h-5 w-5" /> Informacje podstawowe
                 </h3>
                 <div className="space-y-5">
                     <FormField
@@ -112,9 +61,8 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                         placeholder="np. Apel z okazji Dnia Nauczyciela"
                         disabled={isSubmitting}
                     />
-
                     <div className="relative">
-                        <MapPin className="absolute left-3 top-[38px] h-5 w-5 text-txtcolor-300 z-10" />
+                        <MapPin className="text-txtcolor-300 absolute top-[38px] left-3 z-10 h-5 w-5" />
                         <FormField
                             id="location"
                             label="LOKALIZACJA"
@@ -128,15 +76,13 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                 </div>
             </div>
 
-            <div className="bg-secondarybg rounded-xl border border-primary/10 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <CalendarClock className="w-5 h-5 text-secondary" />
-                    Termin
+            <div className="bg-secondarybg border-primary/10 rounded-xl border p-6 shadow-sm">
+                <h3 className="text-foreground mb-4 flex items-center gap-2 text-lg font-semibold">
+                    <CalendarClock className="text-secondary h-5 w-5" /> Termin
                 </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-2">
-                        <label className="block text-xs font-bold text-txtcolor-300 uppercase tracking-wider">
+                        <label className="text-txtcolor-300 block text-xs font-bold tracking-wider uppercase">
                             Rozpoczęcie
                         </label>
                         <div className="flex gap-2">
@@ -144,21 +90,20 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                                 type="date"
                                 required
                                 value={startDate}
-                                onChange={handleStartDateChange}
-                                className="flex-1 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-primary outline-none transition-all"
+                                onChange={(e) => handleStartDateChange(e.target.value)}
+                                className="bg-inputbg text-foreground border-border focus:ring-primary flex-1 rounded-lg border px-4 py-3 transition-all outline-none focus:ring-2"
                             />
                             <input
                                 type="time"
                                 required
                                 value={startTime}
-                                onChange={handleStartTimeChange}
-                                className="w-36 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-primary outline-none transition-all"
+                                onChange={(e) => handleStartTimeChange(e.target.value)}
+                                className="bg-inputbg text-foreground border-border focus:ring-primary w-36 rounded-lg border px-4 py-3 transition-all outline-none focus:ring-2"
                             />
                         </div>
                     </div>
-
                     <div className="space-y-2">
-                        <label className="block text-xs font-bold text-txtcolor-300 uppercase tracking-wider">
+                        <label className="text-txtcolor-300 block text-xs font-bold tracking-wider uppercase">
                             Zakończenie
                         </label>
                         <div className="flex gap-2">
@@ -167,23 +112,23 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                                 required
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="flex-1 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-primary outline-none transition-all"
+                                className="bg-inputbg text-foreground border-border focus:ring-primary flex-1 rounded-lg border px-4 py-3 transition-all outline-none focus:ring-2"
                             />
                             <input
                                 type="time"
                                 required
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.target.value)}
-                                className="w-36 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-primary outline-none transition-all"
+                                className="bg-inputbg text-foreground border-border focus:ring-primary w-36 rounded-lg border px-4 py-3 transition-all outline-none focus:ring-2"
                             />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-secondarybg rounded-xl border border-primary/10 p-6 shadow-sm">
+            <div className="bg-secondarybg border-primary/10 rounded-xl border p-6 shadow-sm">
                 <div className="space-y-2">
-                    <label className="block text-xs font-bold text-txtcolor-300 uppercase tracking-wider">
+                    <label className="text-txtcolor-300 block text-xs font-bold tracking-wider uppercase">
                         Opis Szczegółowy
                     </label>
                     <textarea
@@ -192,7 +137,7 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                         onChange={(e) => setDescription(e.target.value)}
                         disabled={isSubmitting}
                         placeholder="Opisz plan wydarzenia, atrakcje i wymagania..."
-                        className="w-full h-48 bg-inputbg text-foreground rounded-lg px-4 py-3 border border-border focus:ring-2 focus:ring-secondary outline-none resize-none scrollbar-thin transition-all"
+                        className="bg-inputbg text-foreground border-border focus:ring-secondary scrollbar-thin h-48 w-full resize-none rounded-lg border px-4 py-3 transition-all outline-none focus:ring-2"
                     />
                 </div>
             </div>
@@ -201,9 +146,13 @@ export default function EventForm({ councilId, initialData, onSubmit, isSubmitti
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="bg-primary text-darkgray px-10 py-4 rounded-xl font-bold text-base flex items-center gap-3 hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 transform hover:-translate-y-1"
+                    className="bg-primary text-darkgray shadow-primary/20 flex transform items-center gap-3 rounded-xl px-10 py-4 text-base font-bold shadow-lg transition-all hover:-translate-y-1 hover:opacity-90 disabled:opacity-50"
                 >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                    {isSubmitting ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                        <Save className="h-5 w-5" />
+                    )}
                     {initialData ? 'Zapisz Zmiany' : 'Opublikuj Wydarzenie'}
                 </button>
             </div>

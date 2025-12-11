@@ -31,34 +31,35 @@ function ActivateContent() {
     }, [token]);
 
     return (
-        <div className="w-full text-center max-w-[404px] rounded-[12px] px-6 py-10 flex flex-col justify-center items-center bg-secondarybg border border-border shadow-xl">
+        <div className="bg-secondarybg border-border flex w-full max-w-[404px] flex-col items-center justify-center rounded-[12px] border px-6 py-10 text-center shadow-xl">
             <div className="mb-8 flex flex-col items-center gap-2">
-                <div className="scale-125 text-primary">
+                <div className="text-primary scale-125">
                     <SchoolRounded />
                 </div>
-                <span className="text-xl font-bold tracking-widest text-foreground uppercase mt-2">
-          Samorząd Uczniowski
-        </span>
+                <span className="text-foreground mt-2 text-xl font-bold tracking-widest uppercase">
+                    Samorząd Uczniowski
+                </span>
             </div>
 
             {status === 'loading' && (
-                <div className="flex flex-col items-center gap-4 animate-in fade-in">
-                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                    <h1 className="text-xl font-semibold text-foreground">Weryfikacja...</h1>
-                    <p className="text-sm text-txtcolor-300">Trwa aktywacja Twojego konta.</p>
+                <div className="animate-in fade-in flex flex-col items-center gap-4">
+                    <Loader2 className="text-primary h-10 w-10 animate-spin" />
+                    <h1 className="text-foreground text-xl font-semibold">Weryfikacja...</h1>
+                    <p className="text-txtcolor-300 text-sm">Trwa aktywacja Twojego konta.</p>
                 </div>
             )}
 
             {status === 'success' && (
-                <div className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
-                    <CheckCircle className="w-12 h-12 text-success" />
-                    <h1 className="text-2xl font-bold text-foreground">Konto aktywne!</h1>
-                    <p className="text-sm text-txtcolor-300 max-w-[300px]">
-                        Twój adres e-mail został potwierdzony. Możesz teraz zalogować się do systemu.
+                <div className="animate-in zoom-in-95 flex flex-col items-center gap-4 duration-300">
+                    <CheckCircle className="text-success h-12 w-12" />
+                    <h1 className="text-foreground text-2xl font-bold">Konto aktywne!</h1>
+                    <p className="text-txtcolor-300 max-w-[300px] text-sm">
+                        Twój adres e-mail został potwierdzony. Możesz teraz zalogować się do
+                        systemu.
                     </p>
                     <Link
                         href="/login"
-                        className="mt-4 w-full py-3 px-4 rounded-full bg-primary text-darkgray font-bold hover:bg-secondary transition-all shadow-lg hover:shadow-primary/20"
+                        className="bg-primary text-darkgray hover:bg-secondary hover:shadow-primary/20 mt-4 w-full rounded-full px-4 py-3 font-bold shadow-lg transition-all"
                     >
                         Przejdź do logowania
                     </Link>
@@ -66,17 +67,20 @@ function ActivateContent() {
             )}
 
             {status === 'error' && (
-                <div className="flex flex-col items-center gap-4 animate-in shake duration-300">
-                    <XCircle className="w-12 h-12 text-error" />
-                    <h1 className="text-xl font-bold text-foreground">Błąd aktywacji</h1>
-                    <div className="flex flex-col gap-3 w-full mt-4">
+                <div className="animate-in shake flex flex-col items-center gap-4 duration-300">
+                    <XCircle className="text-error h-12 w-12" />
+                    <h1 className="text-foreground text-xl font-bold">Błąd aktywacji</h1>
+                    <div className="mt-4 flex w-full flex-col gap-3">
                         <Link
                             href="/login"
-                            className="w-full py-3 px-4 rounded-full bg-inputbg text-foreground border border-border hover:border-primary transition-all font-medium text-sm"
+                            className="bg-inputbg text-foreground border-border hover:border-primary w-full rounded-full border px-4 py-3 text-sm font-medium transition-all"
                         >
                             Wróć do logowania
                         </Link>
-                        <Link href="/" className="text-xl text-foregorund hover:text-primary transition-colors">
+                        <Link
+                            href="/"
+                            className="text-foregorund hover:text-primary text-xl transition-colors"
+                        >
                             Strona główna
                         </Link>
                     </div>
@@ -88,7 +92,7 @@ function ActivateContent() {
 
 export default function ActivatePage() {
     return (
-        <main className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <main className="bg-background flex min-h-screen items-center justify-center p-4">
             <Suspense fallback={<div className="text-primary">Ładowanie...</div>}>
                 <ActivateContent />
             </Suspense>

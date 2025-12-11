@@ -1,4 +1,4 @@
-import { apiFetch } from "./httpClient";
+import { apiFetch } from './httpClient';
 
 export interface PermissionsResponseDto {
     roles: string[];
@@ -6,5 +6,5 @@ export interface PermissionsResponseDto {
 }
 
 export const fetchMyPermissions = async (): Promise<PermissionsResponseDto> => {
-    return apiFetch<PermissionsResponseDto>('/permissions'); 
+    return apiFetch<PermissionsResponseDto>('/permissions');
 };

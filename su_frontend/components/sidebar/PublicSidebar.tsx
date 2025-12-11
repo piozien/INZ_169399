@@ -12,6 +12,31 @@ interface SidebarProps {
     onClose: () => void;
 }
 
+const NavItem = ({
+    href,
+    label,
+    icon: Icon,
+    currentPath,
+}: {
+    href: string;
+    label: string;
+    icon: any;
+    currentPath: string;
+}) => {
+    const isActive = currentPath === href;
+    return (
+        <Link
+            href={href}
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive ? 'bg-primary text-background' : 'text-foreground hover:bg-secondarybg'
+            }`}
+        >
+            <Icon className="h-5 w-5" />
+            <span>{label}</span>
+        </Link>
+    );
+};
+
 export default function PublicSidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { toggleTheme } = useTheme();
@@ -21,67 +46,44 @@ export default function PublicSidebar({ isOpen, onClose }: SidebarProps) {
         { href: '/upcoming', label: 'Wydarzenia', icon: CalendarDaysIcon },
     ];
 
-    const NavItem = ({ href, label, icon: Icon }: { href: string; label: string; icon: any }) => {
-        const isActive = pathname === href;
-        return (
-            <Link
-                href={href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                        ? 'bg-primary text-background'
-                        : 'text-foreground hover:bg-secondarybg'
-                }`}
-            >
-                <Icon className="h-5 w-5" />
-                <span>{label}</span>
-            </Link>
-        );
-    };
-
     return (
         <>
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-background/50 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+                    className="bg-background/50 animate-in fade-in fixed inset-0 z-40 backdrop-blur-sm duration-200 md:hidden"
                     onClick={onClose}
                 />
             )}
 
             <aside
-                className={`
-                fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-border bg-background p-4 transition-transform duration-300 ease-in-out
-                ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-                
-                md:sticky md:top-0 md:h-screen md:translate-x-0 md:border-r md:border-border md:z-auto
-                `}
+                className={`border-border bg-background fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r p-4 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:border-border md:sticky md:top-0 md:z-auto md:h-screen md:translate-x-0 md:border-r`}
             >
-                <div className="flex items-center justify-between p-3 mb-2 shrink-0">
+                <div className="mb-2 flex shrink-0 items-center justify-between p-3">
                     <div className="flex items-center gap-3">
-                        <SchoolRounded className="h-8 w-8 text-secondary" />
+                        <SchoolRounded className="text-secondary h-8 w-8" />
                         <span className="text-lg font-bold">SAMORZĄD</span>
                     </div>
-                    <button onClick={onClose} className="md:hidden text-txtcolor-300 hover:text-foreground">
+                    <button
+                        onClick={onClose}
+                        className="text-txtcolor-300 hover:text-foreground md:hidden"
+                    >
                         <X className="h-6 w-6" />
                     </button>
                 </div>
 
-                <div className="px-3 py-2 text-xs text-txtcolor-300 shrink-0">
-                    Witaj!
-                </div>
+                <div className="text-txtcolor-300 shrink-0 px-3 py-2 text-xs">Witaj!</div>
 
                 <div className="mt-6 flex flex-1 flex-col justify-between">
-
                     <div className="space-y-1">
                         {publicLinks.map((link) => (
-                            <NavItem key={link.href} {...link} />
+                            <NavItem key={link.href} {...link} currentPath={pathname} />
                         ))}
                     </div>
 
-                    <div className="space-y-2 pt-4 border-t border-border -mx-4 px-4 pb-2">
-
+                    <div className="border-border -mx-4 space-y-2 border-t px-4 pt-4 pb-2">
                         <button
                             onClick={toggleTheme}
-                            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondarybg transition-colors"
+                            className="text-foreground hover:bg-secondarybg flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors"
                         >
                             <span className="flex items-center gap-3">
                                 <Sun className="h-5 w-5" />
@@ -91,7 +93,7 @@ export default function PublicSidebar({ isOpen, onClose }: SidebarProps) {
 
                         <Link
                             href="/login"
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondarybg transition-colors"
+                            className="text-foreground hover:bg-secondarybg flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
                         >
                             <LogIn className="h-5 w-5" />
                             <span>Zaloguj się</span>
@@ -99,7 +101,7 @@ export default function PublicSidebar({ isOpen, onClose }: SidebarProps) {
 
                         <Link
                             href="/register"
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondarybg transition-colors"
+                            className="text-foreground hover:bg-secondarybg flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
                         >
                             <UserPlus className="h-5 w-5" />
                             <span>Dołącz</span>

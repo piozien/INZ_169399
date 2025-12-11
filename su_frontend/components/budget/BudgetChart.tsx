@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart as PieChartIcon } from 'lucide-react';
 
 interface Props {
     income: number;
@@ -15,17 +16,22 @@ export default function BudgetChart({ income, expenses }: Props) {
 
     if (income === 0 && expenses === 0) {
         return (
-            <div className="h-[300px] flex items-center justify-center text-txtcolor-300 bg-secondarybg rounded-xl border border-border border-dashed">
-                Brak danych do wykresu
+            <div className="bg-secondarybg border-border text-txtcolor-300 flex h-[350px] w-full flex-col items-center justify-center gap-3 rounded-xl border p-6">
+                <div className="bg-background border-border rounded-full border p-4">
+                    <PieChartIcon className="h-8 w-8 opacity-20" />
+                </div>
+                <p className="text-sm">Brak danych finansowych do wykresu</p>
             </div>
         );
     }
 
     return (
-        <div className="h-[350px] w-full bg-secondarybg p-4 rounded-xl border border-border flex flex-col">
-            <h3 className="text-sm font-bold text-txtcolor-300 mb-2 uppercase tracking-wider">Struktura Budżetu</h3>
+        <div className="bg-secondarybg border-border flex h-[350px] w-full flex-col rounded-xl border p-4 shadow-sm">
+            <h3 className="text-txtcolor-300 mb-2 pl-2 text-sm font-bold tracking-wider uppercase">
+                Struktura Budżetu
+            </h3>
 
-            <div className="flex-1 w-full min-h-0">
+            <div className="min-h-0 w-full flex-1">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
@@ -43,14 +49,23 @@ export default function BudgetChart({ income, expenses }: Props) {
                             ))}
                         </Pie>
                         <Tooltip
-                            contentStyle={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)', borderRadius: '8px', color: 'var(--color-foreground)' }}
-                            itemStyle={{ color: 'var(--color-foreground)' }}
+                            contentStyle={{
+                                backgroundColor: 'var(--color-background)',
+                                borderColor: 'var(--color-border)',
+                                borderRadius: '12px',
+                                color: 'var(--color-foreground)',
+                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                            }}
+                            itemStyle={{ color: 'var(--color-foreground)', fontWeight: 'bold' }}
                             formatter={(value: number) => `${value.toFixed(2)} PLN`}
                         />
                         <Legend
                             verticalAlign="bottom"
                             height={36}
                             iconType="circle"
+                            formatter={(value) => (
+                                <span className="text-txtcolor-300 ml-1 text-sm">{value}</span>
+                            )}
                         />
                     </PieChart>
                 </ResponsiveContainer>

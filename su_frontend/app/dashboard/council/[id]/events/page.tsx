@@ -1,12 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { fetchCouncilEvents, deleteEvent, approveEvent, rejectEvent, resetToPending } from "@/lib/api/events";
-import { EventResponseDto } from "@/types/event.types";
-import EventCard from "@/components/events/EventCard";
-import EventDetailsModal from "@/components/events/EventDetailsModal";
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useCouncilEvents } from '@/hooks/council/events/useCouncilEvents';
+import EventCard from '@/components/events/EventCard';
+import EventDetailsModal from '@/components/events/EventDetailsModal';
 import {
     ChevronDown,
     ChevronUp,
@@ -20,141 +18,73 @@ import {
     Loader2,
     ArrowLeft,
     Send,
-    RotateCcw
-} from "lucide-react";
+    RotateCcw,
+} from 'lucide-react';
 
 export default function CouncilEventsPage() {
     const params = useParams();
     const router = useRouter();
-    const councilId = Array.isArray(params.id) ? params.id[0] : params.id;
+    const councilId = Array.isArray(params.id) ? params.id[0] : params.id || '';
 
-    const [events, setEvents] = useState<EventResponseDto[]>([]);
-    const [selectedEvent, setSelectedEvent] = useState<EventResponseDto | null>(null);
-    const [isArchiveOpen, setIsArchiveOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [processingId, setProcessingId] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("ALL");
+    const {
+        activeEvents,
+        archiveEvents,
+        isLoading,
+        searchQuery,
+        setSearchQuery,
+        statusFilter,
+        setStatusFilter,
+        isArchiveOpen,
+        setIsArchiveOpen,
+        selectedEvent,
+        setSelectedEvent,
+        handleDelete,
+        handleDecision,
+        isProcessing,
+        processingId,
+    } = useCouncilEvents(councilId);
 
-    useEffect(() => {
-        if (councilId) {
-            fetchCouncilEvents(councilId).then(data => {
-                setEvents(data);
-                setLoading(false);
-            });
-        }
-    }, [councilId]);
-
-    const handleDelete = async (id: string) => {
-        if(confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
-            await deleteEvent(id);
-            setEvents(prev => prev.filter(e => e.id !== id));
-            setSelectedEvent(null);
-        }
-    }
-
-    const handleDecision = async (eventId: string, decision: 'APPROVE' | 'REJECT' | 'PENDING') => {
-        setProcessingId(eventId);
-        try {
-            let updatedEvent: EventResponseDto;
-
-            if (decision === 'APPROVE') {
-                updatedEvent = await approveEvent(eventId);
-            } else if (decision === 'REJECT') {
-                updatedEvent = await rejectEvent(eventId);
-            } else {
-                updatedEvent = await resetToPending(eventId);
-            }
-
-            setEvents(prev => prev.map(e => e.id === eventId ? updatedEvent : e));
-            if (selectedEvent && selectedEvent.id === eventId) {
-                setSelectedEvent(updatedEvent);
-            }
-
-        } catch (error) {
-            console.error(error);
-            alert('Wystąpił błąd podczas przetwarzania decyzji.');
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    const { activeEvents, archiveEvents } = useMemo(() => {
-        const now = new Date();
-
-        const filtered = events.filter(event => {
-            const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesStatus = statusFilter === "ALL" || event.status === statusFilter;
-            return matchesSearch && matchesStatus;
-        });
-
-        const sorted = filtered.sort((a, b) =>
-            new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-        );
-
-        const active: EventResponseDto[] = [];
-        const archive: EventResponseDto[] = [];
-
-        sorted.forEach(event => {
-            const isFinished = new Date(event.endDate) < now;
-            const isRejected = event.status === 'REJECTED';
-
-            if (isFinished || isRejected) {
-                archive.push(event);
-            } else {
-                active.push(event);
-            }
-        });
-
-        archive.reverse();
-
-        return { activeEvents: active, archiveEvents: archive };
-    }, [events, searchQuery, statusFilter]);
-
-
-    if (loading) return <div className="p-8 text-primary">Ładowanie...</div>;
+    if (isLoading) return <div className="text-primary p-8">Ładowanie...</div>;
 
     return (
-        <div className="p-6 space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-8 p-6">
+            <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => router.push(`/dashboard/council/${councilId}`)}
-                        className="p-2 -ml-2 rounded-xl text-txtcolor-300 hover:text-foreground hover:bg-secondarybg transition-colors"
+                        className="text-txtcolor-300 hover:text-foreground hover:bg-secondarybg -ml-2 rounded-xl p-2 transition-colors"
                         title="Powrót do samorządu"
                     >
                         <ArrowLeft className="h-6 w-6" />
                     </button>
-                    <h1 className="text-2xl font-bold text-foreground">Zarządzanie Wydarzeniami</h1>
+                    <h1 className="text-foreground text-2xl font-bold">Zarządzanie Wydarzeniami</h1>
                 </div>
 
                 <Link
                     href={`/dashboard/council/${councilId}/events/create`}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-darkgray hover:bg-secondary rounded-lg font-bold shadow-md hover:shadow-lg transition-all"
+                    className="bg-primary text-darkgray hover:bg-secondary flex items-center gap-2 rounded-lg px-4 py-2 font-bold shadow-md transition-all hover:shadow-lg"
                 >
-                    <Plus className="w-5 h-5" />
-                    Stwórz wydarzenie
+                    <Plus className="h-5 w-5" /> Stwórz wydarzenie
                 </Link>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 bg-secondarybg p-4 rounded-xl border border-secondarybg">
+            <div className="bg-secondarybg border-secondarybg flex flex-col gap-4 rounded-xl border p-4 md:flex-row">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-txtcolor-300 w-4 h-4" />
+                    <Search className="text-txtcolor-300 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <input
                         type="text"
                         placeholder="Szukaj po nazwie..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-inputbg border border-secondarybg text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-txtcolor-300"
+                        className="bg-inputbg border-secondarybg text-foreground focus:ring-primary placeholder:text-txtcolor-300 w-full rounded-lg border py-2 pr-4 pl-10 focus:ring-2 focus:outline-none"
                     />
                 </div>
-
                 <div className="relative w-full md:w-48">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-txtcolor-300 w-4 h-4" />
+                    <Filter className="text-txtcolor-300 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full pl-10 pr-8 py-2 rounded-lg bg-inputbg border border-secondarybg text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                        className="bg-inputbg border-secondarybg text-foreground focus:ring-primary w-full cursor-pointer appearance-none rounded-lg border py-2 pr-8 pl-10 focus:ring-2 focus:outline-none"
                     >
                         <option value="ALL">Wszystkie</option>
                         <option value="DRAFT">Szkic</option>
@@ -162,20 +92,18 @@ export default function CouncilEventsPage() {
                         <option value="APPROVED">Zatwierdzone</option>
                         <option value="REJECTED">Odrzucone</option>
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-txtcolor-300 w-4 h-4 pointer-events-none" />
+                    <ChevronDown className="text-txtcolor-300 pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
                 </div>
             </div>
-
             <div>
-                <h2 className="text-lg font-semibold text-txtcolor-300 mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
-                    Aktualne i Nadchodzące
-                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">
+                <h2 className="text-txtcolor-300 mb-4 flex items-center gap-2 text-lg text-sm font-semibold tracking-wider uppercase">
+                    Aktualne i Nadchodzące{' '}
+                    <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs">
                         {activeEvents.length}
                     </span>
                 </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {activeEvents.map(event => (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+                    {activeEvents.map((event) => (
                         <EventCard
                             key={event.id}
                             event={event}
@@ -184,28 +112,31 @@ export default function CouncilEventsPage() {
                         />
                     ))}
                     {activeEvents.length === 0 && (
-                        <div className="col-span-full py-10 text-center text-txtcolor-300 bg-secondarybg/30 rounded-lg border border-dashed border-secondarybg">
+                        <div className="text-txtcolor-300 bg-secondarybg/30 border-secondarybg col-span-full rounded-lg border border-dashed py-10 text-center">
                             Brak wydarzeń spełniających kryteria.
                         </div>
                     )}
                 </div>
             </div>
 
-            <div className="border-t border-secondarybg pt-4">
+            <div className="border-secondarybg border-t pt-4">
                 <button
                     onClick={() => setIsArchiveOpen(!isArchiveOpen)}
-                    className="flex items-center gap-2 text-txtcolor-300 hover:text-primary transition w-full group"
+                    className="text-txtcolor-300 hover:text-primary group flex w-full items-center gap-2 transition"
                 >
-                    {isArchiveOpen ? <ChevronUp className="w-5 h-5"/> : <ChevronDown className="w-5 h-5"/>}
-                    <span className="font-semibold text-lg">Archiwum (Zakończone / Odrzucone)</span>
-                    <span className="bg-secondarybg group-hover:bg-primary/10 text-xs px-2 py-0.5 rounded-full transition-colors">
+                    {isArchiveOpen ? (
+                        <ChevronUp className="h-5 w-5" />
+                    ) : (
+                        <ChevronDown className="h-5 w-5" />
+                    )}
+                    <span className="text-lg font-semibold">Archiwum (Zakończone / Odrzucone)</span>
+                    <span className="bg-secondarybg group-hover:bg-primary/10 rounded-full px-2 py-0.5 text-xs transition-colors">
                         {archiveEvents.length}
                     </span>
                 </button>
-
                 {isArchiveOpen && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6 animate-in slide-in-from-top-2">
-                        {archiveEvents.map(event => (
+                    <div className="animate-in slide-in-from-top-2 mt-6 grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+                        {archiveEvents.map((event) => (
                             <EventCard
                                 key={event.id}
                                 event={event}
@@ -213,10 +144,15 @@ export default function CouncilEventsPage() {
                                 variant="admin"
                             />
                         ))}
-                        {archiveEvents.length === 0 && <p className="text-txtcolor-300 text-sm col-span-full text-center py-4">Puste archiwum.</p>}
+                        {archiveEvents.length === 0 && (
+                            <p className="text-txtcolor-300 col-span-full py-4 text-center text-sm">
+                                Puste archiwum.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
+
             {selectedEvent && (
                 <EventDetailsModal
                     event={selectedEvent}
@@ -225,63 +161,59 @@ export default function CouncilEventsPage() {
                         <>
                             {selectedEvent.status === 'PENDING' && (
                                 <>
-                                    <button
+                                    <ActionButton
                                         onClick={() => handleDecision(selectedEvent.id, 'REJECT')}
-                                        disabled={processingId === selectedEvent.id}
-                                        className="px-4 py-2 rounded-xl border border-error text-error hover:bg-error hover:text-foreground transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50"
-                                    >
-                                        {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <XCircle className="w-4 h-4" />}
-                                        Odrzuć
-                                    </button>
-                                    <button
+                                        isLoading={
+                                            isProcessing && processingId === selectedEvent.id
+                                        }
+                                        icon={XCircle}
+                                        label="Odrzuć"
+                                        color="error"
+                                    />
+                                    <ActionButton
                                         onClick={() => handleDecision(selectedEvent.id, 'APPROVE')}
-                                        disabled={processingId === selectedEvent.id}
-                                        className="px-5 py-2 rounded-xl bg-success text-darkgray hover:bg-success/90 border border-success/50 transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-success/20"
-                                    >
-                                        {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <CheckCircle className="w-4 h-4" />}
-                                        Zatwierdź
-                                    </button>
+                                        isLoading={
+                                            isProcessing && processingId === selectedEvent.id
+                                        }
+                                        icon={CheckCircle}
+                                        label="Zatwierdź"
+                                        color="success"
+                                    />
                                 </>
                             )}
-
                             {selectedEvent.status === 'DRAFT' && (
-                                <button
+                                <ActionButton
                                     onClick={() => handleDecision(selectedEvent.id, 'PENDING')}
-                                    disabled={processingId === selectedEvent.id}
-                                    className="px-5 py-2 rounded-xl bg-primary text-darkgray hover:bg-secondary  transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50 shadow-lg hover:shadow-lg"
-                                >
-                                    {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <Send className="w-4 h-4" />}
-                                    Wyślij do akceptacji
-                                </button>
+                                    isLoading={isProcessing && processingId === selectedEvent.id}
+                                    icon={Send}
+                                    label="Wyślij do akceptacji"
+                                    color="primary"
+                                />
+                            )}
+                            {(selectedEvent.status === 'APPROVED' ||
+                                selectedEvent.status === 'REJECTED') && (
+                                <ActionButton
+                                    onClick={() => handleDecision(selectedEvent.id, 'PENDING')}
+                                    isLoading={isProcessing && processingId === selectedEvent.id}
+                                    icon={RotateCcw}
+                                    label="Przywróć"
+                                    color="neutral"
+                                />
                             )}
 
-                            {(selectedEvent.status === 'APPROVED' || selectedEvent.status === 'REJECTED') && (
-                                <button
-                                    onClick={() => handleDecision(selectedEvent.id, 'PENDING')}
-                                    disabled={processingId === selectedEvent.id}
-                                    className="px-4 py-2 rounded-xl border border-txtcolor-300 text-txtcolor-300 hover:text-foreground hover:bg-secondarybg transition-all font-bold text-sm flex items-center gap-2 disabled:opacity-50"
-                                    title="Cofnij status do oczekujących"
-                                >
-                                    {processingId === selectedEvent.id ? <Loader2 className="animate-spin w-4 h-4"/> : <RotateCcw className="w-4 h-4" />}
-                                    Przywróć
-                                </button>
-                            )}
-
-                            <div className="w-px h-8 bg-secondarybg mx-1" />
-
+                            <div className="bg-secondarybg mx-1 h-8 w-px" />
                             <button
                                 onClick={() => handleDelete(selectedEvent.id)}
-                                className="p-2 rounded-xl text-txtcolor-300 hover:text-error hover:bg-error/10 transition-all"
+                                className="text-txtcolor-300 hover:text-error hover:bg-error/10 rounded-xl p-2 transition-all"
                                 title="Usuń"
                             >
-                                <Trash2 className="w-5 h-5" />
+                                <Trash2 className="h-5 w-5" />
                             </button>
-
                             <Link
                                 href={`/dashboard/council/${councilId}/events/${selectedEvent.id}/edit`}
-                                className="px-4 py-2 rounded-xl bg-primary text-darkgray hover:bg-secondary transition-all font-bold text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
+                                className="bg-primary text-darkgray hover:bg-secondary flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-md transition-all hover:shadow-lg"
                             >
-                                <Edit className="w-4 h-4" /> Edytuj
+                                <Edit className="h-4 w-4" /> Edytuj
                             </Link>
                         </>
                     }
@@ -290,3 +222,28 @@ export default function CouncilEventsPage() {
         </div>
     );
 }
+
+const ActionButton = ({ onClick, isLoading, icon: Icon, label, color }: any) => {
+    const styles: any = {
+        error: 'border border-error text-error hover:bg-error hover:text-foreground',
+        success:
+            'bg-success text-darkgray hover:bg-success/90 border border-success/50 shadow-lg shadow-success/20',
+        primary: 'bg-primary text-darkgray hover:bg-secondary shadow-lg hover:shadow-lg',
+        neutral:
+            'border border-txtcolor-300 text-txtcolor-300 hover:text-foreground hover:bg-secondarybg',
+    };
+    return (
+        <button
+            onClick={onClick}
+            disabled={isLoading}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all disabled:opacity-50 ${styles[color]}`}
+        >
+            {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+                <Icon className="h-4 w-4" />
+            )}{' '}
+            {label}
+        </button>
+    );
+};
