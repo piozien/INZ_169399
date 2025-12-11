@@ -1,14 +1,13 @@
 {
-  "name": "su_frontend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbo",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "format": "prettier --write ."
-  },
+    "name": "su_frontend",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev --turbo",
+        "build": "next build",
+        "start": "next start",
+        "format": "prettier --write ."
+    },
     "dependencies": {
         "@tanstack/react-query": "^5.90.8",
         "date-fns": "^4.1.0",
@@ -35,7 +34,7 @@
         "autoprefixer": "^10.4.22",
         "baseline-browser-mapping": "^2.8.32",
         "eslint": "^9.39.1",
-        "eslint-config-next": "^16.0.3",
+        "eslint-config-next": "^16.0.8",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-react": "^7.37.5",
         "eslint-plugin-react-hooks": "^7.0.1",

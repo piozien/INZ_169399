@@ -111,7 +111,7 @@ function ResetPasswordForm() {
         <main className="flex min-h-screen items-center justify-center p-3">
             <div className="bg-secondarybg border-border flex w-full max-w-[404px] flex-col items-center justify-center rounded-[11.83px] border px-3 py-10 text-center shadow-2xl">
                 <div className="flex flex-col items-center">
-                    <SchoolRounded className="text-primary mb-2 h-16 w-16" />
+                    <SchoolRounded className="text-secondary mb-2 h-16 w-16" />
                     <h1 className="text-foreground mt-4 text-[23.42px] font-semibold">
                         Ustaw nowe hasło
                     </h1>
