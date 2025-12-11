@@ -1,0 +1,74 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${JDBC_DATABASE_URL}
+    username: ${JDBC_DATABASE_USERNAME}
+    password: ${JDBC_DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  security:
+    oauth2:
+      client:
+        registration:
+          microsoft:
+            client-id: ${OAUTH2_MICROSOFT_CLIENT_ID}
+            client-secret: ${OAUTH2_MICROSOFT_CLIENT_SECRET}
+            scope: openid,profile,email,offline_access,https://graph.microsoft.com/Calendars.ReadWrite
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/microsoft"
+        provider:
+          microsoft:
+            token-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token
+            authorization-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize
+            jwk-set-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/discovery/v2.0/keys
+            user-name-attribute: sub
+
+
+FRONTEND_URL: ${FRONTEND_URL}
+
+JWT_SECRET: ${JWT_SECRET}
+JWT_EXPIRATION: ${JWT_EXPIRATION}
+JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+PASSWORD_RESET_EXPIRATION_HOURS: ${PASSWORD_RESET_EXPIRATION_HOURS}
+
+ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING}
+ACS_SENDER_ADDRESS: ${ACS_SENDER_ADDRESS}
+
+MS_GRAPH_BASE_URL: "https://graph.microsoft.com"
+MS_GRAPH_BASE_URL_01: "https://graph.microsoft.com/v1.0"
+
+OAUTH2_MICROSOFT_CLIENT_ID: ${OAUTH2_MICROSOFT_CLIENT_ID}
+OAUTH2_MICROSOFT_CLIENT_SECRET: ${OAUTH2_MICROSOFT_CLIENT_SECRET}
+OUATH2_TENTANT_ID: ${AZURE_TENANT_ID}
+AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+
+MS_GRAPH_CLIENT_ID: ${OAUTH2_MICROSOFT_CLIENT_ID}
+MS_GRAPH_CLIENT_SECRET: ${OAUTH2_MICROSOFT_CLIENT_SECRET}
+MS_GRAPH_TENANT_ID: ${AZURE_TENANT_ID}
+
+app:
+  frontend:
+    url: ${FRONTEND_URL}
+  cookie:
+    secure: true
+  activation:
+    expiration-ms: ${ACTIVATION_EXPIRATION_MS}
+
+logging:
+  level:
+    pl.su.su_backend: INFO
