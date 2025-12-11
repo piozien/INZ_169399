@@ -10,7 +10,6 @@ import FormField from '@/components/FormField';
 
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { ApiError } from '@/types/error.types';
-import { LoginRequestDto } from '@/types/auth.types';
 import { getMicrosoftAuthUrl } from '@/lib/api/auth';
 
 function LoginForm() {
