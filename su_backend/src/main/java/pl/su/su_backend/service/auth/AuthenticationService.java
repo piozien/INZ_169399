@@ -2,8 +2,7 @@ package pl.su.su_backend.service.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -46,19 +45,33 @@ public class AuthenticationService {
                     .orElseThrow(() -> ApiException.notFound("Użytkownik nie istnieje"));
 
             if (user.isBlocked()) {
-                log.warn("A blocked user is attempting to log in: {}", user.getEmail());
                 throw ApiException.forbidden("Twoje konto zostało zablokowane. Skontaktuj się z administratorem.");
             }
 
             if (user.getStatus() == StatusEnum.PENDING) {
-                log.warn("An inactive user is attempting to log in.: {}", user.getEmail());
                 throw ApiException.forbidden("Konto nie zostało jeszcze aktywowane. Sprawdź skrzynkę email.");
             }
 
             return generateResponse(user);
+
+        } catch (ApiException e) {
+            throw e;
+
+        } catch (LockedException e) {
+            log.warn("Login blocked user attempt: {}", request.getEmail());
+            throw ApiException.forbidden("Twoje konto zostało zablokowane. Skontaktuj się z administratorem.");
+
+        } catch (DisabledException e) {
+            log.warn("Login disabled user attempt: {}", request.getEmail());
+            throw ApiException.forbidden("Konto nie zostało jeszcze aktywowane.");
+
+        } catch (BadCredentialsException e) {
+            log.warn("Invalid credentials for: {}", request.getEmail());
+            throw ApiException.unauthorized("Błędny email lub hasło");
+
         } catch (Exception e) {
-            log.warn("Local login error: {}", e.getMessage());
-            throw ApiException.unauthorized( "Błędny email lub hasło");
+            log.error("Unknown login error: {}", e.getMessage());
+            throw ApiException.unauthorized("Błąd logowania");
         }
     }
 
@@ -75,13 +88,13 @@ public class AuthenticationService {
 
             log.info("Odpowiedź z Microsoft Graph: {}", msUser);
 
-            if (msUser == null) throw ApiException.unauthorized( "Nieprawidłowy token");
+            if (msUser == null) throw ApiException.unauthorized("Nieprawidłowy token");
 
             String email = (String) msUser.getOrDefault("mail", msUser.get("userPrincipalName"));
             String externalId = (String) msUser.get("id");
             String displayName = (String) msUser.get("displayName");
 
-            if (email == null) throw ApiException.unauthorized( "Brak emaila w koncie MS");
+            if (email == null) throw ApiException.unauthorized("Brak emaila w koncie MS");
 
             Users user = userService.getOrCreateMicrosoftUser(email, displayName, externalId);
 
@@ -95,7 +108,7 @@ public class AuthenticationService {
             throw e;
         } catch (Exception e) {
             log.error("Error MS: {}", e.getMessage());
-            throw ApiException.unauthorized( "Błąd weryfikacji konta Microsoft");
+            throw ApiException.unauthorized("Błąd weryfikacji konta Microsoft");
         }
     }
 
