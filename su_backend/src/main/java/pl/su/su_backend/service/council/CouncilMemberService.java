@@ -12,6 +12,8 @@ import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.RoleCategory;
 import pl.su.su_backend.model.enums.RoleCode;
+import pl.su.su_backend.model.roles.Role;
+import pl.su.su_backend.model.users.UserRole;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.council.CouncilRepository;
@@ -19,10 +21,7 @@ import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
 import pl.su.su_backend.service.log.ActivityLogService;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -96,28 +95,40 @@ public class CouncilMemberService {
         return councilMemberRepository.findByCouncilId(councilId);
     }
 
+    @Transactional
     public void removeMember(UUID councilId, UUID userId, String actingUserEmail) {
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
 
         boolean isSelf = actingUser.getId().equals(userId);
-        boolean hasPermissionManage = permissionService.hasPermission(actingUser.getId(), PermissionCode.COUNCIL_MEMBER_MANAGE
-                , councilId);
 
+        boolean hasPermissionManage = permissionService.hasPermission(actingUser.getId(),
+                PermissionCode.COUNCIL_MEMBER_MANAGE, councilId);
 
         if (!isSelf && !hasPermissionManage) {
             throw ApiException.forbidden("Brak uprawnień do usuwania członków");
         }
 
         CouncilMember.CouncilMemberId membershipId = new CouncilMember.CouncilMemberId(councilId, userId);
-        CouncilMember councilMember = councilMemberRepository.findById(membershipId)
+        CouncilMember targetMember = councilMemberRepository.findById(membershipId)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono członka samorządu"));
 
-        councilMemberRepository.delete(councilMember);
+        if (!isSelf) {
+            int actingRank = getCouncilRank(councilId, actingUser);
+            int targetRank = targetMember.getRole().getRank();
 
-        activityLogService.log(actingUser.getId(), ActionType.USER_UPDATED, "Usunięto członka z samorządu.");
+            if (actingRank <= targetRank) {
+                throw ApiException.forbidden("Nie posiadasz wystarczającej rangi, aby usunąć tego członka.");
+            }
+        }
+
+        councilMemberRepository.delete(targetMember);
+
+        activityLogService.log(actingUser.getId(), ActionType.USER_UPDATED,
+                "Usunięto członka z samorządu (ID: " + userId + ")");
     }
 
+    @Transactional
     public CouncilMember updateMemberRole(UUID councilId, UUID userId, RoleCode newRoleCode, String actingUserEmail) {
         Users actingUser = usersRepository.findByEmail(actingUserEmail)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
@@ -127,15 +138,31 @@ public class CouncilMemberService {
         }
 
         CouncilMember.CouncilMemberId membershipId = new CouncilMember.CouncilMemberId(councilId, userId);
-        CouncilMember councilMember = councilMemberRepository.findById(membershipId)
+        CouncilMember targetMember = councilMemberRepository.findById(membershipId)
                 .orElseThrow(() -> ApiException.notFound("Nie znaleziono członka samorządu"));
 
         if (newRoleCode.getCategory() != RoleCategory.SU) {
             throw ApiException.badRequest("Można przypisywać tylko role samorządowe.");
         }
 
-        councilMember.setRole(newRoleCode);
-        return councilMemberRepository.save(councilMember);
+        int actingRank = getCouncilRank(councilId, actingUser);
+        int targetCurrentRank = targetMember.getRole().getRank();
+        int newRoleRank = newRoleCode.getRank();
+
+        if (actingRank <= targetCurrentRank) {
+            throw ApiException.forbidden("Nie możesz modyfikować członka o randze równej lub wyższej od Twojej.");
+        }
+
+        if (actingRank <= newRoleRank) {
+            throw ApiException.forbidden("Nie możesz nadać rangi równej lub wyższej od Twojej własnej.");
+        }
+
+        targetMember.setRole(newRoleCode);
+
+        activityLogService.log(actingUser.getId(), ActionType.USER_UPDATED,
+                "Zmieniono rolę członka " + targetMember.getUser().getEmail() + " na " + newRoleCode);
+
+        return councilMemberRepository.save(targetMember);
     }
 
     @Transactional(readOnly = true)
@@ -180,5 +207,24 @@ public class CouncilMemberService {
                 .filter(role -> role.getCategory() == RoleCategory.SU)
                 .map(role -> new RoleOptionDto(role.name(), role.getDisplayName()))
                 .collect(Collectors.toList());
+    }
+
+    private int getCouncilRank(UUID councilId, Users user) {
+        RoleCode globalHighest = getHighestGlobalRole(user);
+        if (globalHighest == RoleCode.ADMINISTRATOR) {
+            return Integer.MAX_VALUE;
+        }
+
+        return councilMemberRepository.findByCouncilIdAndUserId(councilId, user.getId())
+                .map(member -> member.getRole().getRank())
+                .orElse(-1);
+    }
+
+    private RoleCode getHighestGlobalRole(Users user) {
+        return user.getUserRoles().stream()
+                .map(UserRole::getRole)
+                .map(Role::getRoleCode)
+                .max(Comparator.comparingInt(RoleCode::getRank))
+                .orElse(RoleCode.UCZEN);
     }
 }
