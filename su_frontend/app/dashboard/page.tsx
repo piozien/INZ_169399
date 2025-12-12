@@ -97,7 +97,7 @@ export default function DashboardPage() {
                             title="Wydarzenia"
                             icon={CalendarDays}
                             value={summary?.upcomingEventsCount}
-                            subValue="nadchodzących"
+                            subValue="oczekujących"
                             linkHref={`/dashboard/council/${summary?.activeCouncilId}/events`}
                             linkText="Zarządzaj kalendarzem"
                             theme="info"
