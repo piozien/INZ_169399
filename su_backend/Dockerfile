@@ -14,5 +14,4 @@ COPY --from=builder /app/target/*.jar app.jar
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
-# Uruchamiamy skrypt
 ENTRYPOINT ["./entrypoint.sh"]
