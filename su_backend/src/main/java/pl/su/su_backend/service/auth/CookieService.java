@@ -18,18 +18,18 @@ public class CookieService {
     public void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
                 .httpOnly(true)
-                .secure(false) // true on prod, https
+                .secure(true) // true on prod, https
                 .path("/")
                 .maxAge(jwtExpiration / 1000)
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/api/auth/refresh")
                 .maxAge(refreshExpiration / 1000)
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
