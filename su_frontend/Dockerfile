@@ -7,6 +7,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+ENV NEXT_PUBLIC_API_URL=https://subackend-89f03bcfe431.herokuapp.com/api
+
 RUN npm run build
 
 FROM node:20-alpine AS runner
