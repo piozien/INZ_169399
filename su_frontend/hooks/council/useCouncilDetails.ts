@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { fetchCouncilById, leaveCouncil } from '@/lib/api/council';
+import {deleteCouncil, fetchCouncilById, leaveCouncil} from '@/lib/api/council';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { CouncilResponseDto } from '@/types/council.types';
 
@@ -12,6 +12,8 @@ export const useCouncilDetails = (councilId: string) => {
 
     const [copied, setCopied] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const {
         data: council,
@@ -47,6 +49,19 @@ export const useCouncilDetails = (councilId: string) => {
         }
     };
 
+    const deleteMutation = useMutation({
+        mutationFn: () => deleteCouncil(councilId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+            setIsDeleteModalOpen(false);
+            router.push('/dashboard');
+            router.refresh();
+        },
+        onError: (err) => {
+            alert('Nie udało się usunąć samorządu. ' + (err instanceof Error ? err.message : ''));
+        }
+    });
+
     const hasPermission = (perm: string) => {
         if (!council?.myPermissions) return false;
         return council.myPermissions.includes('ALL_ACCESS') || council.myPermissions.includes(perm);
@@ -72,5 +87,11 @@ export const useCouncilDetails = (councilId: string) => {
         isEditModalOpen,
         openEditModal: () => setIsEditModalOpen(true),
         closeEditModal: () => setIsEditModalOpen(false),
+
+        removeCouncil: () => deleteMutation.mutate(),
+        isDeleting: deleteMutation.isPending,
+        isDeleteModalOpen,
+        openDeleteModal: () => setIsDeleteModalOpen(true),
+        closeDeleteModal: () => setIsDeleteModalOpen(false),
     };
 };

@@ -101,7 +101,6 @@ public class EventService {
         event.setStartDate(dto.getStartDate());
         event.setEndDate(dto.getEndDate());
         event.setLocation(dto.getLocation());
-
         return eventMapper.toResponse(eventRepository.save(event));
     }
 

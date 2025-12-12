@@ -112,7 +112,7 @@ public class UserService {
         assignDefaultRole(savedUser);
         sendActivationEmail(savedUser);
 
-        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "Użytkownik zarejestrowany lokalnei.");
+        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "Użytkownik zarejestrowany lokalnie.");
 
         return userMapper.toResponseDto(savedUser);
     }
@@ -232,7 +232,7 @@ public class UserService {
         user.setStatus(StatusEnum.BLOCKED); // Soft delete
         usersRepository.save(user);
 
-        activityLogService.log(userId, ActionType.SOFT_DELETE, "Użytkownik został zablokowany");
+        activityLogService.log(userId, ActionType.SOFT_DELETE, "Użytkownik został zablokowany przez " + currentUser.getFullName());
     }
 
     @Transactional
@@ -249,7 +249,7 @@ public class UserService {
         user.setStatus(StatusEnum.CONFIRMED);
         usersRepository.save(user);
 
-        activityLogService.log(userId, ActionType.USER_UNBLOCKED, "Użytkownik odblokowany");
+        activityLogService.log(userId, ActionType.USER_UNBLOCKED, "Użytkownik odblokowany przez: " + currentUser.getFullName());
 
         return userMapper.toResponseDto(user);
     }

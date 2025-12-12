@@ -14,6 +14,7 @@ import {
 import { EventResponseDto } from '@/types/event.types';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import React from "react";
 
 interface Props {
     event: EventResponseDto;
@@ -98,17 +99,47 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
 
                 <div className="custom-scrollbar flex-1 space-y-8 overflow-y-auto p-6">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <InfoBox icon={Clock} label="Czas Trwania">
-                            {format(startDate, 'HH:mm', { locale: pl })} -{' '}
-                            {format(endDate, 'HH:mm', { locale: pl })}
-                        </InfoBox>
+
+                        <div className="bg-secondarybg border-secondarybg hover:border-secondary/30 flex items-start gap-4 rounded-2xl border p-4 transition-colors">
+                            <div className="bg-inputbg text-secondary border-secondary/10 shrink-0 rounded-xl border p-2.5">
+                                <Clock className="h-6 w-6" />
+                            </div>
+                            <div className="w-full">
+                                <p className="text-txtcolor-300 mb-2 text-xs font-bold tracking-wide uppercase">Czas Trwania</p>
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-success ring-4 ring-success/10" />
+                                        <span className="text-foreground font-semibold text-sm">
+                                            {format(startDate, 'dd.MM.yyyy', { locale: pl })}
+                                            <span className="text-txtcolor-300 ml-1">godz.</span> {format(startDate, 'HH:mm')}
+                                        </span>
+                                    </div>
+
+                                    <div className="ml-[3.5px] h-3 border-l-2 border-dashed border-secondary/20 my-0.5" />
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-warning ring-4 ring-warning/10" />
+                                        <span className="text-foreground font-semibold text-sm">
+                                            {format(endDate, 'dd.MM.yyyy', { locale: pl })}
+                                            <span className="text-txtcolor-300 ml-1">godz.</span> {format(endDate, 'HH:mm')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <InfoBox icon={MapPin} label="Lokalizacja">
-                            {event.location || 'Online'}
+                            <span className="break-words">{event.location || 'Online'}</span>
                         </InfoBox>
+
                         <div className="md:col-span-2">
                             <InfoBox icon={Users} label="Uczestnicy">
-                                {getParticipantsLabel(event.participants?.length || 0)} na to
-                                wydarzenie
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-foreground">{event.participants?.length || 0}</span>
+                                    <span className="text-txtcolor-300">
+                                        {getParticipantsLabel(event.participants?.length || 0).replace(/^\d+\s/, '')}
+                                    </span>
+                                </div>
                             </InfoBox>
                         </div>
                     </div>
@@ -117,7 +148,7 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
                         <div className="text-secondary flex items-center gap-2 text-sm font-bold tracking-widest uppercase">
                             <AlignLeft className="h-4 w-4" /> Opis Wydarzenia
                         </div>
-                        <div className="prose prose-invert text-foregorund bg-secondarybg border-secondarybg max-w-none rounded-2xl border p-5 leading-relaxed">
+                        <div className="prose prose-invert text-foreground bg-secondarybg border-secondarybg max-w-none rounded-2xl border p-5 leading-relaxed">
                             {event.description}
                         </div>
                     </div>
@@ -141,12 +172,14 @@ export default function EventDetailsModal({ event, onClose, actions }: Props) {
 
 const InfoBox = ({ icon: Icon, label, children }: any) => (
     <div className="bg-secondarybg border-secondarybg hover:border-secondary/30 flex h-full items-start gap-4 rounded-2xl border p-4 transition-colors">
-        <div className="bg-inputbg text-secondary border-secondary/10 rounded-xl border p-2.5">
+        <div className="bg-inputbg text-secondary border-secondary/10 shrink-0 rounded-xl border p-2.5">
             <Icon className="h-6 w-6" />
         </div>
-        <div>
-            <p className="text-txtcolor-300 text-xs font-bold tracking-wide uppercase">{label}</p>
-            <p className="text-foreground mt-0.5 font-semibold">{children}</p>
+        <div className="w-full min-w-0">
+            <p className="text-txtcolor-300 mb-0.5 text-xs font-bold tracking-wide uppercase">{label}</p>
+            <div className="text-foreground font-semibold leading-snug">
+                {children}
+            </div>
         </div>
     </div>
 );
