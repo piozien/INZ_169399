@@ -192,8 +192,6 @@ sketch
 
 *.tex
 
-*.sql
-
 su_frontend/.idea/
 
 su_backend/src/main/resources/application-dev.yml

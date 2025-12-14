@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {toast} from "sonner";
 import { fetchAllCouncilsAdmin, deleteCouncilAdmin } from '@/lib/api/admin';
 
 export const useAdminCouncils = () => {
@@ -24,10 +25,12 @@ export const useAdminCouncils = () => {
         mutationFn: deleteCouncilAdmin,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminCouncils'] });
-            alert('Samorząd został usunięty.');
+            toast.success(`Samorząd został usunięty.`);
         },
         onError: (error: any) => {
-            alert('Nie udało się usunąć samorządu: ' + (error.message || 'Błąd'));
+            toast.error('Nie udało się usunąć samorządu', {
+                description: error.message || 'Nie udało się usunąć samorządu',
+            });
         },
     });
 

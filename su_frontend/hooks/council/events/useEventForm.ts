@@ -1,5 +1,6 @@
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { fetchEventById, createEvent, updateEvent } from '@/lib/api/events';
 import { EventRequestDto } from '@/types/event.types';
 
@@ -19,10 +20,11 @@ export const useEventForm = (councilId: string, eventId?: string) => {
         mutationFn: (data: EventRequestDto) => createEvent({ ...data, councilId }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['councilEvents', councilId] });
+            toast.success('Wydarzenie utworzone pomyślnie');
             router.push(`/dashboard/council/${councilId}/events`);
         },
-        onError: (err) =>
-            alert('Błąd tworzenia: ' + (err instanceof Error ? err.message : 'Nieznany błąd')),
+        onError: (err: any) =>
+            toast.error('Błąd tworzenia', { description: err.message || 'Nieznany błąd' }),
     });
 
     const updateMutation = useMutation({
@@ -30,10 +32,11 @@ export const useEventForm = (councilId: string, eventId?: string) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['councilEvents', councilId] });
             queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+            toast.success('Zmiany zapisane');
             router.push(`/dashboard/council/${councilId}/events`);
         },
-        onError: (err) =>
-            alert('Błąd edycji: ' + (err instanceof Error ? err.message : 'Nieznany błąd')),
+        onError: (err: any) =>
+            toast.error('Błąd edycji', { description: err.message || 'Nieznany błąd' }),
     });
 
     const handleSubmit = (formData: EventRequestDto) => {

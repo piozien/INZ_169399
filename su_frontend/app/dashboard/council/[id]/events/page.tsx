@@ -42,6 +42,7 @@ export default function CouncilEventsPage() {
         handleDecision,
         isProcessing,
         processingId,
+        removeParticipant,
     } = useCouncilEvents(councilId);
 
     if (isLoading) return <div className="text-primary p-8">Ładowanie...</div>;
@@ -95,6 +96,7 @@ export default function CouncilEventsPage() {
                     <ChevronDown className="text-txtcolor-300 pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
                 </div>
             </div>
+
             <div>
                 <h2 className="text-txtcolor-300 mb-4 flex items-center gap-2 text-lg text-sm font-semibold tracking-wider uppercase">
                     Aktualne i Nadchodzące{' '}
@@ -157,6 +159,7 @@ export default function CouncilEventsPage() {
                 <EventDetailsModal
                     event={selectedEvent}
                     onClose={() => setSelectedEvent(null)}
+                    onRemoveParticipant={(eventId, userId) => removeParticipant({ eventId, userId })}
                     actions={
                         <>
                             {selectedEvent.status === 'PENDING' && (

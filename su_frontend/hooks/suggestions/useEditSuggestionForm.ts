@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { SuggestionDto, CreateSuggestionPayload } from '@/types/suggestions.types';
 
@@ -32,11 +33,18 @@ export const useEditSuggestionForm = (
         e.preventDefault();
 
         if (!title || !description) return;
-        if (!user?.id) return alert('Błąd: Nie rozpoznano użytkownika.');
-        if (title.length > TITLE_MAX_LENGTH)
-            return alert(`Tytuł jest za długi (max ${TITLE_MAX_LENGTH} znaków).`);
-        if (description.length > DESC_MAX_LENGTH)
-            return alert(`Opis jest za długi (max ${DESC_MAX_LENGTH} znaków).`);
+        if (!user?.id) {
+            toast.error('Błąd: Nie rozpoznano użytkownika.');
+            return;
+        }
+        if (title.length > TITLE_MAX_LENGTH) {
+            toast.error(`Tytuł jest za długi (max ${TITLE_MAX_LENGTH} znaków).`);
+            return;
+        }
+        if (description.length > DESC_MAX_LENGTH) {
+            toast.error(`Opis jest za długi (max ${DESC_MAX_LENGTH} znaków).`);
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -55,23 +63,18 @@ export const useEditSuggestionForm = (
             onClose();
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Błąd podczas edycji sugestii.';
-            alert(`Nie udało się zapisać zmian: ${msg}`);
+            toast.error('Nie udało się zapisać zmian', { description: msg });
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return {
-        title,
-        setTitle,
-        description,
-        setDescription,
-        isAnonymous,
-        setIsAnonymous,
-        tagsInput,
-        setTagsInput,
+        title, setTitle,
+        description, setDescription,
+        isAnonymous, setIsAnonymous,
+        tagsInput, setTagsInput,
         isSubmitting,
-
         handleSubmit,
         TITLE_MAX_LENGTH,
         DESC_MAX_LENGTH,

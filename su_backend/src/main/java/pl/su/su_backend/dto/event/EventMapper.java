@@ -23,5 +23,7 @@ public interface EventMapper {
 
     @Mapping(target = "eventId", source = "event.id")
     @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "userFullName", source = "user.fullName")
+    @Mapping(target = "userEmail", source = "user.email")
     ParticipantResponseDto toParticipantResponse(EventParticipant participant);
 }

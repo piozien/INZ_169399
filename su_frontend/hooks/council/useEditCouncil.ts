@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { updateCouncil } from '@/lib/api/council';
 import { CouncilResponseDto, CouncilRequestDto } from '@/types/council.types';
 import { format } from 'date-fns';
@@ -18,10 +19,8 @@ export const useEditCouncil = (
 
     const [name, setName] = useState(council.name);
     const [academicYear, setAcademicYear] = useState(council.academicYear);
-
     const [startDate, setStartDate] = useState(toInputDate(council.startDate));
     const [endDate, setEndDate] = useState(toInputDate(council.endDate));
-
     const [active, setActive] = useState(council.active);
     const [defaultCouncil, setDefaultCouncil] = useState(council.defaultCouncil);
 
@@ -41,17 +40,16 @@ export const useEditCouncil = (
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['council', council.id] });
             queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+            toast.success('Samorząd zaktualizowany');
             onClose();
         },
-        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd edycji'),
+        onError: (err: any) =>
+            toast.error('Błąd edycji', { description: err.message }),
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        const apiStartDate = startDate
-            ? new Date(startDate).toISOString()
-            : new Date().toISOString();
+        const apiStartDate = startDate ? new Date(startDate).toISOString() : new Date().toISOString();
         const apiEndDate = endDate ? new Date(endDate).toISOString() : new Date().toISOString();
 
         mutation.mutate({
@@ -66,14 +64,17 @@ export const useEditCouncil = (
 
     const toggleArchive = () => {
         if (active) {
-            if (
-                confirm(
-                    'Czy na pewno chcesz zarchiwizować ten samorząd? Nie będzie on już domyślny.'
-                )
-            ) {
-                setActive(false);
-                setDefaultCouncil(false);
-            }
+            toast('Czy chcesz zarchiwizować ten samorząd?', {
+                description: 'Przestanie on być domyślny.',
+                action: {
+                    label: 'Archiwizuj',
+                    onClick: () => {
+                        setActive(false);
+                        setDefaultCouncil(false);
+                    },
+                },
+                cancel: { label: 'Anuluj', onClick: () => {} },
+            });
         } else {
             setActive(true);
         }
@@ -90,18 +91,12 @@ export const useEditCouncil = (
     };
 
     return {
-        name,
-        setName,
-        academicYear,
-        setAcademicYear,
-        startDate,
-        setStartDate,
-        endDate,
-        setEndDate,
-        active,
-        toggleArchive,
-        defaultCouncil,
-        toggleDefault,
+        name, setName,
+        academicYear, setAcademicYear,
+        startDate, setStartDate,
+        endDate, setEndDate,
+        active, toggleArchive,
+        defaultCouncil, toggleDefault,
         handleSubmit,
         isPending: mutation.isPending,
     };

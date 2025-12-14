@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { fetchUpcomingEvents, joinEvent, leaveEvent } from '@/lib/api/events';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { EventResponseDto } from '@/types/event.types';
@@ -22,13 +23,24 @@ export const useUserEvents = () => {
 
     const joinMutation = useMutation({
         mutationFn: joinEvent,
-        onSuccess: async () => {
+        onMutate: () => {
+            const toastId = toast.loading('Zapisywanie...');
+            return { toastId };
+        },
+        onSuccess: async (_, __, context) => {
             await queryClient.invalidateQueries({ queryKey: ['upcomingEvents'] });
-            alert('Pomyślnie dołączono! Zaproszenie zostało wysłane na email.');
+            toast.dismiss(context?.toastId);
+            toast.success('Pomyślnie dołączono!', {
+                description: 'Zaproszenie zostało wysłane na email.',
+            });
             closeModal();
         },
-        onError: (err) =>
-            alert('Nie udało się dołączyć: ' + (err instanceof Error ? err.message : 'Błąd')),
+        onError: (err, _, context) => {
+            toast.dismiss(context?.toastId);
+            toast.error('Nie udało się dołączyć', {
+                description: err instanceof Error ? err.message : 'Błąd',
+            });
+        },
     });
 
     const leaveMutation = useMutation({
@@ -38,11 +50,13 @@ export const useUserEvents = () => {
         },
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: ['upcomingEvents'] });
-            alert('Opuszczono wydarzenie.');
+            toast.info('Opuszczono wydarzenie.');
             closeModal();
         },
         onError: (err) =>
-            alert('Nie udało się zrezygnować: ' + (err instanceof Error ? err.message : 'Błąd')),
+            toast.error('Nie udało się zrezygnować', {
+                description: err instanceof Error ? err.message : 'Błąd',
+            }),
     });
 
     const handleJoin = (eventId: string) => {
@@ -50,9 +64,17 @@ export const useUserEvents = () => {
     };
 
     const handleLeave = (eventId: string) => {
-        if (confirm('Czy na pewno chcesz zrezygnować z udziału w tym wydarzeniu?')) {
-            leaveMutation.mutate(eventId);
-        }
+        toast('Czy na pewno chcesz zrezygnować?', {
+            description: 'Stracisz miejsce na liście uczestników.',
+            action: {
+                label: 'Tak, rezygnuję',
+                onClick: () => leaveMutation.mutate(eventId),
+            },
+            cancel: {
+                label: 'Anuluj',
+                onClick: () => {},
+            },
+        });
     };
 
     const closeModal = () => setSelectedEvent(null);
@@ -64,15 +86,12 @@ export const useUserEvents = () => {
     return {
         events,
         isLoading,
-
         selectedEvent: activeEventDetails,
         setSelectedEvent,
         closeModal,
-
         handleJoin,
         handleLeave,
         isParticipating,
-
         isProcessing: joinMutation.isPending || leaveMutation.isPending,
         processingId: joinMutation.variables || leaveMutation.variables,
     };

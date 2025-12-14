@@ -1,15 +1,11 @@
-import { apiFetch } from './httpClient';
-import { EventRequestDto, EventResponseDto, ParticipantResponseDto } from '@/types/event.types';
+import {apiFetch} from './httpClient';
+import {EventRequestDto, EventResponseDto, ParticipantResponseDto} from '@/types/event.types';
 
 export const createEvent = async (data: EventRequestDto): Promise<EventResponseDto> => {
     return apiFetch<EventResponseDto>('/events', {
         method: 'POST',
         body: JSON.stringify(data),
     });
-};
-
-export const fetchAllEvents = async (): Promise<EventResponseDto[]> => {
-    return apiFetch<EventResponseDto[]>('/events');
 };
 
 export const fetchCouncilEvents = async (councilId: string): Promise<EventResponseDto[]> => {
@@ -49,6 +45,12 @@ export const approveEvent = async (eventId: string): Promise<EventResponseDto> =
 export const rejectEvent = async (eventId: string): Promise<EventResponseDto> => {
     return apiFetch<EventResponseDto>(`/events/${eventId}/reject`, {
         method: 'PUT',
+    });
+};
+
+export const removeParticipant = async (eventId: string, userId: string): Promise<void> => {
+    return apiFetch<void>(`/events/${eventId}/participants/${userId}`, {
+        method: 'DELETE',
     });
 };
 

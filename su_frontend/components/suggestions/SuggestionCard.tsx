@@ -1,9 +1,10 @@
 'use client';
 
-import { SuggestionDto } from '@/types/suggestions.types';
-import { Check, X, Trash2, Edit, User, VenetianMask } from 'lucide-react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import {SuggestionDto} from '@/types/suggestions.types';
+import {Check, X, Trash2, Edit, User, VenetianMask} from 'lucide-react';
+import {format} from 'date-fns';
+import {pl} from 'date-fns/locale';
+import {toast} from 'sonner';
 
 interface Props {
     suggestion: SuggestionDto;
@@ -43,27 +44,42 @@ const STATUS_STYLES = {
 };
 
 export default function SuggestionCard({
-    suggestion,
-    canApprove,
-    canReject,
-    canDelete,
-    canEdit = false,
-    onApprove,
-    onReject,
-    onDelete,
-    onEdit,
-    onClick,
-}: Props) {
+                                           suggestion,
+                                           canApprove,
+                                           canReject,
+                                           canDelete,
+                                           canEdit = false,
+                                           onApprove,
+                                           onReject,
+                                           onDelete,
+                                           onEdit,
+                                           onClick,
+                                       }: Props) {
     const status = STATUS_STYLES[suggestion.status] || STATUS_STYLES.PENDING;
     const isAnon = suggestion.anonymous;
     const authorName = isAnon ? 'Anonimowy' : suggestion.fullName || 'Uczeń';
+
+    const handleDeleteClick = () => {
+        toast('Czy na pewno chcesz usunąć tę sugestię?', {
+            description: 'Operacja jest nieodwracalna.',
+            action: {
+                label: 'Usuń',
+                onClick: () => onDelete(suggestion.id),
+            },
+            cancel: {
+                label: 'Anuluj',
+                onClick: () => {
+                },
+            },
+        });
+    };
 
     return (
         <div
             onClick={onClick}
             className={`bg-secondarybg/20 border-border hover:border-secondary/40 group relative flex flex-col overflow-hidden rounded-2xl border p-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${onClick ? 'cursor-pointer' : ''}`}
         >
-            <div className={`absolute top-0 bottom-0 left-0 w-1 ${status.bar} opacity-60`} />
+            <div className={`absolute top-0 bottom-0 left-0 w-1 ${status.bar} opacity-60`}/>
 
             <div className="mb-3 flex items-start justify-between gap-4 pl-2">
                 <div className="flex items-center gap-3 overflow-hidden">
@@ -71,9 +87,9 @@ export default function SuggestionCard({
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/5 shadow-inner ${isAnon ? 'bg-secondarybg text-txtcolor-300' : 'from-primary/80 to-secondary/80 text-darkgray bg-gradient-to-br'}`}
                     >
                         {isAnon ? (
-                            <VenetianMask className="h-5 w-5" />
+                            <VenetianMask className="h-5 w-5"/>
                         ) : (
-                            <User className="h-5 w-5" />
+                            <User className="h-5 w-5"/>
                         )}
                     </div>
 
@@ -85,7 +101,7 @@ export default function SuggestionCard({
                             <span className="max-w-[150px] truncate font-medium" title={authorName}>
                                 {authorName}
                             </span>
-                            <span className="bg-txtcolor-300/40 h-1 w-1 shrink-0 rounded-full" />
+                            <span className="bg-txtcolor-300/40 h-1 w-1 shrink-0 rounded-full"/>
                             <span className="shrink-0">
                                 {format(new Date(suggestion.createdAt), 'dd.MM.yyyy', {
                                     locale: pl,
@@ -108,7 +124,8 @@ export default function SuggestionCard({
                 </p>
             </div>
 
-            <div className="border-border/50 mt-auto flex flex-col items-start justify-between gap-4 border-t pt-4 pl-2 sm:flex-row sm:items-center">
+            <div
+                className="border-border/50 mt-auto flex flex-col items-start justify-between gap-4 border-t pt-4 pl-2 sm:flex-row sm:items-center">
                 <div className="flex flex-wrap gap-2">
                     {(suggestion.tags || []).map((tag) => (
                         <span
@@ -153,10 +170,7 @@ export default function SuggestionCard({
 
                     {canDelete && (
                         <ActionButton
-                            onClick={() => {
-                                if (confirm('Czy na pewno chcesz usunąć tę sugestię?'))
-                                    onDelete(suggestion.id);
-                            }}
+                            onClick={handleDeleteClick}
                             icon={Trash2}
                             title="Usuń"
                             variant="delete"
@@ -166,7 +180,8 @@ export default function SuggestionCard({
             </div>
 
             {suggestion.rejectionReason && (
-                <div className="text-error bg-error/5 border-error/10 animate-in slide-in-from-top-1 mx-2 mt-3 flex items-start gap-2 rounded-xl border p-3 text-xs">
+                <div
+                    className="text-error bg-error/5 border-error/10 animate-in slide-in-from-top-1 mx-2 mt-3 flex items-start gap-2 rounded-xl border p-3 text-xs">
                     <span className="font-bold whitespace-nowrap">Powód:</span>
                     <span className="leading-snug opacity-90">{suggestion.rejectionReason}</span>
                 </div>
@@ -175,7 +190,7 @@ export default function SuggestionCard({
     );
 }
 
-const ActionButton = ({ onClick, icon: Icon, title, variant }: any) => {
+const ActionButton = ({onClick, icon: Icon, title, variant}: any) => {
     const variants: any = {
         default: 'text-txtcolor-300 hover:text-primary hover:border-primary',
         success: 'text-success hover:bg-success hover:text-darkgray hover:border-success',
@@ -189,7 +204,7 @@ const ActionButton = ({ onClick, icon: Icon, title, variant }: any) => {
             className={`bg-background border-border rounded-xl border p-2 shadow-sm transition-all ${variants[variant]}`}
             title={title}
         >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4 w-4"/>
         </button>
     );
 };

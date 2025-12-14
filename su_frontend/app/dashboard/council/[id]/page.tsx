@@ -92,7 +92,7 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                     <button
                         onClick={handleLeave}
                         disabled={isLeaving}
-                        className="bg-error/10 text-error border-error/20 hover:bg-error flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-white disabled:opacity-50"
+                        className="bg-error/10 text-error border-error/20 hover:bg-error flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-foreground disabled:opacity-50"
                         title="Opuść samorząd"
                     >
                         {isLeaving ? (
@@ -124,7 +124,7 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
                 {hasPermission('COUNCIL_JOIN') && (
                     <div
                         className="bg-secondarybg border-border group hover:border-secondary/50 flex flex-col justify-between rounded-xl border p-6 transition-colors">
@@ -206,7 +206,7 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
 
             <div>
                 <h2 className="text-foreground mb-4 text-xl font-semibold">Szybkie akcje</h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {hasPermission('EVENT_VIEW') && (
                         <ActionCard
                             href={`/dashboard/council/${id}/events`}

@@ -14,6 +14,7 @@ import {
     Pencil,
     Save,
 } from 'lucide-react';
+import {toast} from 'sonner';
 import {UserDto, StatusEnum} from '@/types/user.types';
 import {useUserLogs} from '@/hooks/admin/useUserLogs';
 import {useAdminUsers} from '@/hooks/admin/useAdminUsers';
@@ -41,7 +42,7 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
         unblockUser,
         availableRoles,
         updateUser,
-        isUpdating
+        isUpdating,
     } = useAdminUsers();
 
     const {data: logs, isLoading: logsLoading} = useUserLogs(isOpen ? user.id : null);
@@ -57,19 +58,53 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
     }, [user, isOpen]);
 
     const handleSave = async () => {
-        if (!editForm.fullName.trim()) return alert('Imię i nazwisko nie może być puste');
+        if (!editForm.fullName.trim()) {
+            toast.error('Błąd walidacji', {description: 'Imię i nazwisko nie może być puste'});
+            return;
+        }
 
         try {
             await updateUser({
                 userId: user.id,
                 data: {
                     fullName: editForm.fullName,
-                    status: editForm.status
-                }
+                    status: editForm.status,
+                },
             });
             setIsEditing(false);
         } catch (error) {
         }
+    };
+
+    const handleRemoveRole = (role: string) => {
+        toast('Czy na pewno chcesz odebrać tę rolę?', {
+            description: `Użytkownik straci uprawnienia związane z rolą ${role}.`,
+            action: {
+                label: 'Odbierz',
+                onClick: () => removeRole({userId: user.id, role}),
+            },
+            cancel: {
+                label: 'Anuluj', onClick: () => {
+                }
+            },
+        });
+    };
+
+    const handleDeleteUser = () => {
+        toast('Czy na pewno chcesz zablokować/usunąć użytkownika?', {
+            description: 'Konto zostanie dezaktywowane (soft delete).',
+            action: {
+                label: 'Zablokuj',
+                onClick: () => {
+                    deleteUser(user.id);
+                    onClose();
+                },
+            },
+            cancel: {
+                label: 'Anuluj', onClick: () => {
+                }
+            },
+        });
     };
 
     if (!isOpen) return null;
@@ -79,30 +114,35 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
             className="bg-background/80 animate-in fade-in fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-sm duration-200">
             <div
                 className="bg-background border-border animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border shadow-2xl">
-
                 <div className="border-border bg-secondarybg/20 flex items-start justify-between border-b p-6">
                     <div className="flex-1 mr-4">
                         {isEditing ? (
                             <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <div>
-                                    <label className="text-xs font-bold text-txtcolor-300 uppercase mb-1 block">Imię i
-                                        Nazwisko</label>
+                                    <label className="text-xs font-bold text-txtcolor-300 uppercase mb-1 block">
+                                        Imię i Nazwisko
+                                    </label>
                                     <input
                                         type="text"
                                         value={editForm.fullName}
-                                        onChange={(e) => setEditForm({...editForm, fullName: e.target.value})}
+                                        onChange={(e) =>
+                                            setEditForm({...editForm, fullName: e.target.value})
+                                        }
                                         className="w-full bg-inputbg border border-border rounded-lg px-3 py-2 text-foreground font-bold focus:ring-2 focus:ring-primary focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-txtcolor-300 uppercase mb-1 block">Status
-                                        Konta</label>
+                                    <label className="text-xs font-bold text-txtcolor-300 uppercase mb-1 block">
+                                        Status Konta
+                                    </label>
                                     <select
                                         value={editForm.status}
-                                        onChange={(e) => setEditForm({
-                                            ...editForm,
-                                            status: e.target.value as StatusEnum
-                                        })}
+                                        onChange={(e) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                status: e.target.value as StatusEnum,
+                                            })
+                                        }
                                         className="w-full bg-inputbg border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                                     >
                                         <option value="CONFIRMED">CONFIRMED (Aktywny)</option>
@@ -116,14 +156,20 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                                         disabled={isUpdating}
                                         className="flex items-center gap-2 bg-primary text-darkgray px-4 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
                                     >
-                                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin"/> :
-                                            <Save className="h-4 w-4"/>}
+                                        {isUpdating ? (
+                                            <Loader2 className="h-4 w-4 animate-spin"/>
+                                        ) : (
+                                            <Save className="h-4 w-4"/>
+                                        )}
                                         Zapisz
                                     </button>
                                     <button
                                         onClick={() => {
                                             setIsEditing(false);
-                                            setEditForm({fullName: user.fullName, status: user.status});
+                                            setEditForm({
+                                                fullName: user.fullName,
+                                                status: user.status,
+                                            });
                                         }}
                                         disabled={isUpdating}
                                         className="flex items-center gap-2 bg-transparent text-txtcolor-300 border border-border px-4 py-2 rounded-lg text-sm font-bold hover:bg-secondarybg transition-colors"
@@ -135,7 +181,9 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                         ) : (
                             <>
                                 <div className="mb-1 flex items-center gap-3">
-                                    <h2 className="text-foreground text-xl font-bold">{user.fullName}</h2>
+                                    <h2 className="text-foreground text-xl font-bold">
+                                        {user.fullName}
+                                    </h2>
                                     <UserStatusBadge status={user.status}/>
 
                                     <button
@@ -183,7 +231,6 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                 <div className="custom-scrollbar flex-1 overflow-y-auto p-6">
                     {tab === 'ROLES' && (
                         <div className="animate-in slide-in-from-left-2 fade-in space-y-8 duration-300">
-
                             <div>
                                 <h3 className="text-txtcolor-300 mb-3 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
                                     <Shield className="h-3 w-3"/> Przypisane Role Globalne
@@ -197,10 +244,7 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                                             >
                                                 <span className="text-foreground">{role}</span>
                                                 <button
-                                                    onClick={() => {
-                                                        if (confirm(`Czy na pewno odebrać rolę ${role}?`))
-                                                            removeRole({userId: user.id, role});
-                                                    }}
+                                                    onClick={() => handleRemoveRole(role)}
                                                     className="text-txtcolor-300 hover:text-error opacity-0 transition-colors group-hover:opacity-100"
                                                     title="Odbierz rolę"
                                                 >
@@ -234,7 +278,8 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                                         ))}
                                     {availableRoles.length === 0 && (
                                         <p className="text-warning flex items-center gap-2 text-xs">
-                                            <AlertTriangle className="h-4 w-4"/> Brak dostępnych ról do nadania.
+                                            <AlertTriangle className="h-4 w-4"/> Brak dostępnych
+                                            ról do nadania.
                                         </p>
                                     )}
                                 </div>
@@ -242,8 +287,8 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                                     className="text-txtcolor-300 bg-secondarybg/30 border-border flex items-start gap-2 rounded border p-2.5 text-[10px]">
                                     <Info className="text-primary mt-0.5 h-4 w-4 shrink-0"/>
                                     <p>
-                                        Powyższe role dotyczą całego systemu. Role samorządowe (np. Przewodniczący)
-                                        nadaje się w panelu konkretnego samorządu.
+                                        Powyższe role dotyczą całego systemu. Role samorządowe (np.
+                                        Przewodniczący) nadaje się w panelu konkretnego samorządu.
                                     </p>
                                 </div>
                             </div>
@@ -269,12 +314,7 @@ export default function UserDetailsModal({isOpen, onClose, user}: Props) {
                                         </button>
                                     ) : (
                                         <button
-                                            onClick={() => {
-                                                if (confirm('Czy na pewno zablokować/usunąć tego użytkownika?')) {
-                                                    deleteUser(user.id);
-                                                    onClose();
-                                                }
-                                            }}
+                                            onClick={handleDeleteUser}
                                             className="bg-error/5 text-error border-error/20 hover:bg-error/10 flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 font-bold transition-colors"
                                         >
                                             <Ban className="h-5 w-5"/> Zablokuj / Usuń
