@@ -7,7 +7,9 @@ import {
     assignGlobalRole,
     removeGlobalRole,
     fetchAllGlobalRoles,
+    updateUserAdmin,
 } from '@/lib/api/admin';
+import {UserUpdateRequestDto} from "@/types/user.types";
 
 export const useAdminUsers = () => {
     const queryClient = useQueryClient();
@@ -72,6 +74,15 @@ export const useAdminUsers = () => {
         onError: (err: any) => alert(err.message || 'Błąd usuwania roli.'),
     });
 
+    const updateMutation = useMutation({
+        mutationFn: ({ userId, data }: { userId: string; data: UserUpdateRequestDto }) =>
+            updateUserAdmin(userId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] });
+        },
+        onError: (err: any) => alert(err.message || 'Błąd aktualizacji użytkownika.'),
+    });
+
     return {
         users: filteredUsers,
         availableRoles,
@@ -88,5 +99,7 @@ export const useAdminUsers = () => {
         unblockUser: unblockMutation.mutate,
         assignRole: assignRoleMutation.mutate,
         removeRole: removeRoleMutation.mutate,
+        updateUser: updateMutation.mutate,
+        isUpdating: updateMutation.isPending,
     };
 };
