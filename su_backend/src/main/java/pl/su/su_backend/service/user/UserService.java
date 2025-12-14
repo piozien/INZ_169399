@@ -7,10 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
-import pl.su.su_backend.dto.user.UserMapper;
-import pl.su.su_backend.dto.user.UserRequestDto;
-import pl.su.su_backend.dto.user.UserResponseDto;
-import pl.su.su_backend.dto.user.ChangePasswordRequestDto;
+import pl.su.su_backend.dto.user.*;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
@@ -194,7 +191,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDto updateUser(UUID userId, UserRequestDto request, String currentUserEmail) {
+    public UserResponseDto updateUser(UUID userId, UserUpdateRequestDto request, String currentUserEmail) {
         Users currentUser = getUserByEmailEntity(currentUserEmail);
 
         boolean canEdit = currentUser.getId().equals(userId) ||

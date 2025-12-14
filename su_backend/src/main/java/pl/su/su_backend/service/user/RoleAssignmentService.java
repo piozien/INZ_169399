@@ -98,7 +98,7 @@ public class RoleAssignmentService {
 
         if (!userRoleRepository.existsById(id)) {
             log.info("User {} does not have a role {}", target.getEmail(), roleCode);
-            return;
+            throw ApiException.badRequest("Rola nieusunięta, docelowy Użytkownik jej nie posiada.");
         }
 
         userRoleRepository.deleteById(id);

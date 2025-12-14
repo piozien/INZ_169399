@@ -1,6 +1,7 @@
 package pl.su.su_backend.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -35,7 +36,8 @@ public class EventRequestDto {
 
     private String location;
 
-    private String calendarEventId;
+    @Min(value = 1, message = "Limit uczestników musi być większy od 0")
+    private Integer maxParticipants;
 
     private UUID councilId;
 }

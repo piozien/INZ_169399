@@ -23,7 +23,7 @@ public class CouncilRequestDto {
     private String name;
 
     @NotBlank(message = "Wymagane jest podanie roku szkolnego")
-    @Pattern(regexp = "^(20)\\d{2}\\/(20)\\d{2}$",
+    @Pattern(regexp = "^2\\d{3}\\/2\\d{3}$",
             message = "Nieprawidłowy format roku akademickiego. Oczekiwany format: RRRR/RRRR (np. 2024/2025)")
     private String academicYear;
 

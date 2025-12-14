@@ -41,6 +41,7 @@ public enum PermissionCode {
     EVENT_EDIT("event.edit", "Edit events"),
     EVENT_DELETE("event.delete", "Delete events"),
     EVENT_APPROVE("event.approve", "Approve events"),
+    EVENT_REMOVE_PARTICIPANT("event.remove", "Remove participant events"),
 
     // Suggestion Management
     SUGGESTION_VIEW("suggestion.view", "View suggestions"),
