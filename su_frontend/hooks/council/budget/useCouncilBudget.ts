@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import {
     fetchCouncilBudget,
     fetchBudgetTransactions,
@@ -56,8 +55,16 @@ export const useCouncilBudget = (councilId: string) => {
     const permissions = useMemo(() => {
         const hasPerm = (perm: string) => {
             if (isAdmin) return true;
-            if (budget?.myPermissions?.some((p) => p === 'ALL_ACCESS' || p === perm)) return true;
-            if (context?.permissions?.some((p) => p === 'ALL_ACCESS' || p === perm)) return true;
+            if (
+                budget?.myPermissions &&
+                (budget.myPermissions.includes('ALL_ACCESS') || budget.myPermissions.includes(perm))
+            )
+                return true;
+            if (
+                context?.permissions &&
+                (context.permissions.includes('ALL_ACCESS') || context.permissions.includes(perm))
+            )
+                return true;
             return false;
         };
 
@@ -73,67 +80,37 @@ export const useCouncilBudget = (councilId: string) => {
 
     const deleteTransMutation = useMutation({
         mutationFn: deleteTransaction,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['budget'] });
-            toast.success('Transakcja usunięta', { description: 'Saldo zostało przeliczone.' });
-        },
-        onError: (err: any) =>
-            toast.error('Błąd usuwania', { description: err.message }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budget'] }),
+        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd usuwania transakcji'),
     });
 
     const deleteBudgetMutation = useMutation({
         mutationFn: deleteBudget,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['budget'] });
-            toast.success('Budżet usunięty', { description: 'Rok budżetowy został zamknięty.' });
-        },
-        onError: (err: any) =>
-            toast.error('Błąd usuwania budżetu', { description: err.message }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budget'] }),
+        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd usuwania budżetu'),
     });
 
     const removeTransaction = (id: string) => {
-        if (isLocked) {
-            toast.error('Odmowa dostępu', { description: 'Samorząd jest archiwalny.' });
-            return;
+        if (isLocked) return alert('Samorząd jest archiwalny. Nie można usuwać transakcji.');
+        if (confirm('Czy na pewno chcesz usunąć tę transakcję? Saldo zostanie przeliczone.')) {
+            deleteTransMutation.mutate(id);
         }
-
-        toast('Czy na pewno usunąć tę transakcję?', {
-            description: 'Operacja jest nieodwracalna.',
-            action: {
-                label: 'Usuń',
-                onClick: () => deleteTransMutation.mutate(id),
-            },
-            cancel: {
-                label: 'Anuluj',
-                onClick: () => {},
-            },
-        });
     };
 
     const removeBudget = () => {
-        if (isLocked) {
-            toast.error('Odmowa dostępu', { description: 'Samorząd jest archiwalny.' });
-            return;
+        if (isLocked) return alert('Samorząd jest archiwalny. Nie można usunąć budżetu.');
+        if (
+            budget?.id &&
+            confirm(
+                'UWAGA! Czy na pewno chcesz usunąć CAŁY ROK BUDŻETOWY? Wszystkie transakcje zostaną utracone bezpowrotnie!'
+            )
+        ) {
+            deleteBudgetMutation.mutate(budget.id);
         }
-        if (!budget?.id) return;
-
-        toast('UWAGA: Usuwasz CAŁY ROK BUDŻETOWY!', {
-            description: 'Wszystkie transakcje zostaną utracone bezpowrotnie. Kontynuować?',
-            action: {
-                label: 'Tak, usuń wszystko',
-                onClick: () => deleteBudgetMutation.mutate(budget.id),
-            },
-            cancel: {
-                label: 'Anuluj',
-                onClick: () => {},
-            },
-            duration: 8000,
-        });
     };
 
     const downloadReport = (format: 'pdf' | 'xlsx') => {
         if (!budget || !transactions) return;
-        toast.info('Generowanie raportu...', { duration: 2000 });
         if (format === 'pdf') generateBudgetPdf(budget, transactions);
         else generateBudgetExcel(budget, transactions);
     };
@@ -143,22 +120,28 @@ export const useCouncilBudget = (councilId: string) => {
         budget,
         transactions,
         isLoading: budgetLoading || councilLoading || transLoading,
+
         isCouncilActive,
         isLocked,
         isAdmin,
         permissions,
+
         removeTransaction,
         removeBudget,
         downloadReport,
+
         isAddModalOpen,
         openAddModal: () => setIsAddModalOpen(true),
         closeAddModal: () => setIsAddModalOpen(false),
+
         isCreateModalOpen,
         openCreateModal: () => setIsCreateModalOpen(true),
         closeCreateModal: () => setIsCreateModalOpen(false),
+
         isEditBudgetModalOpen,
         openEditBudgetModal: () => setIsEditBudgetModalOpen(true),
         closeEditBudgetModal: () => setIsEditBudgetModalOpen(false),
+
         editingTransaction,
         openEditTransactionModal: (t: CouncilTransactionResponseDto) => setEditingTransaction(t),
         closeEditTransactionModal: () => setEditingTransaction(null),

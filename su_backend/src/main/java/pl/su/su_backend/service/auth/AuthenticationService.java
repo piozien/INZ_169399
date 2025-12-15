@@ -33,7 +33,6 @@ public class AuthenticationService {
     private final UserService userService;
     private final RestClient graphRestClient;
 
-    @Transactional
     public LoginResponseDto authenticateLocal(LoginRequestDto request) {
         log.info("Local login: {}", request.getEmail());
         try {
@@ -127,7 +126,6 @@ public class AuthenticationService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .status(user.getStatus())
-                .roles(roles)
                 .build();
 
         return LoginResponseDto.builder()

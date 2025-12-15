@@ -5,7 +5,6 @@ export interface ParticipantResponseDto {
     eventId: string;
     userId: string;
     userFullName?: string;
-    userEmail?: string;
     role: EventParticipantRole;
     confirmed: boolean;
     assignedAt: string;
@@ -23,8 +22,6 @@ export interface EventResponseDto {
     calendarEventId?: string;
     status: EventStatus;
     participants?: ParticipantResponseDto[];
-    maxParticipants?: number | null;
-    participantsCount: number;
 }
 
 export interface EventRequestDto {
@@ -34,5 +31,4 @@ export interface EventRequestDto {
     endDate: string;
     location?: string;
     councilId?: string;
-    maxParticipants?: number | null;
 }

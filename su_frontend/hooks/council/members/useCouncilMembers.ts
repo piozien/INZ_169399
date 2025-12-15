@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
     fetchCouncilMembers,
     removeMemberFromCouncil,
@@ -37,6 +36,7 @@ export const useCouncilMembers = (councilId: string) => {
 
     const sortedMembers = useMemo(() => {
         if (!members) return [];
+
         const getRolePriority = (roleString: string) => {
             const role = roleString.toUpperCase();
             if (role.includes('OPIEKUN')) return 1;
@@ -47,6 +47,7 @@ export const useCouncilMembers = (councilId: string) => {
             if (role.includes('BYŁY') || role.includes('BYLY')) return 6;
             return 99;
         };
+
         return [...members].sort((a, b) => {
             const priorityA = getRolePriority(a.role);
             const priorityB = getRolePriority(b.role);
@@ -62,12 +63,8 @@ export const useCouncilMembers = (councilId: string) => {
 
     const removeMutation = useMutation({
         mutationFn: (userId: string) => removeMemberFromCouncil(councilId, userId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['councilMembers', councilId] });
-            toast.success('Członek usunięty');
-        },
-        onError: (err: any) =>
-            toast.error('Błąd usuwania', { description: err.message }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['councilMembers', councilId] }),
+        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd usuwania'),
     });
 
     const updateRoleMutation = useMutation({
@@ -77,10 +74,8 @@ export const useCouncilMembers = (councilId: string) => {
             queryClient.invalidateQueries({ queryKey: ['councilMembers', councilId] });
             setIsEditModalOpen(false);
             setEditingMember(null);
-            toast.success('Rola zaktualizowana');
         },
-        onError: (err: any) =>
-            toast.error('Błąd edycji roli', { description: err.message }),
+        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd edycji roli'),
     });
 
     const addMutation = useMutation({
@@ -89,10 +84,8 @@ export const useCouncilMembers = (councilId: string) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['councilMembers', councilId] });
             setIsAddModalOpen(false);
-            toast.success('Członek dodany pomyślnie');
         },
-        onError: (err: any) =>
-            toast.error('Błąd dodawania', { description: err.message }),
+        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd dodawania członka'),
     });
 
     const openEditModal = (userId: string) => {
@@ -109,36 +102,25 @@ export const useCouncilMembers = (councilId: string) => {
         }
     };
 
-    const removeMember = (userId: string) => {
-        toast('Czy na pewno chcesz usunąć członka?', {
-            description: 'Straci on dostęp do panelu samorządu.',
-            action: {
-                label: 'Usuń',
-                onClick: () => removeMutation.mutate(userId),
-            },
-            cancel: {
-                label: 'Anuluj',
-                onClick: () => {},
-            },
-        });
-    };
-
     return {
         members: sortedMembers,
         isLoading: membersLoading || contextLoading,
         error,
         canManage,
+
         isAddModalOpen,
         openAddModal: () => setIsAddModalOpen(true),
         closeAddModal: () => setIsAddModalOpen(false),
         addMember: (userId: string, roleCode: string) => addMutation.mutate({ userId, roleCode }),
         isAdding: addMutation.isPending,
+
         isEditModalOpen,
         closeEditModal: () => setIsEditModalOpen(false),
         openEditModal,
         saveRole,
         editingMember,
         isSaving: updateRoleMutation.isPending,
-        removeMember,
+
+        removeMember: (userId: string) => removeMutation.mutate(userId),
     };
 };

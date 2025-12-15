@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
     fetchCouncilSuggestions,
     approveSuggestion,
@@ -46,10 +45,9 @@ export const useCouncilSuggestions = (councilId: string) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['councilSuggestions', councilId] });
             setSelectedSuggestion(null);
-            toast.success('Sugestia zatwierdzona');
         },
-        onError: (err: any) =>
-            toast.error('Błąd zatwierdzania', { description: err.message || 'Nieznany błąd' }),
+        onError: (err) =>
+            alert('Błąd zatwierdzania: ' + (err instanceof Error ? err.message : 'Nieznany')),
     });
 
     const rejectMutation = useMutation({
@@ -58,20 +56,17 @@ export const useCouncilSuggestions = (councilId: string) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['councilSuggestions', councilId] });
             setSelectedSuggestion(null);
-            toast.success('Sugestia odrzucona');
         },
-        onError: (err: any) =>
-            toast.error('Błąd odrzucania', { description: err.message || 'Nieznany błąd' }),
+        onError: (err) =>
+            alert('Błąd odrzucania: ' + (err instanceof Error ? err.message : 'Nieznany')),
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteSuggestion,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['councilSuggestions', councilId] });
-            toast.success('Sugestia usunięta');
-        },
-        onError: (err: any) =>
-            toast.error('Błąd usuwania', { description: err.message || 'Nieznany błąd' }),
+        onSuccess: () =>
+            queryClient.invalidateQueries({ queryKey: ['councilSuggestions', councilId] }),
+        onError: (err) =>
+            alert('Błąd usuwania: ' + (err instanceof Error ? err.message : 'Nieznany')),
     });
 
     const displayedSuggestions = useMemo(() => {
@@ -92,10 +87,13 @@ export const useCouncilSuggestions = (councilId: string) => {
         isLoading: suggestionsLoading || councilLoading,
         permissions,
 
-        filter, setFilter,
-        searchQuery, setSearchQuery,
+        filter,
+        setFilter,
+        searchQuery,
+        setSearchQuery,
 
-        selectedSuggestion, setSelectedSuggestion,
+        selectedSuggestion,
+        setSelectedSuggestion,
 
         approve: approveMutation.mutate,
         reject: (id: string, reason: string) => rejectMutation.mutate({ id, reason }),

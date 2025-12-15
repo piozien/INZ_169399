@@ -13,17 +13,12 @@ public interface EventMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "participants", ignore = true)
-    @Mapping(target = "participantsCount", ignore = true)
-    @Mapping(target = "council", ignore = true)
     Event toEntity(EventRequestDto dto);
 
     @Mapping(target = "createdById", source = "createdBy.id")
-    @Mapping(target = "councilId", source = "council.id")
     EventResponseDto toResponse(Event event);
 
     @Mapping(target = "eventId", source = "event.id")
     @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "userFullName", source = "user.fullName")
-    @Mapping(target = "userEmail", source = "user.email")
     ParticipantResponseDto toParticipantResponse(EventParticipant participant);
 }

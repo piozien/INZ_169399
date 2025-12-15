@@ -16,8 +16,6 @@ import java.util.UUID;
 public class ParticipantResponseDto {
     private UUID eventId;
     private UUID userId;
-    private String userFullName;
-    private String userEmail;
     private EventParticipantRole role;
     private Boolean confirmed;
     private LocalDateTime assignedAt;

@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
     fetchSuggestions,
     createSuggestion,
@@ -58,54 +57,35 @@ export const usePublicSuggestions = () => {
             setDescription('');
             setTagsInput('');
             setIsAnonymous(false);
-            toast.success('Twoja sugestia została wysłana!');
+            alert('Twoja sugestia została wysłana!');
             setIsHistoryOpen(true);
         },
         onError: (error) =>
-            toast.error('Błąd wysyłania', {
-                description: error instanceof Error ? error.message : 'Wystąpił błąd.',
-            }),
+            alert(`Błąd: ${error instanceof Error ? error.message : 'Wystąpił błąd.'}`),
     });
 
     const updateMutation = useMutation({
         mutationFn: (variables: { id: string; data: Partial<CreateSuggestionPayload> }) =>
             updateSuggestion(variables.id, variables.data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['suggestions'] });
-            toast.success('Sugestia zaktualizowana');
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
         onError: (error) =>
-            toast.error('Nie udało się zaktualizować', {
-                description: error instanceof Error ? error.message : 'Błąd',
-            }),
+            alert(
+                `Nie udało się zaktualizować: ${error instanceof Error ? error.message : 'Błąd'}`
+            ),
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteSuggestion,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['suggestions'] });
-            toast.success('Sugestia usunięta');
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
         onError: (error) =>
-            toast.error('Nie udało się usunąć', {
-                description: error instanceof Error ? error.message : 'Błąd',
-            }),
+            alert(`Nie udało się usunąć: ${error instanceof Error ? error.message : 'Błąd'}`),
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.id) {
-            toast.error('Musisz być zalogowany.');
-            return;
-        }
-        if (title.length > TITLE_MAX_LENGTH) {
-            toast.error('Tytuł za długi.');
-            return;
-        }
-        if (description.length > DESC_MAX_LENGTH) {
-            toast.error('Opis za długi.');
-            return;
-        }
+        if (!user?.id) return alert('Musisz być zalogowany.');
+        if (title.length > TITLE_MAX_LENGTH) return alert('Tytuł za długi.');
+        if (description.length > DESC_MAX_LENGTH) return alert('Opis za długi.');
 
         setIsSubmitting(true);
         try {
@@ -133,21 +113,34 @@ export const usePublicSuggestions = () => {
     };
 
     return {
-        title, setTitle,
-        description, setDescription,
-        isAnonymous, setIsAnonymous,
-        tagsInput, setTagsInput,
+        title,
+        setTitle,
+        description,
+        setDescription,
+        isAnonymous,
+        setIsAnonymous,
+        tagsInput,
+        setTagsInput,
         isSubmitting,
         handleSubmit,
-        TITLE_MAX_LENGTH, DESC_MAX_LENGTH,
+        TITLE_MAX_LENGTH,
+        DESC_MAX_LENGTH,
+
         isLoading,
         userSuggestions,
         displayedSuggestions,
-        isHistoryOpen, setIsHistoryOpen,
-        filter, setFilter,
-        searchQuery, setSearchQuery,
-        editingSuggestion, setEditingSuggestion,
-        selectedSuggestion, setSelectedSuggestion,
+
+        isHistoryOpen,
+        setIsHistoryOpen,
+        filter,
+        setFilter,
+        searchQuery,
+        setSearchQuery,
+        editingSuggestion,
+        setEditingSuggestion,
+        selectedSuggestion,
+        setSelectedSuggestion,
+
         handleEditSubmit,
         deleteSuggestion: deleteMutation.mutate,
     };

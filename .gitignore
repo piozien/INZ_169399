@@ -190,7 +190,11 @@ sketch
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,java,dotenv,nextjs,react,visualstudiocode
 
+su_backend/src/main/resources/db/migration/
+
 *.tex
+
+*.sql
 
 su_frontend/.idea/
 

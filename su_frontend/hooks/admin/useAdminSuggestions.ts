@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAllSuggestionsAdmin, deleteSuggestionAdmin } from '@/lib/api/admin';
-import {toast} from "sonner";
 
 export const useAdminSuggestions = () => {
     const queryClient = useQueryClient();
@@ -39,9 +38,7 @@ export const useAdminSuggestions = () => {
             queryClient.invalidateQueries({ queryKey: ['adminAllSuggestions'] });
         },
         onError: (error: any) => {
-            toast.error('Nie udało się usunąć sugestii', {
-                description: error.message || 'Nie udało się usunąć sugestii',
-            });
+            alert('Nie udało się usunąć sugestii: ' + (error.message || 'Błąd'));
         },
     });
 

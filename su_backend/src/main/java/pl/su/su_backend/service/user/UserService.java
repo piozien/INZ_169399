@@ -7,7 +7,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
-import pl.su.su_backend.dto.user.*;
+import pl.su.su_backend.dto.user.UserMapper;
+import pl.su.su_backend.dto.user.UserRequestDto;
+import pl.su.su_backend.dto.user.UserResponseDto;
+import pl.su.su_backend.dto.user.ChangePasswordRequestDto;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
 import pl.su.su_backend.model.enums.ActionType;
@@ -109,7 +112,7 @@ public class UserService {
         assignDefaultRole(savedUser);
         sendActivationEmail(savedUser);
 
-        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "Użytkownik zarejestrowany lokalnie.");
+        activityLogService.log(savedUser.getId(), ActionType.REGISTER, "Użytkownik zarejestrowany lokalnei.");
 
         return userMapper.toResponseDto(savedUser);
     }
@@ -191,7 +194,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDto updateUser(UUID userId, UserUpdateRequestDto request, String currentUserEmail) {
+    public UserResponseDto updateUser(UUID userId, UserRequestDto request, String currentUserEmail) {
         Users currentUser = getUserByEmailEntity(currentUserEmail);
 
         boolean canEdit = currentUser.getId().equals(userId) ||
@@ -229,7 +232,7 @@ public class UserService {
         user.setStatus(StatusEnum.BLOCKED); // Soft delete
         usersRepository.save(user);
 
-        activityLogService.log(userId, ActionType.SOFT_DELETE, "Użytkownik został zablokowany przez " + currentUser.getFullName());
+        activityLogService.log(userId, ActionType.SOFT_DELETE, "Użytkownik został zablokowany");
     }
 
     @Transactional
@@ -246,7 +249,7 @@ public class UserService {
         user.setStatus(StatusEnum.CONFIRMED);
         usersRepository.save(user);
 
-        activityLogService.log(userId, ActionType.USER_UNBLOCKED, "Użytkownik odblokowany przez: " + currentUser.getFullName());
+        activityLogService.log(userId, ActionType.USER_UNBLOCKED, "Użytkownik odblokowany");
 
         return userMapper.toResponseDto(user);
     }

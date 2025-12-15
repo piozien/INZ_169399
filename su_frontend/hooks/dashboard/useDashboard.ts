@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { fetchDashboardSummary } from '@/lib/api/dashboard';
 import { joinCouncilByCode } from '@/lib/api/council';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -21,14 +20,12 @@ export const useDashboard = () => {
     const joinMutation = useMutation({
         mutationFn: joinCouncilByCode,
         onSuccess: () => {
-            toast.success('Sukces!', { description: 'Dołączono do samorządu.' });
+            alert('Sukces! Dołączono do samorządu.');
             queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
             setJoinCode('');
         },
         onError: (err) =>
-            toast.error('Błąd dołączania', {
-                description: err instanceof Error ? err.message : 'Nieznany błąd',
-            }),
+            alert('Błąd dołączania: ' + (err instanceof Error ? err.message : 'Nieznany błąd')),
     });
 
     const handleJoin = (e: React.FormEvent) => {
@@ -43,9 +40,12 @@ export const useDashboard = () => {
         user,
         summary,
         isLoading,
-        joinCode, setJoinCode,
+
+        joinCode,
+        setJoinCode,
         handleJoin,
         isJoining: joinMutation.isPending,
+
         firstName,
         isMember,
     };

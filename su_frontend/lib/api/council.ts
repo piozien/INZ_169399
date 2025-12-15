@@ -34,12 +34,6 @@ export const updateCouncil = async (
     });
 };
 
-export const deleteCouncil = async (id: string): Promise<void> => {
-    await apiFetch<void>(`/councils/${id}`, {
-        method: 'DELETE',
-    });
-};
-
 export const addMemberToCouncil = async (
     councilId: string,
     userId: string,

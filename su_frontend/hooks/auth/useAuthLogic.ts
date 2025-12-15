@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api/httpClient';
 import { fetchMyPermissions } from '@/lib/api/permissions';
 import { UserDto } from '@/types/user.types';
@@ -25,7 +24,7 @@ export const useAuthLogic = () => {
                 };
             });
         } catch (error) {
-            console.warn('Failed to load permissions in background', error);
+            console.error('Nie udało się pobrać uprawnień w tle', error);
         }
     }, []);
 
@@ -34,6 +33,7 @@ export const useAuthLogic = () => {
             const userData = await apiFetch<UserDto>('/users/me');
             setUser(userData);
             setIsLoading(false);
+
             await loadPermissionsBackground();
         } catch (error) {
             setUser(null);
@@ -47,47 +47,23 @@ export const useAuthLogic = () => {
     }, [checkAuth]);
 
     const login = async (data: LoginRequestDto) => {
-        try {
-            queryClient.clear();
-            const userData = await apiFetch<UserDto>('/auth/login', {
-                method: 'POST',
-                body: JSON.stringify(data),
-            });
-            setUser(userData);
-
-            toast.success(`Witaj, ${userData.fullName}!`, {
-                description: 'Zalogowano pomyślnie.',
-            });
-
-            await loadPermissionsBackground();
-        } catch (e: any) {
-            toast.error('Błąd logowania', {
-                description: e.message || 'Sprawdź poprawność danych.',
-            });
-            throw e;
-        }
+        queryClient.clear();
+        const userData = await apiFetch<UserDto>('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+        setUser(userData);
+        await loadPermissionsBackground();
     };
 
     const loginWithMicrosoft = async (data: MicrosoftLoginRequest) => {
-        try {
-            queryClient.clear();
-            const userData = await apiFetch<UserDto>('/auth/microsoft', {
-                method: 'POST',
-                body: JSON.stringify(data),
-            });
-            setUser(userData);
-
-            toast.success(`Witaj, ${userData.fullName}!`, {
-                description: 'Zalogowano przez Microsoft.',
-            });
-
-            await loadPermissionsBackground();
-        } catch (e: any) {
-            toast.error('Błąd logowania Microsoft', {
-                description: e.message || 'Wystąpił problem z autoryzacją.',
-            });
-            throw e;
-        }
+        queryClient.clear();
+        const userData = await apiFetch<UserDto>('/auth/microsoft', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+        setUser(userData);
+        await loadPermissionsBackground();
     };
 
     const logout = async () => {
@@ -99,11 +75,6 @@ export const useAuthLogic = () => {
             setUser(null);
             queryClient.removeQueries();
             queryClient.clear();
-
-            toast.info('Wylogowano pomyślnie', {
-                duration: 2000
-            });
-
             router.push('/login');
         }
     };

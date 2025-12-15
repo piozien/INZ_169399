@@ -51,12 +51,8 @@ public class Event {
     @JoinColumn(name = "council_id")
     private Council council;
 
-    @Column(name = "max_participants")
-    private Integer maxParticipants;
-
-    @Column(name = "participants_count", nullable = false)
-    @Builder.Default
-    private Integer participantsCount = 0;
+    @Column(name = "calendar_event_id")
+    private String calendarEventId;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

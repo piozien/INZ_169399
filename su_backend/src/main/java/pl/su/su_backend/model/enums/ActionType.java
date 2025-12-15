@@ -5,7 +5,6 @@ public enum ActionType {
     REGISTER,
     UPDATE_PROFILE,
     SOFT_DELETE,
-    PASSWORD_CHANGE,
 
     // ROLES
     ASSIGN_ROLE,

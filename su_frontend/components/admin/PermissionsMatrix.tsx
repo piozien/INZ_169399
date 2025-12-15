@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, Loader2, Lock, ShieldAlert, Globe, Landmark, Ban } from 'lucide-react';
+import { Check, X, Loader2, Lock, ShieldAlert, Globe, Landmark } from 'lucide-react';
 import { usePermissions } from '@/hooks/admin/usePermissions';
 
 const ROLE_NAMES: Record<string, string> = {
@@ -11,6 +11,7 @@ const ROLE_NAMES: Record<string, string> = {
     'NAUCZYCIEL': 'Nauczyciel',
     'UCZEN': 'Uczeń',
     'BYLY_UCZEN': 'Były Uczeń',
+
     'PRZEWODNICZACY_SU': 'Przew. SU',
     'ZASTEPCA_SU': 'Zastępca SU',
     'CZLONEK_SU': 'Członek SU',
@@ -21,39 +22,23 @@ const ROLE_NAMES: Record<string, string> = {
 
 const formatRole = (role: string) => {
     if (ROLE_NAMES[role]) return ROLE_NAMES[role];
-    return role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return role
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
 export default function PermissionsMatrix() {
-    const { matrix, isLoading, togglePermission, isError, error } = usePermissions();
+    const { matrix, isLoading, togglePermission } = usePermissions();
     const [activeTab, setActiveTab] = useState<'GLOBAL' | 'SU'>('GLOBAL');
 
-    if (isLoading)
+    if (isLoading || !matrix)
         return (
             <div className="flex justify-center p-10">
                 <Loader2 className="text-primary h-8 w-8 animate-spin" />
             </div>
         );
-
-    if (isError) {
-        return (
-            <div className="flex flex-col items-center justify-center p-8 text-center rounded-xl border border-error/20 bg-error/5 min-h-[300px]">
-                <div className="bg-error/10 p-4 rounded-full mb-4">
-                    <Ban className="h-10 w-10 text-error" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground">Brak dostępu</h3>
-                <p className="text-txtcolor-300 mt-2 max-w-md">
-                    Nie masz wystarczających uprawnień, aby zarządzać macierzą ról.
-                    Skontaktuj się z administratorem, jeśli uważasz to za błąd.
-                </p>
-                <span className="text-xs text-error/60 mt-4 font-mono">
-                    {(error as any)?.message || '403 Forbidden'}
-                </span>
-            </div>
-        );
-    }
-
-    if (!matrix) return null;
 
     const suRoleKeywords = ['_SU'];
     const allRoles = Object.keys(matrix);

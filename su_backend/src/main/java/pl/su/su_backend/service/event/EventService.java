@@ -10,16 +10,13 @@ import pl.su.su_backend.dto.event.EventResponseDto;
 import pl.su.su_backend.dto.event.ParticipantResponseDto;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.model.council.Council;
-import pl.su.su_backend.model.council.CouncilMember;
 import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.EventParticipantRole;
 import pl.su.su_backend.model.enums.EventStatus;
 import pl.su.su_backend.model.enums.PermissionCode;
-import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.event.Event;
 import pl.su.su_backend.model.event.EventParticipant;
 import pl.su.su_backend.model.users.Users;
-import pl.su.su_backend.repositories.council.CouncilMemberRepository;
 import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.event.EventParticipantRepository;
 import pl.su.su_backend.repositories.event.EventRepository;
@@ -31,7 +28,6 @@ import pl.su.su_backend.service.user.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -45,7 +41,6 @@ public class EventService {
     private final EventParticipantRepository participantRepository;
     private final UsersRepository usersRepository;
     private final CouncilRepository councilRepository;
-    private final CouncilMemberRepository councilMemberRepository;
     private final UserService userService;
     private final ActivityLogService activityLogService;
     private final PermissionService permissionService;
@@ -73,9 +68,6 @@ public class EventService {
         event.setCreatedBy(creator);
         event.setStatus(EventStatus.DRAFT);
         event.setCreatedAt(LocalDateTime.now());
-
-        event.setMaxParticipants(dto.getMaxParticipants());
-        event.setParticipantsCount(0);
 
         if (dto.getCouncilId() != null) {
             Council council = councilRepository.findById(dto.getCouncilId())
@@ -110,8 +102,6 @@ public class EventService {
         event.setEndDate(dto.getEndDate());
         event.setLocation(dto.getLocation());
 
-        event.setMaxParticipants(dto.getMaxParticipants());
-
         return eventMapper.toResponse(eventRepository.save(event));
     }
 
@@ -139,15 +129,10 @@ public class EventService {
             throw ApiException.conflict("Użytkownik już bierze udział w wydarzeniu");
         }
 
-        checkParticipantsLimit(event, user);
-
         return addParticipantInternal(event, user, role, confirmed, true);
     }
 
     private ParticipantResponseDto addParticipantInternal(Event event, Users user, EventParticipantRole role, boolean confirmed, boolean sendEmail) {
-
-        boolean isExempt = isUserExemptFromLimit(user, event.getCouncil());
-
         EventParticipant participant = EventParticipant.builder()
                 .id(new EventParticipant.Id(event.getId(), user.getId()))
                 .event(event)
@@ -159,11 +144,6 @@ public class EventService {
 
         participantRepository.save(participant);
 
-        if (!isExempt) {
-            event.setParticipantsCount(event.getParticipantsCount() + 1);
-            eventRepository.save(event);
-        }
-
         if (sendEmail) {
             sendCalendarInvitation(event, user);
         }
@@ -173,70 +153,18 @@ public class EventService {
 
     public void removeParticipant(UUID eventId, UUID userId, UUID removedById) {
         Event event = eventRepository.findById(eventId).orElseThrow(() -> ApiException.notFound("Nie znaleziono wydarzenia"));
-        Users user = usersRepository.findById(userId).orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
         UUID councilId = event.getCouncil() != null ? event.getCouncil().getId() : null;
 
         boolean isCreator = event.getCreatedBy().getId().equals(removedById);
         boolean isSelf = userId.equals(removedById);
-        boolean hasPerm = permissionService.hasPermission(removedById, PermissionCode.EVENT_REMOVE_PARTICIPANT, councilId);
+        boolean hasPerm = permissionService.hasPermission(removedById, PermissionCode.EVENT_EDIT, councilId);
 
         if (!isCreator && !isSelf && !hasPerm) {
             throw ApiException.forbidden("Brak uprawnień");
         }
-
-        boolean wasExempt = isUserExemptFromLimit(user, event.getCouncil());
-
         participantRepository.deleteByEvent_IdAndUser_Id(eventId, userId);
-
-        if (!wasExempt && event.getParticipantsCount() > 0) {
-            event.setParticipantsCount(event.getParticipantsCount() - 1);
-            eventRepository.save(event);
-        }
-
         activityLogService.log(userId, ActionType.EVENT_LEAVE, "Opuszczono wydarzenie: " + event.getTitle());
     }
-
-
-    private void checkParticipantsLimit(Event event, Users user) {
-        if (event.getMaxParticipants() == null) {
-            return;
-        }
-
-        if (isUserExemptFromLimit(user, event.getCouncil())) {
-            return;
-        }
-
-        if (event.getParticipantsCount() >= event.getMaxParticipants()) {
-            throw ApiException.conflict("Osiągnięto limit miejsc na to wydarzenie (" + event.getMaxParticipants() + ")");
-        }
-    }
-
-    private boolean isUserExemptFromLimit(Users user, Council council) {
-        boolean hasGlobalExemptRole = user.getUserRoles().stream()
-                .anyMatch(ur -> {
-                    RoleCode code = ur.getRole().getRoleCode();
-                    return code == RoleCode.DYREKTOR ||
-                            code == RoleCode.ZASTEPCA_DYREKTORA ||
-                            code == RoleCode.ADMINISTRATOR;
-                });
-
-        if (hasGlobalExemptRole) {
-            return true;
-        }
-
-        if (council != null) {
-            Optional<CouncilMember> memberOpt = councilMemberRepository.findByCouncilIdAndUserId(council.getId(), user.getId());
-            if (memberOpt.isPresent()) {
-                RoleCode code = memberOpt.get().getRole();
-                return code == RoleCode.OPIEKUN_SU ||
-                        code == RoleCode.PRZEWODNICZACY_SU ||
-                        code == RoleCode.ZASTEPCA_DYREKTORA;
-            }
-        }
-
-        return false;
-    }
-
 
     private void sendCalendarInvitation(Event event, Users user) {
         try {

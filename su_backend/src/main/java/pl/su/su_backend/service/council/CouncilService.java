@@ -125,7 +125,6 @@ public class CouncilService {
         }
 
         councilRepository.delete(council);
-        log.info("Council  with ID {} has been removed by {}.", councilId, currentUserEmail);
         activityLogService.log(currentUser.getId(), ActionType.COUNCIL_DELETE, "Usunięto samorząd: " + council.getName());
     }
 

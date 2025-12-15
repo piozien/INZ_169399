@@ -49,7 +49,6 @@ public class JwtService {
     }
 
     public String generateToken(String email, String fullName) {
-
         Map<String, Object> extraClaims = (fullName != null && !fullName.isEmpty())
                 ? Map.of("name", fullName, "email", email)
                 : Map.of("email", email);

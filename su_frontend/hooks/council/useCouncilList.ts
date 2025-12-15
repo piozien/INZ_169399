@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { fetchUserCouncils, joinCouncilByCode } from '@/lib/api/council';
 import { CouncilResponseDto } from '@/types/council.types';
 import { ApiError } from '@/types/error.types';
@@ -8,7 +7,6 @@ import { ApiError } from '@/types/error.types';
 export const useCouncilList = () => {
     const queryClient = useQueryClient();
     const [joinError, setJoinError] = useState<string | null>(null);
-
     const {
         data: councils,
         isLoading,
@@ -32,12 +30,13 @@ export const useCouncilList = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
             setJoinError(null);
-            toast.success('Dołączono do samorządu!');
         },
-        onError: (err: any) => {
-            const message = err instanceof ApiError ? err.message : 'Wystąpił błąd podczas dołączania.';
-            setJoinError(message);
-            toast.error('Błąd dołączania', { description: message });
+        onError: (err) => {
+            if (err instanceof ApiError) {
+                setJoinError(err.message);
+            } else {
+                setJoinError('Wystąpił błąd podczas dołączania.');
+            }
         },
     });
 

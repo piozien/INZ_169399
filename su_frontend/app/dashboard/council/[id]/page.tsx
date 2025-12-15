@@ -1,6 +1,6 @@
 'use client';
 
-import {use} from 'react';
+import { use } from 'react';
 import Link from 'next/link';
 import {
     Loader2,
@@ -15,15 +15,13 @@ import {
     Settings,
     Lightbulb,
     LogOut,
-    Trash2
 } from 'lucide-react';
 import SchoolRounded from '@/components/icons/SchoolRounded';
 import EditCouncilModal from '@/components/council/EditCouncilModal';
-import DeleteCouncilModal from '@/components/council/DeleteCouncilModal';
-import {useCouncilDetails} from '@/hooks/council/useCouncilDetails';
+import { useCouncilDetails } from '@/hooks/council/useCouncilDetails';
 
-export default function CouncilDetailPage({params}: { params: Promise<{ id: string }> }) {
-    const {id} = use(params);
+export default function CouncilDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
 
     const {
         council,
@@ -37,17 +35,12 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
         isEditModalOpen,
         openEditModal,
         closeEditModal,
-        removeCouncil,
-        isDeleting,
-        isDeleteModalOpen,
-        openDeleteModal,
-        closeDeleteModal
     } = useCouncilDetails(id);
 
     if (isLoading) {
         return (
             <div className="flex h-[50vh] items-center justify-center">
-                <Loader2 className="text-primary h-8 w-8 animate-spin"/>
+                <Loader2 className="text-primary h-8 w-8 animate-spin" />
             </div>
         );
     }
@@ -63,11 +56,10 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
 
     return (
         <div className="mx-auto max-w-7xl space-y-8 p-6">
-            <div
-                className="border-border flex flex-col items-start justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
+            <div className="border-border flex flex-col items-start justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
                 <div className="flex items-center gap-4">
                     <div className="bg-secondarybg border-border rounded-2xl border p-4">
-                        <SchoolRounded className="text-secondary h-10 w-10"/>
+                        <SchoolRounded className="text-secondary h-10 w-10" />
                     </div>
                     <div>
                         <div className="flex items-center gap-3">
@@ -79,7 +71,7 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                             </span>
                         </div>
                         <p className="text-txtcolor-300 mt-1 flex items-center gap-2">
-                            <CalendarDays className="h-4 w-4"/>
+                            <CalendarDays className="h-4 w-4" />
                             Rok szkolny:{' '}
                             <span className="text-foreground font-medium">
                                 {council.academicYear}
@@ -92,45 +84,35 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                     <button
                         onClick={handleLeave}
                         disabled={isLeaving}
-                        className="bg-error/10 text-error border-error/20 hover:bg-error flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-foreground disabled:opacity-50"
+                        className="bg-error/10 text-error border-error/20 hover:bg-error flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-white disabled:opacity-50"
                         title="Opuść samorząd"
                     >
                         {isLeaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin"/>
+                            <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                            <LogOut className="h-4 w-4"/>
+                            <LogOut className="h-4 w-4" />
                         )}
                         <span className="hidden sm:inline">Opuść</span>
                     </button>
 
-                    {hasPermission('COUNCIL_DELETE') && (
-                        <button
-                            onClick={openDeleteModal}
-                            className="bg-error/10 text-error border-error/20 hover:bg-error flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-foreground"
-                        >
-                            <Trash2 className="h-4 w-4"/>
-                            <span className="hidden sm:inline">Usuń</span>
-                        </button>
-                    )}
                     {hasPermission('COUNCIL_EDIT') && (
                         <button
                             onClick={openEditModal}
                             className="bg-secondarybg border-border hover:border-secondary text-foreground flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
                         >
-                            <Settings className="h-4 w-4"/>
+                            <Settings className="h-4 w-4" />
                             <span className="hidden sm:inline">Ustawienia</span>
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 {hasPermission('COUNCIL_JOIN') && (
-                    <div
-                        className="bg-secondarybg border-border group hover:border-secondary/50 flex flex-col justify-between rounded-xl border p-6 transition-colors">
+                    <div className="bg-secondarybg border-border group hover:border-secondary/50 flex flex-col justify-between rounded-xl border p-6 transition-colors">
                         <div>
                             <div className="text-txtcolor-300 mb-2 flex items-center gap-2">
-                                <Hash className="text-secondary h-5 w-5"/>
+                                <Hash className="text-secondary h-5 w-5" />
                                 <span className="text-sm font-medium tracking-wider uppercase">
                                     Kod dołączenia
                                 </span>
@@ -147,9 +129,9 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                                 {council.joinCode}
                             </code>
                             {isCopied ? (
-                                <Check className="text-success h-5 w-5"/>
+                                <Check className="text-success h-5 w-5" />
                             ) : (
-                                <Copy className="text-txtcolor-300 group-hover:text-secondary h-5 w-5"/>
+                                <Copy className="text-txtcolor-300 group-hover:text-secondary h-5 w-5" />
                             )}
                         </button>
                     </div>
@@ -158,7 +140,7 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                 <div className="bg-secondarybg border-border flex flex-col justify-between rounded-xl border p-6">
                     <div>
                         <div className="text-txtcolor-300 mb-2 flex items-center gap-2">
-                            <Users className="text-info h-5 w-5"/>
+                            <Users className="text-info h-5 w-5" />
                             <span className="text-sm font-medium tracking-wider uppercase">
                                 Członkowie
                             </span>
@@ -174,14 +156,14 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
                         href={`/dashboard/council/${id}/members`}
                         className="text-secondary mt-4 flex items-center text-sm font-medium hover:underline"
                     >
-                        Zarządzaj członkami <ArrowRight className="ml-1 h-4 w-4"/>
+                        Zarządzaj członkami <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>
                 </div>
 
                 <div className="bg-secondarybg border-border flex flex-col justify-between rounded-xl border p-6">
                     <div>
                         <div className="text-txtcolor-300 mb-2 flex items-center gap-2">
-                            <CalendarDays className="text-warning h-5 w-5"/>
+                            <CalendarDays className="text-warning h-5 w-5" />
                             <span className="text-sm font-medium tracking-wider uppercase">
                                 Kadencja
                             </span>
@@ -206,7 +188,7 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
 
             <div>
                 <h2 className="text-foreground mb-4 text-xl font-semibold">Szybkie akcje</h2>
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {hasPermission('EVENT_VIEW') && (
                         <ActionCard
                             href={`/dashboard/council/${id}/events`}
@@ -252,27 +234,17 @@ export default function CouncilDetailPage({params}: { params: Promise<{ id: stri
             </div>
 
             {council && (
-                <>
-                    <EditCouncilModal
-                        isOpen={isEditModalOpen}
-                        onClose={closeEditModal}
-                        council={council}
-                    />
-
-                    <DeleteCouncilModal
-                        isOpen={isDeleteModalOpen}
-                        onClose={closeDeleteModal}
-                        onConfirm={removeCouncil}
-                        isDeleting={isDeleting}
-                        councilName={council.name}
-                    />
-                </>
+                <EditCouncilModal
+                    isOpen={isEditModalOpen}
+                    onClose={closeEditModal}
+                    council={council}
+                />
             )}
         </div>
     );
 }
 
-const ActionCard = ({href, icon: Icon, title, desc, color}: any) => {
+const ActionCard = ({ href, icon: Icon, title, desc, color }: any) => {
     const colors: any = {
         accent: 'bg-accent/10 text-accent',
         warning: 'bg-warning/10 text-warning',
@@ -280,12 +252,11 @@ const ActionCard = ({href, icon: Icon, title, desc, color}: any) => {
     };
     return (
         <Link href={href} className="group">
-            <div
-                className="bg-secondarybg border-border hover:border-secondary hover:bg-secondary/5 flex h-full items-center gap-4 rounded-xl border p-6 transition-all">
+            <div className="bg-secondarybg border-border hover:border-secondary hover:bg-secondary/5 flex h-full items-center gap-4 rounded-xl border p-6 transition-all">
                 <div
                     className={`rounded-lg p-3 transition-transform group-hover:scale-110 ${colors[color]}`}
                 >
-                    <Icon className="h-6 w-6"/>
+                    <Icon className="h-6 w-6" />
                 </div>
                 <div>
                     <h3 className="text-foreground text-lg font-bold">{title}</h3>
@@ -296,11 +267,10 @@ const ActionCard = ({href, icon: Icon, title, desc, color}: any) => {
     );
 };
 
-const DisabledCard = ({icon: Icon, title, desc}: any) => (
-    <div
-        className="bg-secondarybg/50 border-border flex h-full cursor-not-allowed items-center gap-4 rounded-xl border p-6 opacity-50">
+const DisabledCard = ({ icon: Icon, title, desc }: any) => (
+    <div className="bg-secondarybg/50 border-border flex h-full cursor-not-allowed items-center gap-4 rounded-xl border p-6 opacity-50">
         <div className="bg-darkgray text-darkgray rounded-lg p-3">
-            <Icon className="h-6 w-6"/>
+            <Icon className="h-6 w-6" />
         </div>
         <div>
             <h3 className="text-foreground text-lg font-bold">{title}</h3>

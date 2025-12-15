@@ -185,7 +185,7 @@ export default function SuggestionDetailsModal({
                                     <button
                                         onClick={handleRejectSubmit}
                                         disabled={!rejectionReason.trim()}
-                                        className="bg-error text-darkgray hover:bg-error/90 rounded-lg px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="bg-error text-foreground hover:bg-error/90 rounded-lg px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         Potwierdź odrzucenie
                                     </button>

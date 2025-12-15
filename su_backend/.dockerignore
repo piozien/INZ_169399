@@ -8,5 +8,5 @@ target/
 .git/
 .vscode/
 logs/
-Dockerfile
-docker-compose.yml
+DockerFile .dockerignore
+

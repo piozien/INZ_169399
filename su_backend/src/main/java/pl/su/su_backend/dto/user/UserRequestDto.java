@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import pl.su.su_backend.model.enums.AuthProvider;
 import pl.su.su_backend.model.enums.StatusEnum;
 
+import java.util.UUID;
+
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -29,6 +31,8 @@ public class UserRequestDto {
     private String password;
 
     private StatusEnum status;
+
+    private UUID classId;
 
     @Builder.Default
     private AuthProvider authProvider = AuthProvider.LOCAL;

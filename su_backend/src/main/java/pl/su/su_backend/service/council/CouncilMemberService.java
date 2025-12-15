@@ -200,7 +200,6 @@ public class CouncilMemberService {
         councilMember.setRole(RoleCode.CZLONEK_SU);
 
         councilMemberRepository.save(councilMember);
-        activityLogService.log(userId, ActionType.USER_UPDATED, "Dołączono do samorządu jako członek");
     }
 
     public List<RoleOptionDto> getAvailableRoles() {

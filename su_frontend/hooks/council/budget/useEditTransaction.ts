@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { updateTransaction } from '@/lib/api/budget';
 import { CouncilTransactionRequestDto, CouncilTransactionResponseDto } from '@/types/budget.types';
 
@@ -32,12 +31,9 @@ export const useEditTransaction = (
         mutationFn: (data: CouncilTransactionRequestDto) => updateTransaction(transaction.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget'] });
-            toast.success('Transakcja zaktualizowana');
             onClose();
         },
-        onError: (err: any) => {
-            toast.error('Błąd edycji transakcji', { description: err.message });
-        },
+        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd edycji'),
     });
 
     const changeAmount = (delta: number) => {
@@ -60,11 +56,16 @@ export const useEditTransaction = (
     };
 
     return {
-        description, setDescription,
-        amount, setAmount,
-        type, setType,
-        date, setDate,
-        time, setTime,
+        description,
+        setDescription,
+        amount,
+        setAmount,
+        type,
+        setType,
+        date,
+        setDate,
+        time,
+        setTime,
         changeAmount,
         handleSubmit,
         isPending: mutation.isPending,

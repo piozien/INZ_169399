@@ -26,7 +26,7 @@ public class MailService {
 
     @Value("${ACS_SENDER_ADDRESS}")
     private String senderAddress;
-    @Value("{$FRONTEND_URL}")
+    @Value("$FRONTEND_URL{}")
     private String frontendUrl;
 
     private static final String COLOR_PRIMARY = "#c2410c";

@@ -1,6 +1,5 @@
-import {useState, useMemo} from 'react';
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
-import {toast} from 'sonner';
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchAllUsersAdmin,
     unblockUser,
@@ -8,9 +7,7 @@ import {
     assignGlobalRole,
     removeGlobalRole,
     fetchAllGlobalRoles,
-    updateUserAdmin,
 } from '@/lib/api/admin';
-import {UserUpdateRequestDto} from '@/types/user.types';
 
 export const useAdminUsers = () => {
     const queryClient = useQueryClient();
@@ -19,12 +16,12 @@ export const useAdminUsers = () => {
     const [roleFilter, setRoleFilter] = useState<string>('ALL');
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'BLOCKED'>('ALL');
 
-    const {data: users, isLoading: isUsersLoading} = useQuery({
+    const { data: users, isLoading: isUsersLoading } = useQuery({
         queryKey: ['adminAllUsers'],
         queryFn: fetchAllUsersAdmin,
     });
 
-    const {data: availableRoles = []} = useQuery({
+    const { data: availableRoles = [] } = useQuery({
         queryKey: ['adminGlobalRoles'],
         queryFn: fetchAllGlobalRoles,
         staleTime: 1000 * 60 * 60,
@@ -47,75 +44,32 @@ export const useAdminUsers = () => {
     const deleteMutation = useMutation({
         mutationFn: deleteUser,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['adminAllUsers']});
-            toast.success('Użytkownik usunięty', {
-                description: 'Konto zostało pomyślnie dezaktywowane (soft delete).',
-            });
+            queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] });
+            alert('Użytkownik usunięty (soft delete).');
         },
-        onError: (err: any) => {
-            toast.error('Błąd usuwania', {
-                description: err.message || 'Nie udało się usunąć użytkownika.',
-            });
-        },
+        onError: (err: any) => alert(err.message || 'Błąd usuwania.'),
     });
 
     const unblockMutation = useMutation({
         mutationFn: unblockUser,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['adminAllUsers']});
-            toast.success('Użytkownik odblokowany', {
-                description: 'Konto jest ponownie aktywne.',
-            });
-        },
-        onError: (err: any) => {
-            toast.error('Błąd operacji', {
-                description: err.message || 'Nie udało się odblokować użytkownika.',
-            });
+            queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] });
+            alert('Użytkownik odblokowany.');
         },
     });
 
     const assignRoleMutation = useMutation({
-        mutationFn: ({userId, role}: { userId: string; role: string }) =>
+        mutationFn: ({ userId, role }: { userId: string; role: string }) =>
             assignGlobalRole(userId, role),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['adminAllUsers']});
-            toast.success('Rola przypisana pomyślnie');
-        },
-        onError: (err: any) => {
-            toast.error('Błąd nadawania roli', {
-                description: err.message || 'Wystąpił nieoczekiwany błąd.',
-            });
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] }),
+        onError: (err: any) => alert(err.message || 'Błąd nadawania roli.'),
     });
 
     const removeRoleMutation = useMutation({
-        mutationFn: ({userId, role}: { userId: string; role: string }) =>
+        mutationFn: ({ userId, role }: { userId: string; role: string }) =>
             removeGlobalRole(userId, role),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['adminAllUsers']});
-            toast.info('Rola została odebrana');
-        },
-        onError: (err: any) => {
-            toast.error('Błąd usuwania roli', {
-                description: err.message || 'Wystąpił nieoczekiwany błąd.',
-            });
-        },
-    });
-
-    const updateMutation = useMutation({
-        mutationFn: ({userId, data}: { userId: string; data: UserUpdateRequestDto }) =>
-            updateUserAdmin(userId, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['adminAllUsers']});
-            toast.success('Dane zaktualizowane', {
-                description: 'Profil użytkownika został zmieniony.',
-            });
-        },
-        onError: (err: any) => {
-            toast.error('Błąd aktualizacji', {
-                description: err.message || 'Nie udało się zapisać zmian.',
-            });
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] }),
+        onError: (err: any) => alert(err.message || 'Błąd usuwania roli.'),
     });
 
     return {
@@ -134,7 +88,5 @@ export const useAdminUsers = () => {
         unblockUser: unblockMutation.mutate,
         assignRole: assignRoleMutation.mutate,
         removeRole: removeRoleMutation.mutate,
-        updateUser: updateMutation.mutateAsync,
-        isUpdating: updateMutation.isPending,
     };
 };
