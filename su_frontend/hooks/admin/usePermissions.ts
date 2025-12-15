@@ -1,22 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPermissionMatrix, assignPermission, revokePermission } from '@/lib/api/admin';
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 export const usePermissions = () => {
     const queryClient = useQueryClient();
 
-    const { data: matrix, isLoading } = useQuery({
+    const { data: matrix, isLoading, isError, error } = useQuery({
         queryKey: ['permissionMatrix'],
         queryFn: fetchPermissionMatrix,
         staleTime: 1000 * 60 * 5,
+        retry: false,
     });
 
     const toggleMutation = useMutation({
         mutationFn: async ({
-            role,
-            perm,
-            hasPerm,
-        }: {
+                               role,
+                               perm,
+                               hasPerm,
+                           }: {
             role: string;
             perm: string;
             hasPerm: boolean;
@@ -40,6 +41,8 @@ export const usePermissions = () => {
     return {
         matrix,
         isLoading,
+        isError,
+        error,
         togglePermission: toggleMutation.mutate,
     };
 };

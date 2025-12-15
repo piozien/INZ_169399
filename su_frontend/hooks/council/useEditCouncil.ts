@@ -49,8 +49,8 @@ export const useEditCouncil = (
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const apiStartDate = startDate ? new Date(startDate).toISOString() : new Date().toISOString();
-        const apiEndDate = endDate ? new Date(endDate).toISOString() : new Date().toISOString();
+        const apiStartDate = startDate || new Date().toISOString().split('T')[0];
+        const apiEndDate = endDate || new Date().toISOString().split('T')[0];
 
         mutation.mutate({
             name,

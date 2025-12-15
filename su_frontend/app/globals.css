@@ -179,29 +179,34 @@ select:focus {
 @layer components {
 
     .my-toast {
-        @apply flex items-center gap-4 w-full py-3 px-6 shadow-xl transition-all duration-300 font-sans relative overflow-hidden border-2 rounded-full;
+        @apply flex items-start gap-4 w-full py-4 px-6 shadow-xl transition-all duration-300 font-sans relative overflow-hidden border-2 rounded-xl;
         @apply bg-inputbg text-foreground;
     }
 
+    .my-toast-content {
+        @apply flex flex-col flex-1 min-w-0;
+    }
+
     .my-toast-title {
-        @apply text-sm font-bold text-foreground tracking-wide;
+        @apply text-sm font-bold text-foreground tracking-wide break-words;
     }
 
     .my-toast-desc {
-        @apply text-xs text-txtcolor-300 mt-0.5 font-medium leading-relaxed;
+        @apply text-xs text-txtcolor-300 mt-1 font-medium leading-relaxed break-words whitespace-normal;
     }
 
     .my-toast-icon {
-        @apply h-6 w-6 shrink-0;
+        @apply h-6 w-6 shrink-0 mt-0.5;
     }
 
     .my-toast-btn {
-        @apply font-bold text-xs py-2 px-5 rounded-full hover:opacity-90 transition-all ml-auto whitespace-nowrap shrink-0 shadow-md active:scale-95;
+        @apply font-bold text-xs py-2 px-5 rounded-full hover:opacity-90 transition-all ml-auto whitespace-nowrap shrink-0 shadow-md active:scale-95 self-center;
     }
 
     .my-toast-cancel {
-        @apply border border-border bg-background text-txtcolor-300 hover:text-foreground hover:bg-secondarybg font-medium text-xs py-2 px-4 rounded-full transition-colors whitespace-nowrap shrink-0;
+        @apply border border-border bg-background text-txtcolor-300 hover:text-foreground hover:bg-secondarybg font-medium text-xs py-2 px-4 rounded-full transition-colors whitespace-nowrap shrink-0 self-center;
     }
+
 
     .my-toast[data-type="error"] {
         @apply border-error shadow-error/20;
