@@ -166,11 +166,10 @@ export default function DashboardPage() {
                             </strong>{' '}
                             sugestii.
                             <br />
-                            Aktualnie{' '}
+                            Aktualnie oczekujacych na rozpatrzenie:{' '}
                             <span className="text-warning font-bold">
                                 {summary?.myPendingSuggestionsCount || 0}
                             </span>{' '}
-                            czeka na rozpatrzenie.
                         </p>
                     </ActivityCard>
 

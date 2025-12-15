@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { fetchCouncilById, leaveCouncil } from '@/lib/api/council';
+import { toast } from 'sonner';
+import { deleteCouncil, fetchCouncilById, leaveCouncil } from '@/lib/api/council';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { CouncilResponseDto } from '@/types/council.types';
 
@@ -12,6 +13,7 @@ export const useCouncilDetails = (councilId: string) => {
 
     const [copied, setCopied] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const {
         data: council,
@@ -30,21 +32,40 @@ export const useCouncilDetails = (councilId: string) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+            toast.info(`Opuszczono samorząd ${council?.name || ''}`);
             router.push('/dashboard');
         },
-        onError: (err) => {
-            alert('Nie udało się opuścić samorządu. ' + (err instanceof Error ? err.message : ''));
+        onError: (err: any) => {
+            toast.error('Nie udało się opuścić samorządu', { description: err.message });
         },
     });
 
-    const handleLeave = () => {
-        if (
-            confirm(
-                `Czy na pewno chcesz opuścić samorząd "${council?.name}"? Ta operacja jest nieodwracalna.`
-            )
-        ) {
-            leaveMutation.mutate();
+    const deleteMutation = useMutation({
+        mutationFn: () => deleteCouncil(councilId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+            setIsDeleteModalOpen(false);
+            toast.success('Samorząd został usunięty');
+            router.push('/dashboard');
+            router.refresh();
+        },
+        onError: (err: any) => {
+            toast.error('Nie udało się usunąć samorządu', { description: err.message });
         }
+    });
+
+    const handleLeave = () => {
+        toast('Czy na pewno chcesz opuścić ten samorząd?', {
+            description: 'Ta operacja jest nieodwracalna.',
+            action: {
+                label: 'Opuść',
+                onClick: () => leaveMutation.mutate(),
+            },
+            cancel: {
+                label: 'Anuluj',
+                onClick: () => {},
+            },
+        });
     };
 
     const hasPermission = (perm: string) => {
@@ -56,6 +77,7 @@ export const useCouncilDetails = (councilId: string) => {
         if (council?.joinCode) {
             navigator.clipboard.writeText(council.joinCode);
             setCopied(true);
+            toast.success('Skopiowano kod do schowka');
             setTimeout(() => setCopied(false), 2000);
         }
     };
@@ -72,5 +94,10 @@ export const useCouncilDetails = (councilId: string) => {
         isEditModalOpen,
         openEditModal: () => setIsEditModalOpen(true),
         closeEditModal: () => setIsEditModalOpen(false),
+        removeCouncil: () => deleteMutation.mutate(),
+        isDeleting: deleteMutation.isPending,
+        isDeleteModalOpen,
+        openDeleteModal: () => setIsDeleteModalOpen(true),
+        closeDeleteModal: () => setIsDeleteModalOpen(false),
     };
 };

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Landmark, Trash2, Calendar, Users, Loader2 } from 'lucide-react';
 import { useAdminCouncils } from '@/hooks/admin/useAdminCouncils';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function CouncilsManager() {
     const router = useRouter();
@@ -15,6 +16,22 @@ export default function CouncilsManager() {
                 <Loader2 className="text-primary h-8 w-8 animate-spin" />
             </div>
         );
+
+    const handleDeleteClick = (e: React.MouseEvent, councilId: string, councilName: string) => {
+        e.stopPropagation();
+        toast('Czy na pewno chcesz usunąć ten samorząd?', {
+            description: `Samorząd "${councilName}" zostanie trwale usunięty wraz z całą historią.`,
+            action: {
+                label: 'Usuń',
+                onClick: () => deleteCouncil(councilId),
+            },
+            cancel: {
+                label: 'Anuluj',
+                onClick: () => {},
+            },
+            duration: 8000,
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -52,7 +69,6 @@ export default function CouncilsManager() {
 
                         <div
                             className="border-border mt-6 flex items-center justify-between border-t pt-4"
-                            onClick={(e) => e.stopPropagation()}
                         >
                             <div className="text-txtcolor-300 flex items-center gap-1 text-xs font-bold uppercase">
                                 <Users className="h-3.5 w-3.5" /> Kod:{' '}
@@ -61,14 +77,7 @@ export default function CouncilsManager() {
                                 </span>
                             </div>
                             <button
-                                onClick={() => {
-                                    if (
-                                        confirm(
-                                            'UWAGA: Usunięcie samorządu usunie też jego członków, historię finansów i wydarzenia. Czy kontynuować?'
-                                        )
-                                    )
-                                        deleteCouncil(council.id);
-                                }}
+                                onClick={(e) => handleDeleteClick(e, council.id, council.name)}
                                 className="hover:bg-error/10 text-txtcolor-300 hover:text-error z-10 rounded-lg p-2 transition-colors"
                                 title="Usuń samorząd trwale"
                             >

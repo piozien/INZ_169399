@@ -8,6 +8,7 @@ import pl.su.su_backend.dto.suggestion.SuggestionRequestDto;
 import pl.su.su_backend.dto.suggestion.SuggestionResponseDto;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.model.council.Council;
+import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.PermissionCode;
 import pl.su.su_backend.model.enums.SuggestionStatus;
 import pl.su.su_backend.model.suggestion.Suggestion;
@@ -17,6 +18,7 @@ import pl.su.su_backend.repositories.council.CouncilRepository;
 import pl.su.su_backend.repositories.suggestion.SuggestionRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
 import pl.su.su_backend.service.auth.PermissionService;
+import pl.su.su_backend.service.log.ActivityLogService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +34,7 @@ public class SuggestionService {
     private final UsersRepository usersRepository;
     private final CouncilRepository councilRepository;
     private final PermissionService permissionService;
+    private final ActivityLogService activityLogService;
     private final SuggestionMapper suggestionMapper;
 
     public SuggestionResponseDto createSuggestion(SuggestionRequestDto dto, UUID userId) {
@@ -60,7 +63,9 @@ public class SuggestionService {
         }
 
         suggestion.setAnonymous(dto.isAnonymous());
-
+        if(!dto.isAnonymous()){
+            activityLogService.log(userId, ActionType.SUGGESTION_CREATE, "Użytkownik utworzył sugestię");
+        }
         Suggestion savedSuggestion = suggestionRepository.save(suggestion);
 
         if (dto.getTags() != null && !dto.getTags().isEmpty()) {
@@ -87,6 +92,7 @@ public class SuggestionService {
         }
 
         suggestion.setStatus(SuggestionStatus.APPROVED);
+        activityLogService.log(approvedById, ActionType.SUGGESTION_APPROVE, "Sugestia zatwierdzona");
         return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
     }
 
@@ -94,12 +100,13 @@ public class SuggestionService {
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> ApiException.notFound("Sugestia nie istnieje"));
 
-        if (!permissionService.hasPermission(rejectedById, PermissionCode.SUGGESTION_DELETE, suggestion.getCouncil().getId())) {
+        if (!permissionService.hasPermission(rejectedById, PermissionCode.SUGGESTION_REJECT, suggestion.getCouncil().getId())) {
             throw ApiException.forbidden("Brak uprawnień do odrzucania sugestii.");
         }
 
         suggestion.setStatus(SuggestionStatus.REJECTED);
         suggestion.setRejectionReason(reason);
+        activityLogService.log(rejectedById, ActionType.SUGGESTION_REJECT, "Sugestia odrzucona");
         return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
     }
 
@@ -130,7 +137,7 @@ public class SuggestionService {
                 suggestion.getTags().add(newTag);
             }
         }
-
+        activityLogService.log(userId, ActionType.SUGGESTION_UPDATE, "Sugestia zaaktualizowana");
         return suggestionMapper.toResponse(suggestionRepository.save(suggestion));
     }
 
@@ -145,6 +152,7 @@ public class SuggestionService {
             throw ApiException.forbidden("Brak uprawnień do usunięcia");
         }
         suggestionRepository.delete(suggestion);
+        activityLogService.log(userId, ActionType.SUGGESTION_DELETE, "Sugestia usunięta");
     }
 
     @Transactional(readOnly = true)

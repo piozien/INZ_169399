@@ -1,8 +1,10 @@
 package pl.su.su_backend.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,9 +19,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EventRequestDto {
     @NotBlank(message = "Tytuł wydarzenia jest wymagany")
+    @Size(max = 100, message = "Tytuł nie może być dłuższy niż 100 znaków")
     private String title;
 
     @NotBlank(message = "Opis jest wymagany")
+    @Size(max = 1000, message = "Opis nie może być dłuższy niż 1000 znaków")
     private String description;
 
     @NotNull(message = "Data rozpoczęcia jest wymagana")
@@ -32,7 +36,8 @@ public class EventRequestDto {
 
     private String location;
 
-    private String calendarEventId;
+    @Min(value = 1, message = "Limit uczestników musi być większy od 0")
+    private Integer maxParticipants;
 
     private UUID councilId;
 }

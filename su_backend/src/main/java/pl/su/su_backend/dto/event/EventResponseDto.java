@@ -21,8 +21,10 @@ public class EventResponseDto {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private String location;
+    private Integer maxParticipants;
+    private Integer participantsCount;
     private UUID createdById;
-    private String calendarEventId;
+    private UUID councilId;
     private LocalDateTime createdAt;
     private EventStatus status;
     private List<ParticipantResponseDto> participants;

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { createBudget } from '@/lib/api/budget';
 import { CouncilBudgetRequestDto } from '@/types/budget.types';
 
@@ -20,9 +21,16 @@ export const useCreateBudget = (councilId: string, onClose: () => void) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budget'] });
+            toast.success('Budżet utworzony', {
+                description: `Rozpoczęto rok budżetowy ${year}.`,
+            });
             onClose();
         },
-        onError: (err) => alert(err instanceof Error ? err.message : 'Błąd tworzenia budżetu'),
+        onError: (err: any) => {
+            toast.error('Błąd tworzenia budżetu', {
+                description: err.message,
+            });
+        },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -31,10 +39,8 @@ export const useCreateBudget = (councilId: string, onClose: () => void) => {
     };
 
     return {
-        initialAmount,
-        setInitialAmount,
-        year,
-        setYear,
+        initialAmount, setInitialAmount,
+        year, setYear,
         handleSubmit,
         isPending: mutation.isPending,
     };

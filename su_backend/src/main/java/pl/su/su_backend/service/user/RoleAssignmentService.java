@@ -71,7 +71,7 @@ public class RoleAssignmentService {
         userRoleRepository.save(userRole);
 
         activityLogService.log(acting.getId(), ActionType.ASSIGN_ROLE,
-                "Nadano rolę " + roleCode + " użytkownikowi " + target.getEmail());
+                "Nadano rolę " + roleCode + " przez:  " + acting.getEmail());
 
         log.info("Role {} assigned to user {} by {}. Reason: {}", roleCode, target.getEmail(), acting.getEmail(), reason);
     }
@@ -98,7 +98,7 @@ public class RoleAssignmentService {
 
         if (!userRoleRepository.existsById(id)) {
             log.info("User {} does not have a role {}", target.getEmail(), roleCode);
-            return;
+            throw ApiException.badRequest("Rola nieusunięta, docelowy Użytkownik jej nie posiada.");
         }
 
         userRoleRepository.deleteById(id);
@@ -106,7 +106,7 @@ public class RoleAssignmentService {
         target.getUserRoles().removeIf(ur -> ur.getRole().getRoleCode() == roleCode);
 
         activityLogService.log(acting.getId(), ActionType.REMOVE_ROLE,
-                "Odebrano rolę " + roleCode + " użytkownikowi " + target.getEmail());
+                "Odebrano rolę " + roleCode + " przez " + acting.getEmail());
 
         log.info("Role {} revoked from user {} by {}. Reason: {}", roleCode, target.getEmail(), acting.getEmail(), reason);
     }

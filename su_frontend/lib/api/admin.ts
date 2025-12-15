@@ -1,19 +1,26 @@
-import { apiFetch } from './httpClient';
-import { UserDto } from '@/types/user.types';
-import { SuggestionDto } from '@/types/suggestions.types';
-import { ActivityLogResponseDto } from '@/types/log.types';
-import { CouncilResponseDto } from '@/types/council.types';
+import {apiFetch} from './httpClient';
+import {UserDto, UserUpdateRequestDto} from '@/types/user.types';
+import {SuggestionDto} from '@/types/suggestions.types';
+import {ActivityLogResponseDto} from '@/types/log.types';
+import {CouncilResponseDto} from '@/types/council.types';
 
 export const fetchAllUsersAdmin = async (): Promise<UserDto[]> => {
     return apiFetch<UserDto[]>('/users');
 };
 
 export const unblockUser = async (userId: string): Promise<UserDto> => {
-    return apiFetch<UserDto>(`/users/${userId}/unblock`, { method: 'POST' });
+    return apiFetch<UserDto>(`/users/${userId}/unblock`, {method: 'POST'});
 };
 
 export const deleteUser = async (userId: string): Promise<void> => {
-    return apiFetch(`/users/${userId}`, { method: 'DELETE' });
+    return apiFetch(`/users/${userId}`, {method: 'DELETE'});
+};
+
+export const updateUserAdmin = async (userId: string, data: UserUpdateRequestDto): Promise<UserDto> => {
+    return apiFetch<UserDto>(`/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
 };
 
 export const fetchAllGlobalRoles = async (): Promise<string[]> => {
@@ -21,11 +28,11 @@ export const fetchAllGlobalRoles = async (): Promise<string[]> => {
 };
 
 export const assignGlobalRole = async (userId: string, roleCode: string): Promise<UserDto> => {
-    return apiFetch<UserDto>(`/users/${userId}/roles/${roleCode}`, { method: 'POST' });
+    return apiFetch<UserDto>(`/users/${userId}/roles/${roleCode}`, {method: 'POST'});
 };
 
 export const removeGlobalRole = async (userId: string, roleCode: string): Promise<UserDto> => {
-    return apiFetch<UserDto>(`/users/${userId}/roles/${roleCode}`, { method: 'DELETE' });
+    return apiFetch<UserDto>(`/users/${userId}/roles/${roleCode}`, {method: 'DELETE'});
 };
 
 export const fetchUserLogs = async (userId: string): Promise<ActivityLogResponseDto[]> => {
@@ -37,11 +44,11 @@ export const fetchPermissionMatrix = async (): Promise<Record<string, string[]>>
 };
 
 export const assignPermission = async (roleCode: string, permissionCode: string): Promise<void> => {
-    return apiFetch(`/admin/roles/${roleCode}/permissions/${permissionCode}`, { method: 'POST' });
+    return apiFetch(`/admin/roles/${roleCode}/permissions/${permissionCode}`, {method: 'POST'});
 };
 
 export const revokePermission = async (roleCode: string, permissionCode: string): Promise<void> => {
-    return apiFetch(`/admin/roles/${roleCode}/permissions/${permissionCode}`, { method: 'DELETE' });
+    return apiFetch(`/admin/roles/${roleCode}/permissions/${permissionCode}`, {method: 'DELETE'});
 };
 
 export const fetchAllCouncilsAdmin = async (): Promise<CouncilResponseDto[]> => {
@@ -49,7 +56,7 @@ export const fetchAllCouncilsAdmin = async (): Promise<CouncilResponseDto[]> => 
 };
 
 export const deleteCouncilAdmin = async (councilId: string): Promise<void> => {
-    return apiFetch(`/councils/${councilId}`, { method: 'DELETE' });
+    return apiFetch(`/councils/${councilId}`, {method: 'DELETE'});
 };
 
 export const fetchAllSuggestionsAdmin = async (): Promise<SuggestionDto[]> => {
@@ -57,5 +64,5 @@ export const fetchAllSuggestionsAdmin = async (): Promise<SuggestionDto[]> => {
 };
 
 export const deleteSuggestionAdmin = async (suggestionId: string): Promise<void> => {
-    return apiFetch(`/suggestions/${suggestionId}`, { method: 'DELETE' });
+    return apiFetch(`/suggestions/${suggestionId}`, {method: 'DELETE'});
 };

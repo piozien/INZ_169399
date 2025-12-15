@@ -9,7 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import pl.su.su_backend.dto.user.ChangePasswordRequestDto;
-import pl.su.su_backend.dto.user.UserRequestDto;
+import pl.su.su_backend.dto.user.UserUpdateRequestDto;
 import pl.su.su_backend.dto.user.UserResponseDto;
 import pl.su.su_backend.model.enums.RoleCode;
 import pl.su.su_backend.model.users.Users;
@@ -67,7 +67,7 @@ public class UserController {
     @PutMapping("/{userId}")
     @PreAuthorize("hasPermission(null, 'USER_EDIT')")
     public ResponseEntity<UserResponseDto> updateUser(@PathVariable UUID userId,
-                                                      @Valid @RequestBody UserRequestDto request,
+                                                      @Valid @RequestBody UserUpdateRequestDto request,
                                                       @AuthenticationPrincipal Object principal) {
         String email = getCurrentUserEmail(principal);
         log.info("Updating user ID: {} by user: {}", userId, email);

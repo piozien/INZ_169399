@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { createCouncil } from '@/lib/api/council';
 
 interface CouncilFormData {
@@ -25,12 +26,13 @@ export const useCreateCouncilForm = (onSuccess: () => void) => {
         mutationFn: createCouncil,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['userCouncils'] });
+            toast.success('Samorząd utworzony pomyślnie');
             onSuccess();
         },
-        onError: (err) => {
-            setError(
-                err instanceof Error ? err.message : 'Wystąpił błąd podczas tworzenia samorządu'
-            );
+        onError: (err: any) => {
+            const msg = err instanceof Error ? err.message : 'Wystąpił błąd podczas tworzenia samorządu';
+            setError(msg);
+            toast.error('Błąd tworzenia', { description: msg });
         },
     });
 

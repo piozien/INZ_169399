@@ -16,6 +16,7 @@ import {
 import { useAdminSuggestions } from '@/hooks/admin/useAdminSuggestions';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { toast } from 'sonner';
 import SuggestionDetailsModal from '@/components/suggestions/SuggestionDetailsModal';
 
 export default function SuggestionsGlobalManager() {
@@ -58,6 +59,21 @@ export default function SuggestionsGlobalManager() {
         );
     };
 
+    const handleDeleteClick = (e: React.MouseEvent, suggestionId: string) => {
+        e.stopPropagation();
+        toast('Czy na pewno chcesz usunąć tę sugestię?', {
+            description: 'Operacja jest nieodwracalna.',
+            action: {
+                label: 'Usuń',
+                onClick: () => deleteSuggestion(suggestionId),
+            },
+            cancel: {
+                label: 'Anuluj',
+                onClick: () => {},
+            },
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="bg-secondarybg/30 border-border grid grid-cols-1 gap-4 rounded-xl border p-4 md:grid-cols-3">
@@ -90,74 +106,67 @@ export default function SuggestionsGlobalManager() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-secondarybg text-txtcolor-300 border-border border-b text-xs font-bold uppercase">
-                            <tr>
-                                <th className="px-6 py-4">Tytuł / Treść</th>
-                                <th className="px-6 py-4">Autor / Data</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Akcje</th>
-                            </tr>
+                        <tr>
+                            <th className="px-6 py-4">Tytuł / Treść</th>
+                            <th className="px-6 py-4">Autor / Data</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-right">Akcje</th>
+                        </tr>
                         </thead>
                         <tbody className="divide-border divide-y">
-                            {suggestions?.map((s: any) => (
-                                <tr
-                                    key={s.id}
-                                    onClick={() => setSelectedSuggestion(s)}
-                                    className="hover:bg-secondarybg/30 group cursor-pointer transition-colors"
-                                >
-                                    <td className="max-w-[300px] px-6 py-4 md:max-w-[400px]">
-                                        <div className="text-foreground mb-1 flex items-center gap-2 truncate font-bold">
-                                            {s.title}
-                                            <Maximize2 className="text-txtcolor-300 h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                                        </div>
-                                        <div className="text-txtcolor-300 line-clamp-2 text-xs leading-relaxed">
-                                            {s.description}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="text-foreground flex items-center gap-2 text-xs font-medium">
-                                                <User className="text-txtcolor-300 h-3 w-3" />
-                                                {s.anonymous ? (
-                                                    <span className="italic opacity-70">
+                        {suggestions?.map((s: any) => (
+                            <tr
+                                key={s.id}
+                                onClick={() => setSelectedSuggestion(s)}
+                                className="hover:bg-secondarybg/30 group cursor-pointer transition-colors"
+                            >
+                                <td className="max-w-[300px] px-6 py-4 md:max-w-[400px]">
+                                    <div className="text-foreground mb-1 flex items-center gap-2 truncate font-bold">
+                                        {s.title}
+                                        <Maximize2 className="text-txtcolor-300 h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                                    </div>
+                                    <div className="text-txtcolor-300 line-clamp-2 text-xs leading-relaxed">
+                                        {s.description}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex flex-col gap-1">
+                                        <div className="text-foreground flex items-center gap-2 text-xs font-medium">
+                                            <User className="text-txtcolor-300 h-3 w-3" />
+                                            {s.anonymous ? (
+                                                <span className="italic opacity-70">
                                                         Anonim
                                                     </span>
-                                                ) : (
-                                                    s.fullName
-                                                )}
-                                            </div>
-                                            <div className="text-txtcolor-300 font-mono text-[10px]">
-                                                {format(
-                                                    new Date(s.createdAt),
-                                                    'dd MMM yyyy, HH:mm',
-                                                    { locale: pl }
-                                                )}
-                                            </div>
+                                            ) : (
+                                                s.fullName
+                                            )}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4">{getStatusBadge(s.status)}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div
-                                            className="flex justify-end"
-                                            onClick={(e) => e.stopPropagation()}
+                                        <div className="text-txtcolor-300 font-mono text-[10px]">
+                                            {format(
+                                                new Date(s.createdAt),
+                                                'dd MMM yyyy, HH:mm',
+                                                { locale: pl }
+                                            )}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">{getStatusBadge(s.status)}</td>
+                                <td className="px-6 py-4 text-right">
+                                    <div
+                                        className="flex justify-end"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <button
+                                            onClick={(e) => handleDeleteClick(e, s.id)}
+                                            className="hover:bg-error/10 text-txtcolor-300 hover:text-error rounded-lg p-2 transition-colors"
+                                            title="Usuń sugestię"
                                         >
-                                            <button
-                                                onClick={() => {
-                                                    if (
-                                                        confirm(
-                                                            'Czy na pewno usunąć tę sugestię trwale?'
-                                                        )
-                                                    )
-                                                        deleteSuggestion(s.id);
-                                                }}
-                                                className="hover:bg-error/10 text-txtcolor-300 hover:text-error rounded-lg p-2 transition-colors"
-                                                title="Usuń sugestię"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>

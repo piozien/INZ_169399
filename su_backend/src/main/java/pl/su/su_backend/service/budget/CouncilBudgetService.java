@@ -185,6 +185,11 @@ public class CouncilBudgetService {
 
     @Transactional(readOnly = true)
     public List<CouncilTransactionResponseDto> getTransactions(UUID budgetId, String currentUserEmail) {
+        Users user = userService.getUserByEmailEntity(currentUserEmail);
+
+        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_VIEW, budgetId)) {
+            throw ApiException.forbidden("Brak uprawnień");
+        }
         return councilTransactionRepository.findByBudgetId(budgetId).stream().map(transactionMapper::toResponse).collect(Collectors.toList());
     }
 }

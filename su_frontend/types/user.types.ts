@@ -12,6 +12,10 @@ export interface UserDto {
     roles: string[];
     permissions?: string[];
 }
+export interface UserUpdateRequestDto {
+    fullName: string;
+    status?: StatusEnum;
+}
 export interface ChangePasswordRequestDto {
     oldPassword: string;
     newPassword: string;

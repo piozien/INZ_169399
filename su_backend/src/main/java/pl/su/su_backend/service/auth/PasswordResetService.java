@@ -9,11 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.su.su_backend.exception.ApiException;
 import pl.su.su_backend.exception.ErrorCode;
+import pl.su.su_backend.model.enums.ActionType;
 import pl.su.su_backend.model.enums.StatusEnum;
 import pl.su.su_backend.model.users.PasswordResetToken;
 import pl.su.su_backend.model.users.Users;
 import pl.su.su_backend.repositories.auth.PasswordResetTokenRepository;
 import pl.su.su_backend.repositories.user.UsersRepository;
+import pl.su.su_backend.service.log.ActivityLogService;
 import pl.su.su_backend.service.user.MailService;
 import pl.su.su_backend.service.user.UserService;
 
@@ -30,6 +32,7 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final UsersRepository usersRepository;
     private final UserService userService;
+    private final ActivityLogService activityLogService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
 
@@ -67,7 +70,7 @@ public class PasswordResetService {
                 .toUriString();
 
         mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetUrl);
-
+        activityLogService.log(user.getId(), ActionType.PASSWORD_CHANGE, "Próba zresetowania hasła - wysłano link");
         log.info("Reset email sent to: {}", email);
     }
 
@@ -91,7 +94,7 @@ public class PasswordResetService {
 
         resetToken.markAsUsed();
         tokenRepository.save(resetToken);
-
+        activityLogService.log(user.getId(), ActionType.PASSWORD_CHANGE, "Zresetowano hasło pomyślnie");
         log.info("The password has been successfully changed for: {}", user.getEmail());
     }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { validatePasswordResetToken, confirmPasswordReset } from '@/lib/api/auth';
+import { toast } from 'sonner';
 
 export const useResetPassword = () => {
     const router = useRouter();
@@ -12,15 +13,16 @@ export const useResetPassword = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordError, setPasswordError] = useState<string | null>(null);
 
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
+    const [pageError, setPageError] = useState<string | null>(null);
     const [isValidating, setIsValidating] = useState(true);
     const [isTokenValid, setIsTokenValid] = useState(false);
+
+    const [success, setSuccess] = useState(false);
     const [countdown, setCountdown] = useState(5);
 
     useEffect(() => {
         if (!token) {
-            setError('Brak tokenu resetowania w adresie URL.');
+            setPageError('Brak tokenu resetowania w adresie URL.');
             setIsValidating(false);
             return;
         }
@@ -30,7 +32,7 @@ export const useResetPassword = () => {
                 await validatePasswordResetToken(token);
                 setIsTokenValid(true);
             } catch (e) {
-                setError(
+                setPageError(
                     'Token jest nieprawidłowy lub wygasł. Zostaniesz przekierowany, aby wygenerować nowy.'
                 );
                 setIsTokenValid(false);
@@ -51,7 +53,7 @@ export const useResetPassword = () => {
     }, [password, confirmPassword]);
 
     useEffect(() => {
-        const shouldRedirect = success || (!isValidating && !isTokenValid && error);
+        const shouldRedirect = success || (!isValidating && !isTokenValid && pageError);
 
         if (shouldRedirect) {
             const timer = setInterval(() => {
@@ -64,24 +66,33 @@ export const useResetPassword = () => {
             }
             return () => clearInterval(timer);
         }
-    }, [success, isValidating, isTokenValid, error, countdown, router]);
+    }, [success, isValidating, isTokenValid, pageError, countdown, router]);
 
     const mutation = useMutation({
         mutationFn: confirmPasswordReset,
         onSuccess: () => {
             setSuccess(true);
-            setError(null);
             setCountdown(5);
+            toast.success('Hasło zostało zmienione!', {
+                description: 'Zostaniesz przekierowany do strony logowania.',
+                duration: 5000,
+            });
         },
-        onError: (err) => {
-            setError(err instanceof Error ? err.message : 'Wystąpił nieznany błąd.');
+        onError: (err: any) => {
+            toast.error('Nie udało się zmienić hasła', {
+                description: err.message || 'Wystąpił nieznany błąd.',
+            });
         },
     });
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         if (!token) return;
-        setError(null);
+        if (password !== confirmPassword) {
+            toast.error('Hasła muszą być identyczne');
+            return;
+        }
+
         mutation.mutate({ token, newPassword: password });
     };
 
@@ -97,7 +108,7 @@ export const useResetPassword = () => {
         isValidating,
         isTokenValid,
         success,
-        error,
+        error: pageError,
         countdown,
     };
 };

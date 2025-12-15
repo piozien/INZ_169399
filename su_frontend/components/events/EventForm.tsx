@@ -1,9 +1,9 @@
 'use client';
 
-import { Save, Loader2, MapPin, AlignLeft, CalendarClock } from 'lucide-react';
-import { EventRequestDto, EventResponseDto } from '@/types/event.types';
+import {Save, Loader2, MapPin, AlignLeft, CalendarClock, Users} from 'lucide-react';
+import {EventRequestDto, EventResponseDto} from '@/types/event.types';
 import FormField from '@/components/FormField';
-import { useEventFormState } from '@/hooks/council/events/useEventFormState';
+import {useEventFormState} from '@/hooks/council/events/useEventFormState';
 
 interface EventFormProps {
     councilId: string;
@@ -13,11 +13,11 @@ interface EventFormProps {
 }
 
 export default function EventForm({
-    councilId,
-    initialData,
-    onSubmit,
-    isSubmitting,
-}: EventFormProps) {
+                                      councilId,
+                                      initialData,
+                                      onSubmit,
+                                      isSubmitting,
+                                  }: EventFormProps) {
     const {
         title,
         setTitle,
@@ -33,6 +33,8 @@ export default function EventForm({
         setEndTime,
         handleStartDateChange,
         handleStartTimeChange,
+        maxParticipants,
+        setMaxParticipants,
         getPayload,
     } = useEventFormState(initialData);
 
@@ -49,7 +51,7 @@ export default function EventForm({
         <form onSubmit={handleSubmit} className="space-y-8">
             <div className="bg-secondarybg border-primary/10 rounded-xl border p-6 shadow-sm">
                 <h3 className="text-foreground mb-4 flex items-center gap-2 text-lg font-semibold">
-                    <AlignLeft className="text-secondary h-5 w-5" /> Informacje podstawowe
+                    <AlignLeft className="text-secondary h-5 w-5"/> Informacje podstawowe
                 </h3>
                 <div className="space-y-5">
                     <FormField
@@ -62,7 +64,7 @@ export default function EventForm({
                         disabled={isSubmitting}
                     />
                     <div className="relative">
-                        <MapPin className="text-txtcolor-300 absolute top-[38px] left-3 z-10 h-5 w-5" />
+                        <MapPin className="text-txtcolor-300 absolute top-[38px] left-3 z-10 h-5 w-5"/>
                         <FormField
                             id="location"
                             label="LOKALIZACJA"
@@ -73,12 +75,29 @@ export default function EventForm({
                             disabled={isSubmitting}
                         />
                     </div>
+                    <div className="relative">
+                        <Users className="text-txtcolor-300 absolute top-[38px] left-3 z-10 h-5 w-5"/>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-txtcolor-300 text-xs font-bold tracking-wider uppercase">
+                                Limit Uczestników
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                placeholder="       Puste = Brak limitu"
+                                value={maxParticipants}
+                                onChange={(e) => setMaxParticipants(e.target.value)}
+                                className="bg-inputbg text-foreground border-border focus:ring-primary w-full rounded-lg border px-4 py-3 pl-10 transition-all outline-none focus:ring-2"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div className="bg-secondarybg border-primary/10 rounded-xl border p-6 shadow-sm">
                 <h3 className="text-foreground mb-4 flex items-center gap-2 text-lg font-semibold">
-                    <CalendarClock className="text-secondary h-5 w-5" /> Termin
+                    <CalendarClock className="text-secondary h-5 w-5"/> Termin
                 </h3>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-2">
@@ -149,9 +168,9 @@ export default function EventForm({
                     className="bg-primary text-darkgray shadow-primary/20 flex transform items-center gap-3 rounded-xl px-10 py-4 text-base font-bold shadow-lg transition-all hover:-translate-y-1 hover:opacity-90 disabled:opacity-50"
                 >
                     {isSubmitting ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-5 w-5 animate-spin"/>
                     ) : (
-                        <Save className="h-5 w-5" />
+                        <Save className="h-5 w-5"/>
                     )}
                     {initialData ? 'Zapisz Zmiany' : 'Opublikuj Wydarzenie'}
                 </button>
