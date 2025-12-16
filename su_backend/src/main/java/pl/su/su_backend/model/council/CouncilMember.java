@@ -13,7 +13,9 @@ import java.util.UUID;
 @Table(name = "council_members")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class CouncilMember {
 
     @Embeddable
