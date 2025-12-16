@@ -77,7 +77,7 @@ public class SuggestionController {
     }
 
     @PutMapping("/{suggestionId}/approve")
-    @PreAuthorize("hasPermission(null, 'SUGGESTION_APPROVE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SuggestionResponseDto> approveSuggestion(
             @PathVariable UUID suggestionId,
             @AuthenticationPrincipal Object principal) {

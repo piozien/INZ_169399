@@ -40,7 +40,7 @@ WHERE r.role_code IN ('DYREKTOR', 'ZASTEPCA_DYREKTORA') AND p.name IN (
                                                                                      'COUNCIL_BUDGET_VIEW', 'COUNCIL_BUDGET_CREATE', 'COUNCIL_BUDGET_EDIT', 'COUNCIL_BUDGET_DELETE',
                                                                                      'COUNCIL_TRANSACTION_VIEW', 'COUNCIL_TRANSACTION_CREATE', 'COUNCIL_TRANSACTION_EDIT', 'COUNCIL_TRANSACTION_DELETE',
                                                                                      'EVENT_VIEW', 'EVENT_VIEW_DRAFTS', 'EVENT_APPROVE', 'EVENT_DELETE','EVENT_REMOVE_PARTICIPANTS',
-                                                                                     'SUGGESTION_VIEW', 'SUGGESTION_APPROVE', 'SUGGESTION_REJECT',
+                                                                                     'SUGGESTION_VIEW', 'SUGGESTION_APPROVE', 'SUGGESTION_REJECT','SUGGESTION_DELETE','SUGGESTION_EDIT',
                                                                                      'REPORT_VIEW', 'REPORT_GENERATE', 'ACTIVITY_LOG_VIEW'
     )
     ON CONFLICT DO NOTHING;

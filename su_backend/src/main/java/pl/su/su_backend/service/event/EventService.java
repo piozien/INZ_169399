@@ -135,6 +135,10 @@ public class EventService {
         Event event = eventRepository.findById(eventId).orElseThrow(() -> ApiException.notFound("Nie znaleziono wydarzenia"));
         Users user = usersRepository.findById(userId).orElseThrow(() -> ApiException.notFound("Nie znaleziono użytkownika"));
 
+        if (event.getEndDate().isBefore(LocalDateTime.now())) {
+            throw ApiException.badRequest("Nie można zapisać się na wydarzenie, które już się zakończyło");
+        }
+
         if (participantRepository.existsByEvent_IdAndUser_Id(eventId, userId)) {
             throw ApiException.conflict("Użytkownik już bierze udział w wydarzeniu");
         }

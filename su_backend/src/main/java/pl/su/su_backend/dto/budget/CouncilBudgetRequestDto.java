@@ -16,7 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CouncilBudgetRequestDto {
 
-    @NotBlank(message = "Należy wskazać do jakiego samorządu przypisać budżet")
+    @NotNull(message = "Należy wskazać do jakiego samorządu przypisać budżet")
 	private UUID councilId;
 
     @NotBlank(message = "Rok nie może być pusty")
