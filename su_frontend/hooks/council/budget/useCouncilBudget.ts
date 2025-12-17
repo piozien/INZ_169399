@@ -1,22 +1,19 @@
-import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import {useState, useMemo} from 'react';
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {toast} from 'sonner';
 import {
     fetchCouncilBudget,
     fetchBudgetTransactions,
     deleteTransaction,
     deleteBudget,
 } from '@/lib/api/budget';
-import { fetchCouncilContext, fetchCouncilById } from '@/lib/api/council';
-import { CouncilBudgetResponseDto, CouncilTransactionResponseDto } from '@/types/budget.types';
-import { CouncilResponseDto, CouncilContextDto } from '@/types/council.types';
-import { useAuth } from '@/lib/contexts/AuthContext';
-import { generateBudgetPdf, generateBudgetExcel } from '@/lib/reports/budgetReport';
+import {fetchCouncilContext, fetchCouncilById} from '@/lib/api/council';
+import {CouncilBudgetResponseDto, CouncilTransactionResponseDto} from '@/types/budget.types';
+import {CouncilResponseDto, CouncilContextDto} from '@/types/council.types';
+import {useAuth} from '@/lib/contexts/AuthContext';
 
 export const useCouncilBudget = (councilId: string) => {
-    const { user } = useAuth();
-    const router = useRouter();
+    const {user} = useAuth();
     const queryClient = useQueryClient();
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -25,18 +22,22 @@ export const useCouncilBudget = (councilId: string) => {
     const [editingTransaction, setEditingTransaction] =
         useState<CouncilTransactionResponseDto | null>(null);
 
-    const { data: council, isLoading: councilLoading } = useQuery<CouncilResponseDto>({
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportType, setReportType] = useState<'pdf' | 'xlsx'>('pdf');
+
+
+    const {data: council, isLoading: councilLoading} = useQuery<CouncilResponseDto>({
         queryKey: ['council', councilId],
         queryFn: () => fetchCouncilById(councilId),
     });
 
-    const { data: budget, isLoading: budgetLoading } = useQuery<CouncilBudgetResponseDto>({
+    const {data: budget, isLoading: budgetLoading} = useQuery<CouncilBudgetResponseDto>({
         queryKey: ['budget', councilId],
         queryFn: () => fetchCouncilBudget(councilId),
         retry: false,
     });
 
-    const { data: transactions, isLoading: transLoading } = useQuery<
+    const {data: transactions, isLoading: transLoading} = useQuery<
         CouncilTransactionResponseDto[]
     >({
         queryKey: ['budget', budget?.id, 'transactions'],
@@ -44,10 +45,11 @@ export const useCouncilBudget = (councilId: string) => {
         enabled: !!budget?.id,
     });
 
-    const { data: context } = useQuery<CouncilContextDto>({
+    const {data: context} = useQuery<CouncilContextDto>({
         queryKey: ['councilContext', councilId],
         queryFn: () => fetchCouncilContext(councilId),
     });
+
 
     const isAdmin = user?.roles?.includes('ADMINISTRATOR') || false;
     const isCouncilActive = council?.active ?? false;
@@ -74,26 +76,26 @@ export const useCouncilBudget = (councilId: string) => {
     const deleteTransMutation = useMutation({
         mutationFn: deleteTransaction,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['budget'] });
-            toast.success('Transakcja usunięta', { description: 'Saldo zostało przeliczone.' });
+            queryClient.invalidateQueries({queryKey: ['budget']});
+            toast.success('Transakcja usunięta', {description: 'Saldo zostało przeliczone.'});
         },
         onError: (err: any) =>
-            toast.error('Błąd usuwania', { description: err.message }),
+            toast.error('Błąd usuwania', {description: err.message}),
     });
 
     const deleteBudgetMutation = useMutation({
         mutationFn: deleteBudget,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['budget'] });
-            toast.success('Budżet usunięty', { description: 'Rok budżetowy został zamknięty.' });
+            queryClient.invalidateQueries({queryKey: ['budget']});
+            toast.success('Budżet usunięty', {description: 'Rok budżetowy został zamknięty.'});
         },
         onError: (err: any) =>
-            toast.error('Błąd usuwania budżetu', { description: err.message }),
+            toast.error('Błąd usuwania budżetu', {description: err.message}),
     });
 
     const removeTransaction = (id: string) => {
         if (isLocked) {
-            toast.error('Odmowa dostępu', { description: 'Samorząd jest archiwalny.' });
+            toast.error('Odmowa dostępu', {description: 'Samorząd jest archiwalny.'});
             return;
         }
 
@@ -105,14 +107,15 @@ export const useCouncilBudget = (councilId: string) => {
             },
             cancel: {
                 label: 'Anuluj',
-                onClick: () => {},
+                onClick: () => {
+                },
             },
         });
     };
 
     const removeBudget = () => {
         if (isLocked) {
-            toast.error('Odmowa dostępu', { description: 'Samorząd jest archiwalny.' });
+            toast.error('Odmowa dostępu', {description: 'Samorząd jest archiwalny.'});
             return;
         }
         if (!budget?.id) return;
@@ -125,17 +128,20 @@ export const useCouncilBudget = (councilId: string) => {
             },
             cancel: {
                 label: 'Anuluj',
-                onClick: () => {},
+                onClick: () => {
+                },
             },
             duration: 8000,
         });
     };
 
-    const downloadReport = (format: 'pdf' | 'xlsx') => {
-        if (!budget || !transactions) return;
-        toast.info('Generowanie raportu...', { duration: 2000 });
-        if (format === 'pdf') generateBudgetPdf(budget, transactions);
-        else generateBudgetExcel(budget, transactions);
+    const openReportModal = (type: 'pdf' | 'xlsx') => {
+        setReportType(type);
+        setIsReportModalOpen(true);
+    };
+
+    const closeReportModal = () => {
+        setIsReportModalOpen(false);
     };
 
     return {
@@ -149,18 +155,26 @@ export const useCouncilBudget = (councilId: string) => {
         permissions,
         removeTransaction,
         removeBudget,
-        downloadReport,
+
         isAddModalOpen,
         openAddModal: () => setIsAddModalOpen(true),
         closeAddModal: () => setIsAddModalOpen(false),
+
         isCreateModalOpen,
         openCreateModal: () => setIsCreateModalOpen(true),
         closeCreateModal: () => setIsCreateModalOpen(false),
+
         isEditBudgetModalOpen,
         openEditBudgetModal: () => setIsEditBudgetModalOpen(true),
         closeEditBudgetModal: () => setIsEditBudgetModalOpen(false),
+
         editingTransaction,
         openEditTransactionModal: (t: CouncilTransactionResponseDto) => setEditingTransaction(t),
         closeEditTransactionModal: () => setEditingTransaction(null),
+
+        isReportModalOpen,
+        reportType,
+        openReportModal,
+        closeReportModal,
     };
 };

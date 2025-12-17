@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Entity
 @Table(name = "suggestion_tags")
@@ -26,7 +27,7 @@ public class SuggestionTag {
 	@AllArgsConstructor
 	@EqualsAndHashCode
 	public static class Id implements Serializable {
-		private java.util.UUID suggestionId;
+		private UUID suggestionId;
 		private String tag;
 	}
 

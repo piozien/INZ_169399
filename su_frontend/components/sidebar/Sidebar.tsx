@@ -8,7 +8,7 @@ import ProfileIcon from '@/components/icons/sidebar/ProfileIcon';
 import CalendarDaysIcon from '@/components/icons/CalendarDaysIcon';
 import FinanceIcon from '@/components/icons/sidebar/FinanceIcon';
 import ListIcon from '@/components/icons/sidebar/ListIcon';
-import { LogOut, Sun, Moon, Landmark, X, Inbox, Shield } from 'lucide-react'; // Dodano Shield
+import { LogOut, Sun, Moon, Landmark, X, Inbox, Shield } from 'lucide-react';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import React, { useEffect } from 'react';
@@ -202,7 +202,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                                 ) : (
                                     <Moon className="h-5 w-5" />
                                 )}
-                                <span>{theme === 'dark' ? 'Jasny motyw' : 'Ciemny motyw'}</span>
+                                <span>{theme === 'dark' ? 'Jasny Motyw' : 'Ciemny Motyw'}</span>
                             </span>
                         </button>
 

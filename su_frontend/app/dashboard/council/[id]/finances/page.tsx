@@ -22,6 +22,7 @@ import AddTransactionModal from '@/components/budget/AddTransactionModal';
 import EditTransactionModal from '@/components/budget/EditTransactionModal';
 import CreateBudgetModal from '@/components/budget/CreateBudgetModal';
 import EditBudgetModal from '@/components/budget/EditBudgetModal';
+import ReportModal from '@/components/budget/ReportModal';
 import { useCouncilBudget } from '@/hooks/council/budget/useCouncilBudget';
 
 export default function FinancesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +39,6 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
         permissions,
         removeTransaction,
         removeBudget,
-        downloadReport,
         isAddModalOpen,
         openAddModal,
         closeAddModal,
@@ -48,9 +48,15 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
         isEditBudgetModalOpen,
         openEditBudgetModal,
         closeEditBudgetModal,
+
         editingTransaction,
         openEditTransactionModal,
         closeEditTransactionModal,
+
+        isReportModalOpen,
+        reportType,
+        openReportModal,
+        closeReportModal,
     } = useCouncilBudget(councilId);
 
     if (isLoading)
@@ -144,14 +150,14 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
 
                 <div className="flex flex-wrap items-center gap-3 self-end md:self-auto">
                     <button
-                        onClick={() => downloadReport('pdf')}
+                        onClick={() => openReportModal('pdf')}
                         className="bg-secondarybg border-border hover:bg-inputbg text-foreground flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors"
                     >
                         <FileDown className="h-4 w-4" />{' '}
                         <span className="hidden sm:inline">PDF</span>
                     </button>
                     <button
-                        onClick={() => downloadReport('xlsx')}
+                        onClick={() => openReportModal('xlsx')}
                         className="bg-secondarybg border-border hover:bg-inputbg text-foreground flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors"
                     >
                         <FileDown className="h-4 w-4" />{' '}
@@ -264,67 +270,67 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                         ) : (
                             <table className="w-full border-collapse text-left text-sm">
                                 <thead className="text-txtcolor-300 bg-inputbg/50 sticky top-0 z-10 text-xs uppercase backdrop-blur-md">
-                                    <tr>
-                                        <th className="bg-secondarybg px-6 py-3 font-semibold tracking-wider">
-                                            Opis
+                                <tr>
+                                    <th className="bg-secondarybg px-6 py-3 font-semibold tracking-wider">
+                                        Opis
+                                    </th>
+                                    <th className="bg-secondarybg hidden px-6 py-3 font-semibold tracking-wider sm:table-cell">
+                                        Data
+                                    </th>
+                                    <th className="bg-secondarybg px-6 py-3 text-right font-semibold tracking-wider">
+                                        Kwota
+                                    </th>
+                                    {permissions.canEditTransactions && !isLocked && (
+                                        <th className="bg-secondarybg w-20 px-6 py-3 text-center">
+                                            Akcje
                                         </th>
-                                        <th className="bg-secondarybg hidden px-6 py-3 font-semibold tracking-wider sm:table-cell">
-                                            Data
-                                        </th>
-                                        <th className="bg-secondarybg px-6 py-3 text-right font-semibold tracking-wider">
-                                            Kwota
-                                        </th>
-                                        {permissions.canEditTransactions && !isLocked && (
-                                            <th className="bg-secondarybg w-20 px-6 py-3 text-center">
-                                                Akcje
-                                            </th>
-                                        )}
-                                    </tr>
+                                    )}
+                                </tr>
                                 </thead>
                                 <tbody className="divide-border divide-y">
-                                    {transactions?.map((t) => (
-                                        <tr
-                                            key={t.id}
-                                            className="hover:bg-foreground/5 group transition-colors"
+                                {transactions?.map((t) => (
+                                    <tr
+                                        key={t.id}
+                                        className="hover:bg-foreground/5 group transition-colors"
+                                    >
+                                        <td className="text-foreground px-6 py-4 font-medium">
+                                            {t.description}
+                                        </td>
+                                        <td className="text-txtcolor-300 hidden px-6 py-4 font-mono text-xs sm:table-cell">
+                                            {new Date(t.date).toLocaleDateString('pl-PL')}
+                                        </td>
+                                        <td
+                                            className={`px-6 py-4 text-right font-mono font-bold whitespace-nowrap ${t.type === 'INCOME' ? 'text-success' : 'text-error'}`}
                                         >
-                                            <td className="text-foreground px-6 py-4 font-medium">
-                                                {t.description}
-                                            </td>
-                                            <td className="text-txtcolor-300 hidden px-6 py-4 font-mono text-xs sm:table-cell">
-                                                {new Date(t.date).toLocaleDateString('pl-PL')}
-                                            </td>
-                                            <td
-                                                className={`px-6 py-4 text-right font-mono font-bold whitespace-nowrap ${t.type === 'INCOME' ? 'text-success' : 'text-error'}`}
-                                            >
-                                                {t.type === 'INCOME' ? '+' : '-'}
-                                                {t.amount.toFixed(2)}
-                                            </td>
-                                            {permissions.canEditTransactions && !isLocked && (
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-end gap-2 transition-opacity">
+                                            {t.type === 'INCOME' ? '+' : '-'}
+                                            {t.amount.toFixed(2)}
+                                        </td>
+                                        {permissions.canEditTransactions && !isLocked && (
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2 transition-opacity">
+                                                    <button
+                                                        onClick={() =>
+                                                            openEditTransactionModal(t)
+                                                        }
+                                                        className="bg-background border-border hover:border-primary text-txtcolor-300 hover:text-primary rounded-lg border p-1.5 transition-colors"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </button>
+                                                    {permissions.canDeleteTransaction && (
                                                         <button
                                                             onClick={() =>
-                                                                openEditTransactionModal(t)
+                                                                removeTransaction(t.id)
                                                             }
-                                                            className="bg-background border-border hover:border-primary text-txtcolor-300 hover:text-primary rounded-lg border p-1.5 transition-colors"
+                                                            className="bg-background border-border hover:border-error text-txtcolor-300 hover:text-error rounded-lg border p-1.5 transition-colors"
                                                         >
-                                                            <Edit className="h-4 w-4" />
+                                                            <Trash2 className="h-4 w-4" />
                                                         </button>
-                                                        {permissions.canDeleteTransaction && (
-                                                            <button
-                                                                onClick={() =>
-                                                                    removeTransaction(t.id)
-                                                                }
-                                                                className="bg-background border-border hover:border-error text-txtcolor-300 hover:text-error rounded-lg border p-1.5 transition-colors"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            )}
-                                        </tr>
-                                    ))}
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
                                 </tbody>
                             </table>
                         )}
@@ -352,6 +358,16 @@ export default function FinancesPage({ params }: { params: Promise<{ id: string 
                     isOpen={isEditBudgetModalOpen}
                     onClose={closeEditBudgetModal}
                     budget={budget}
+                />
+            )}
+
+            {budget && (
+                <ReportModal
+                    isOpen={isReportModalOpen}
+                    onClose={closeReportModal}
+                    budget={budget}
+                    transactions={transactions || []}
+                    initialType={reportType}
                 />
             )}
         </div>
