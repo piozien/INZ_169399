@@ -1,6 +1,5 @@
 package pl.su.su_backend.dto.council;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
