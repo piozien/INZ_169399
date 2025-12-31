@@ -36,8 +36,8 @@ export const useCouncilSuggestions = (councilId: string) => {
         const hasAll = perms.includes('ALL_ACCESS');
         return {
             canApprove: hasAll || perms.includes('SUGGESTION_APPROVE'),
-            canReject: hasAll || perms.includes('SUGGESTION_DELETE'),
-            canDelete: hasAll || perms.includes('SUGGESTION_DELETE'),
+            canReject: hasAll || perms.includes('SUGGESTION_REJECT'),
+            canDelete: hasAll || perms.includes('SUGGESTION_REJECT'),
         };
     }, [council]);
 

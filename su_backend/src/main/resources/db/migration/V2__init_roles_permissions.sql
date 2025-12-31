@@ -29,12 +29,12 @@ INSERT INTO permissions (name, description) VALUES
     ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r CROSS JOIN permissions p WHERE r.role_code = 'ADMINISTRATOR'
+SELECT r.id, p.id FROM roles r CROSS JOIN permissions p WHERE r.role_code IN ('ADMINISTRATOR', 'DYREKTOR')
     ON CONFLICT DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.role_code IN ('DYREKTOR', 'ZASTEPCA_DYREKTORA') AND p.name IN (
+WHERE r.role_code IN ('ZASTEPCA_DYREKTORA') AND p.name IN (
                                                                                      'USER_VIEW', 'USER_CREATE', 'USER_EDIT',
                                                                                      'COUNCIL_VIEW', 'COUNCIL_VIEW_ALL', 'COUNCIL_CREATE', 'COUNCIL_MEMBER_MANAGE','COUNCIL_DELETE',
                                                                                      'COUNCIL_BUDGET_VIEW', 'COUNCIL_BUDGET_CREATE', 'COUNCIL_BUDGET_EDIT', 'COUNCIL_BUDGET_DELETE',
@@ -118,5 +118,5 @@ WHERE r.role_code = 'BYLY_CZLONEK_SU' AND p.name IN (
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.role_code = 'UCZEN' AND p.name IN ('EVENT_VIEW', 'SUGGESTION_CREATE', 'COUNCIL_JOIN', 'COUNCIL_VIEW')
+WHERE r.role_code = 'UCZEN' AND p.name IN ('EVENT_VIEW', 'SUGGESTION_CREATE', 'COUNCIL_JOIN', 'COUNCIL_VIEW', 'USER_VIEW')
     ON CONFLICT DO NOTHING;
