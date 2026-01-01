@@ -16,6 +16,14 @@ Projekt składa się z backendu opartego na **Spring Boot** (Java 21) oraz front
 
 - **Docker** oraz **Docker Compose** (zainstalowane i skonfigurowane w systemie)
 
+## Konfiguracja
+
+Przed pierwszym uruchomieniem aplikacji należy skonfigurować zmienne środowiskowe:
+
+1. W głównym katalogu projektu znajdź plik `.env.example`.
+2. Skopiuj go i zmień nazwę na `.env`.
+3. Uzupełnij plik `.env` prawidłowymi danymi (w szczególności JWT, danymi do bazy danych jeśli zmieniasz domyślne, oraz konfiguracją usług zewnętrznych jak Microsoft Graph czy Azure Communication Services).
+
 ## Uruchomienie aplikacji (Środowisko Deweloperskie)
 
 1. **Pobranie kodu źródłowego**
@@ -63,6 +71,14 @@ The project consists of a **Spring Boot** (Java 21) backend and a **Next.js** (R
 ## Prerequisites
 
 - **Docker** and **Docker Compose** (installed and configured)
+
+## Configuration
+
+Before running the application for the first time, you must configure the environment variables:
+
+1. Locate the `.env.example` file in the project's root directory.
+2. Copy it and rename the copy to `.env`.
+3. Fill the `.env` file with valid data (especially JWT secrets, database credentials if you change defaults, and external service configurations like Microsoft Graph or Azure Communication Services if you intend to use them).
 
 ## Running the Application (Development Environment)
 
