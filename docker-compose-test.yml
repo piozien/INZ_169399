@@ -1,11 +1,34 @@
+version: '3.8'
+
 services:
-  test-db:
-    image: postgres:17.5-alpine
-    container_name: su_backend_test_db
-    ports:
-      - "5433:5432"
+  db_test:
+    image: postgres:17
     environment:
-      - POSTGRES_DB=su_test_db
-      - POSTGRES_USER=testuser
-      - POSTGRES_PASSWORD=testpass
-    restart: always
+      POSTGRES_DB: samorzad_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d samorzad_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data
+  test_runner:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /app/su_backend
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    command: mvn test -Dspring.profiles.active=test
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db_test:5432/samorzad_test
+      SPRING_DATASOURCE_USERNAME: test_user
+      SPRING_DATASOURCE_PASSWORD: test_password
+      SPRING_MAIN_BANNER-MODE: "off"
+    depends_on:
+      db_test:
+        condition: service_healthy
+
+volumes:
+  maven_cache:
