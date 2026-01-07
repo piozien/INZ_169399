@@ -10,6 +10,7 @@ import {
     removeParticipant,
 } from '@/lib/api/events';
 import {EventResponseDto} from '@/types/event.types';
+import { useCouncilPermissions } from '@/hooks/council/useCouncilPermissions';
 
 export const useCouncilEvents = (councilId: string) => {
     const queryClient = useQueryClient();
@@ -19,11 +20,15 @@ export const useCouncilEvents = (councilId: string) => {
     const [selectedEvent, setSelectedEvent] = useState<EventResponseDto | null>(null);
     const [isArchiveOpen, setIsArchiveOpen] = useState(false);
 
-    const {data: events, isLoading} = useQuery({
+    const {data: events, isLoading: isEventsLoading} = useQuery({
         queryKey: ['councilEvents', councilId],
         queryFn: () => fetchCouncilEvents(councilId),
         enabled: !!councilId,
     });
+
+    const { hasPermission, isLoading: isPermissionsLoading } = useCouncilPermissions(councilId);
+    
+    const isLoading = isEventsLoading || isPermissionsLoading;
 
     const {activeEvents, archiveEvents} = useMemo(() => {
         if (!events) return {activeEvents: [], archiveEvents: []};

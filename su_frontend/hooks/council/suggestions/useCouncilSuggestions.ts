@@ -7,8 +7,8 @@ import {
     rejectSuggestion,
     deleteSuggestion,
 } from '@/lib/api/suggestions';
-import { fetchCouncilById } from '@/lib/api/council';
 import { SuggestionDto } from '@/types/suggestions.types';
+import { useCouncilPermissions } from '@/hooks/council/useCouncilPermissions';
 
 export const useCouncilSuggestions = (councilId: string) => {
     const queryClient = useQueryClient();
@@ -23,23 +23,15 @@ export const useCouncilSuggestions = (councilId: string) => {
         enabled: !!councilId,
     });
 
-    const { data: council, isLoading: councilLoading } = useQuery({
-        queryKey: ['council', councilId],
-        queryFn: () => fetchCouncilById(councilId || ''),
-        enabled: !!councilId,
-    });
+    const { hasPermission, isLoading: permissionsLoading } = useCouncilPermissions(councilId);
 
     const permissions = useMemo(() => {
-        if (!council?.myPermissions)
-            return { canApprove: false, canReject: false, canDelete: false };
-        const perms = council.myPermissions;
-        const hasAll = perms.includes('ALL_ACCESS');
         return {
-            canApprove: hasAll || perms.includes('SUGGESTION_APPROVE'),
-            canReject: hasAll || perms.includes('SUGGESTION_DELETE'),
-            canDelete: hasAll || perms.includes('SUGGESTION_DELETE'),
+            canApprove: hasPermission('SUGGESTION_APPROVE'),
+            canReject: hasPermission('SUGGESTION_DELETE'),
+            canDelete: hasPermission('SUGGESTION_DELETE'),
         };
-    }, [council]);
+    }, [hasPermission]);
 
     const approveMutation = useMutation({
         mutationFn: approveSuggestion,
@@ -89,7 +81,7 @@ export const useCouncilSuggestions = (councilId: string) => {
 
     return {
         suggestions: displayedSuggestions,
-        isLoading: suggestionsLoading || councilLoading,
+        isLoading: suggestionsLoading || permissionsLoading,
         permissions,
 
         filter, setFilter,

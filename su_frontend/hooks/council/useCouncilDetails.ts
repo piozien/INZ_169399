@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { deleteCouncil, fetchCouncilById, leaveCouncil } from '@/lib/api/council';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { CouncilResponseDto } from '@/types/council.types';
+import { useCouncilPermissions } from '@/hooks/council/useCouncilPermissions';
 
 export const useCouncilDetails = (councilId: string) => {
     const router = useRouter();
@@ -17,13 +18,17 @@ export const useCouncilDetails = (councilId: string) => {
 
     const {
         data: council,
-        isLoading,
+        isLoading: isCouncilLoading,
         error,
     } = useQuery<CouncilResponseDto>({
         queryKey: ['council', councilId],
         queryFn: () => fetchCouncilById(councilId),
         retry: 1,
     });
+
+    const { hasPermission, isLoading: isPermissionsLoading } = useCouncilPermissions(councilId);
+
+    const isLoading = isCouncilLoading || isPermissionsLoading;
 
     const leaveMutation = useMutation({
         mutationFn: () => {
@@ -66,11 +71,6 @@ export const useCouncilDetails = (councilId: string) => {
                 onClick: () => {},
             },
         });
-    };
-
-    const hasPermission = (perm: string) => {
-        if (!council?.myPermissions) return false;
-        return council.myPermissions.includes('ALL_ACCESS') || council.myPermissions.includes(perm);
     };
 
     const copyJoinCode = () => {
