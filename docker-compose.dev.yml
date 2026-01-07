@@ -44,25 +44,25 @@ services:
       - ./su_backend:/app
       - /root/.m2:/root/.m2
 
-#  frontend:
-#    build:
-#      context: ./su_frontend
-#      dockerfile: Dockerfile.dev
-#    container_name: su_frontend_dev
-#    restart: unless-stopped
-#    ports:
-#      - "3000:3000"
-#    environment:
-#      NEXT_PUBLIC_API_URL: http://localhost:8080
-#      NEXT_PUBLIC_OAUTH2_AUTHORIZATION_URL: http://localhost:8080/oauth2/authorization/microsoft
-#    depends_on:
-#      - backend
-#    networks:
-#      - su_network_dev
-#    volumes:
-#      - ./su_frontend:/app
-#      - /app/node_modules
-#      - /app/.next
+  frontend:
+    build:
+      context: ./su_frontend
+      dockerfile: Dockerfile.dev
+    container_name: su_frontend_dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_OAUTH2_AUTHORIZATION_URL: http://localhost:8080/oauth2/authorization/microsoft
+    depends_on:
+      - backend
+    networks:
+      - su_network_dev
+    volumes:
+      - ./su_frontend:/app
+      - /app/node_modules
+      - /app/.next
 
 networks:
   su_network_dev:
