@@ -3,7 +3,7 @@ spring:
     name: su-backend-test
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/su_test_db
+    url: jdbc:postgresql://localhost:5433/su_test_db?sslmode=disable&binaryTransfer=false
     username: testuser
     password: testpass
     driver-class-name: org.postgresql.Driver
@@ -23,3 +23,9 @@ spring:
 
 ACS_CONNECTION_STRING: "endpoint=https://fake.azure.com/;accesskey=fake"
 ACS_SENDER_ADDRESS: "no-reply@test.su.edu"
+JWT_SECRET: c3Ryb25nLXRlc3Qtc2VjcmV0LWtleS1mb3ItamF2YS10ZXN0cy0xMjM=
+JWT_EXPIRATION: 1800000
+JWT_REFRESH_EXPIRATION: 604800000
+FRONTEND_URL: http://localhost:3000
+MS_GRAPH_BASE_URL_01: https://graph.microsoft.com/v1.0
+PASSWORD_RESET_EXPIRATION_HOURS: 2

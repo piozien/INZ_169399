@@ -274,6 +274,7 @@ class CouncilBudgetControllerTest extends BaseIntegrationTest {
     void shouldPreventAddingTransactionToInactiveCouncilBudget() throws Exception {
         Cookie authCookie = generateAuthCookie(TREASURER_EMAIL, "Skarbnik");
         UUID oldCouncilId = getCouncilIdByCode("OLD2023");
+        addMemberToCouncil(oldCouncilId, TREASURER_EMAIL, RoleCode.SKARBNIK_SU);
         CouncilBudget oldBudget = budgetRepository.findByCouncil_IdAndYear(oldCouncilId, "2023/2024")
                 .orElseThrow(() -> new RuntimeException("Brak starego budżetu w bazie testowej"));
 

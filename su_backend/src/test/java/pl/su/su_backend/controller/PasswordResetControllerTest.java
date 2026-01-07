@@ -45,7 +45,7 @@ public class PasswordResetControllerTest extends BaseIntegrationTest {
 
     @MockitoBean
     private MailSender mailSender;
-    @Autowired
+    @MockitoBean
     private MailService mailService;
 
     @Test

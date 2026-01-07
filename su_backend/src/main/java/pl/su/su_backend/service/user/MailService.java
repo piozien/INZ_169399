@@ -13,6 +13,7 @@ import pl.su.su_backend.model.event.Event;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -184,7 +185,7 @@ public class MailService {
                 outlookWebLink, btnSecondary,
                 googleLink, btnSecondary,
                 COLOR_GRAY,
-                java.time.Year.now().getValue()
+                Year.now().getValue()
         );
 
         sendEmail(toEmail, subject, htmlContent);

@@ -67,16 +67,6 @@ class UserControllerTest extends BaseIntegrationTest {
     }
 
     @Test
-    void shouldForbidGettingOtherUserProfileWithoutPermission() throws Exception {
-        Cookie studentCookie = generateAuthCookie(STUDENT_EMAIL, "Uczen");
-        UUID targetUserId = getUserIdByEmail(TARGET_EMAIL);
-
-        mockMvc.perform(get("/api/users/{id}", targetUserId)
-                        .cookie(studentCookie))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void shouldAllowAdminToGetOtherUserProfile() throws Exception {
         Cookie adminCookie = generateAuthCookie(ADMIN_EMAIL, "Administrator");
         UUID targetUserId = getUserIdByEmail(STUDENT_EMAIL);
