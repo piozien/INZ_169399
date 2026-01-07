@@ -7,10 +7,11 @@ import {
     deleteTransaction,
     deleteBudget,
 } from '@/lib/api/budget';
-import {fetchCouncilContext, fetchCouncilById} from '@/lib/api/council';
+import {fetchCouncilById} from '@/lib/api/council';
 import {CouncilBudgetResponseDto, CouncilTransactionResponseDto} from '@/types/budget.types';
-import {CouncilResponseDto, CouncilContextDto} from '@/types/council.types';
+import {CouncilResponseDto} from '@/types/council.types';
 import {useAuth} from '@/lib/contexts/AuthContext';
+import { useCouncilPermissions } from '@/hooks/council/useCouncilPermissions';
 
 export const useCouncilBudget = (councilId: string) => {
     const {user} = useAuth();
@@ -31,6 +32,8 @@ export const useCouncilBudget = (councilId: string) => {
         queryFn: () => fetchCouncilById(councilId),
     });
 
+    const { hasPermission, isLoading: permsLoading } = useCouncilPermissions(councilId);
+
     const {data: budget, isLoading: budgetLoading} = useQuery<CouncilBudgetResponseDto>({
         queryKey: ['budget', councilId],
         queryFn: () => fetchCouncilBudget(councilId),
@@ -45,33 +48,20 @@ export const useCouncilBudget = (councilId: string) => {
         enabled: !!budget?.id,
     });
 
-    const {data: context} = useQuery<CouncilContextDto>({
-        queryKey: ['councilContext', councilId],
-        queryFn: () => fetchCouncilContext(councilId),
-    });
-
-
     const isAdmin = user?.roles?.includes('ADMINISTRATOR') || false;
     const isCouncilActive = council?.active ?? false;
     const isLocked = !isCouncilActive && !isAdmin;
 
     const permissions = useMemo(() => {
-        const hasPerm = (perm: string) => {
-            if (isAdmin) return true;
-            if (budget?.myPermissions?.some((p) => p === 'ALL_ACCESS' || p === perm)) return true;
-            if (context?.permissions?.some((p) => p === 'ALL_ACCESS' || p === perm)) return true;
-            return false;
-        };
-
         return {
             canEditTransactions:
-                hasPerm('COUNCIL_TRANSACTION_EDIT') || hasPerm('COUNCIL_TRANSACTION_CREATE'),
-            canDeleteTransaction: hasPerm('COUNCIL_TRANSACTION_DELETE'),
-            canEditBudget: hasPerm('COUNCIL_BUDGET_EDIT'),
-            canDeleteBudget: hasPerm('COUNCIL_BUDGET_DELETE'),
-            canCreateBudget: hasPerm('COUNCIL_BUDGET_CREATE'),
+                hasPermission('COUNCIL_TRANSACTION_EDIT') || hasPermission('COUNCIL_TRANSACTION_CREATE'),
+            canDeleteTransaction: hasPermission('COUNCIL_TRANSACTION_DELETE'),
+            canEditBudget: hasPermission('COUNCIL_BUDGET_EDIT'),
+            canDeleteBudget: hasPermission('COUNCIL_BUDGET_DELETE'),
+            canCreateBudget: hasPermission('COUNCIL_BUDGET_CREATE'),
         };
-    }, [isAdmin, budget, context]);
+    }, [hasPermission]);
 
     const deleteTransMutation = useMutation({
         mutationFn: deleteTransaction,

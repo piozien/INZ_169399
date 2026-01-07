@@ -6,10 +6,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pl.su.su_backend.dto.auth.UserPermissionsResponse;
 import pl.su.su_backend.service.auth.AuthenticationService;
 import pl.su.su_backend.service.auth.PermissionService;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/permissions")
@@ -21,11 +24,12 @@ public class PermissionController {
     private final PermissionService permissionService;
 
     @GetMapping
-    public ResponseEntity<UserPermissionsResponse> getPermissions(@AuthenticationPrincipal Object principal) {
+    public ResponseEntity<UserPermissionsResponse> getPermissions(
+            @AuthenticationPrincipal Object principal,
+            @RequestParam(required = false) UUID councilId
+    ) {
         String email = authenticationService.getEmailFromPrincipal(principal);
-        log.info("Fetching permissions for user: {}", email);
-
-        UserPermissionsResponse response = permissionService.getUserPermissions(email);
+        UserPermissionsResponse response = permissionService.getUserPermissions(email, councilId);
 
         return ResponseEntity.ok(response);
     }
