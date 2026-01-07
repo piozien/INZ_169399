@@ -52,13 +52,9 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file:
-      - .env
     environment:
-      PORT: 3000
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
-      NEXT_PUBLIC_AZURE_AD_CLIENT_ID: ${NEXT_PUBLIC_AZURE_AD_CLIENT_ID}
-      NEXT_PUBLIC_AZURE_AD_TENANT_ID: ${NEXT_PUBLIC_AZURE_AD_TENANT_ID}
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_OAUTH2_AUTHORIZATION_URL: http://localhost:8080/oauth2/authorization/microsoft
     depends_on:
       - backend
     networks:
