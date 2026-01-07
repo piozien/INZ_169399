@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-samorzad}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-samorzad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-samorzad123}
     ports:
       - "5432:5432"
     volumes:
@@ -15,7 +15,7 @@ services:
     networks:
       - su_network_dev
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-samorzad}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-samorzad} -d ${POSTGRES_DB:-samorzad}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,9 +31,9 @@ services:
     env_file:
       - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-samorzad}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-samorzad}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-samorzad123}
       SPRING_PROFILES_ACTIVE: dev
     depends_on:
       database:
@@ -71,5 +71,3 @@ networks:
 volumes:
   postgres_data_dev:
     driver: local
-
-

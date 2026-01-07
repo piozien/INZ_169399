@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
         return [
             {
                 source: '/api/:path*',
-                destination: 'https://subackend-89f03bcfe431.herokuapp.com/api/:path*',
+                destination: 'http://backend:8080/api/:path*',
             },
         ];
     },

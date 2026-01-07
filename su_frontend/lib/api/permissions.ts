@@ -5,6 +5,7 @@ export interface PermissionsResponseDto {
     permissions: string[];
 }
 
-export const fetchMyPermissions = async (): Promise<PermissionsResponseDto> => {
-    return apiFetch<PermissionsResponseDto>('/permissions');
+export const fetchMyPermissions = async (councilId?: string): Promise<PermissionsResponseDto> => {
+    const query = councilId ? `?councilId=${councilId}` : '';
+    return apiFetch<PermissionsResponseDto>(`/permissions${query}`);
 };

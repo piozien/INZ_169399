@@ -187,7 +187,10 @@ public class CouncilBudgetService {
     public List<CouncilTransactionResponseDto> getTransactions(UUID budgetId, String currentUserEmail) {
         Users user = userService.getUserByEmailEntity(currentUserEmail);
 
-        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_VIEW, budgetId)) {
+        CouncilBudget budget = councilBudgetRepository.findById(budgetId)
+                .orElseThrow(() -> ApiException.notFound("Budżet nie istnieje"));
+
+        if (!permissionService.hasPermission(user.getId(), PermissionCode.COUNCIL_TRANSACTION_VIEW, budget.getCouncil().getId())) {
             throw ApiException.forbidden("Brak uprawnień");
         }
         return councilTransactionRepository.findByBudgetId(budgetId).stream().map(transactionMapper::toResponse).collect(Collectors.toList());

@@ -75,17 +75,29 @@ public class PermissionService {
     }
 
 
-    public UserPermissionsResponse getUserPermissions(String userEmail) {
+    public UserPermissionsResponse getUserPermissions(String userEmail, UUID councilId) {
         Users user = usersRepository.findByEmail(userEmail)
                 .orElseThrow(() -> ApiException.badRequest("Nie znaleziono użytkownika"));
 
-        Set<Role> allRoles = collectAllUserRolesForInfoOnly(user);
+        Set<Role> activeRoles = new HashSet<>();
 
-        Set<String> roleNames = allRoles.stream()
+        if (user.getUserRoles() != null) {
+            user.getUserRoles().forEach(ur -> activeRoles.add(ur.getRole()));
+        }
+
+        if (councilId != null) {
+            councilMemberRepository.findByCouncilIdAndUserId(councilId, user.getId())
+                    .ifPresent(member -> {
+                        roleRepository.findByRoleCode(member.getRole())
+                                .ifPresent(activeRoles::add);
+                    });
+        }
+
+        Set<String> roleNames = activeRoles.stream()
                 .map(role -> role.getRoleCode().name())
                 .collect(Collectors.toSet());
 
-        Set<String> permissions = allRoles.stream()
+        Set<String> permissions = activeRoles.stream()
                 .flatMap(role -> role.getPermissions().stream())
                 .map(permission -> permission.getName())
                 .collect(Collectors.toSet());
@@ -110,19 +122,4 @@ public class PermissionService {
                 .anyMatch(p -> p.getName().equals(permission.name()));
     }
 
-    private Set<Role> collectAllUserRolesForInfoOnly(Users user) {
-        Set<Role> allRoles = new HashSet<>();
-
-        if (user.getUserRoles() != null) {
-            user.getUserRoles().forEach(ur -> allRoles.add(ur.getRole()));
-        }
-
-        List<CouncilMember> councilMemberships = councilMemberRepository.findByIdUserId(user.getId());
-        for (CouncilMember membership : councilMemberships) {
-            roleRepository.findByRoleCode(membership.getRole())
-                    .ifPresent(allRoles::add);
-        }
-
-        return allRoles;
-    }
 }
