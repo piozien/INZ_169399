@@ -154,7 +154,7 @@ public class CouncilBudgetService {
         transaction.setDate(dto.getDate());
         councilTransactionRepository.save(transaction);
         updateBalance(budget);
-        activityLogService.log(user.getId(), ActionType.TRANSACTION_EDIT, "Edytowano transakcję");
+        activityLogService.log(user.getId(), ActionType.TRANSACTION_EDIT, "Edytowano transakcję " + transaction.getDescription());
         return transactionMapper.toResponse(transaction);
     }
 
