@@ -91,11 +91,15 @@ public class AuthenticationService {
 
             if (msUser == null) throw ApiException.unauthorized("Nieprawidłowy token");
 
-            String email = (String) msUser.getOrDefault("mail", msUser.get("userPrincipalName"));
+            String email = (String) msUser.get("mail");
+            if (email == null) {
+                email = (String) msUser.get("userPrincipalName");
+            }
+            
             String externalId = (String) msUser.get("id");
             String displayName = (String) msUser.get("displayName");
 
-            if (email == null) throw ApiException.unauthorized("Brak emaila w koncie MS");
+            if (email == null) throw ApiException.unauthorized("Brak adresu email w koncie Microsoft (mail i userPrincipalName są puste)");
 
             Users user = userService.getOrCreateMicrosoftUser(email, displayName, externalId);
 
