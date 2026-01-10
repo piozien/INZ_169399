@@ -14,8 +14,8 @@ Projekt składa się z backendu opartego na **Spring Boot** (Java 21) oraz front
 
 ## Wymagania
 
-- **Docker** oraz **Docker Compose** (zainstalowane i skonfigurowane w systemie)
-
+- **Docker** oraz **Docker Compose** (zainstalowane i skonfigurowane w systemie).
+- **Docker Desktop**: Upewnij się, że aplikacja Docker jest **włączona i działa w tle** przed przystąpieniem do uruchamiania komend.
 ## Konfiguracja
 
 Przed pierwszym uruchomieniem aplikacji należy skonfigurować zmienne środowiskowe:
@@ -71,6 +71,7 @@ The project consists of a **Spring Boot** (Java 21) backend and a **Next.js** (R
 ## Prerequisites
 
 - **Docker** and **Docker Compose** (installed and configured)
+- **Docker Desktop**: Ensure the Docker application is running in the background before executing any commands.
 
 ## Configuration
 
