@@ -52,6 +52,11 @@ export const useCouncilBudget = (councilId: string) => {
         return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [transactions]);
 
+    const sortedTransactions = useMemo(() => {
+        if (!transactions) return [];
+        return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [transactions]);
+
     const isAdmin = user?.roles?.includes('ADMINISTRATOR') || false;
     const isCouncilActive = council?.active ?? false;
     const isLocked = !isCouncilActive && !isAdmin;
